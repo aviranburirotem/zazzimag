@@ -49,6 +49,7 @@
 
   // ---- post viewer ----
   const modal = document.getElementById("modal");
+  let lastFocus = null;
   function openPost(i) {
     const p = posts[i];
     if (!p || !modal) return;
@@ -61,10 +62,16 @@
       <div class="txt"><div style="display:flex;align-items:center;gap:10px">${IC.instagram}<b>@${HANDLE}</b><button class="x" type="button" aria-label="Close">${IC.x}</button></div>
       <p>${esc(p.caption)}</p><span class="label">${date}</span>
       <a class="btn" style="margin-top:auto" href="${esc(p.url)}" target="_blank" rel="noopener">View on Instagram ${IC.out}</a></div></div>`;
+    lastFocus = document.activeElement;
     modal.hidden = false;
+    document.body.style.overflow = "hidden";
     modal.querySelector(".x").focus();
   }
-  const close = () => { if (modal) { modal.hidden = true; modal.innerHTML = ""; } };
+  const close = () => {
+    if (!modal || modal.hidden) return;
+    modal.hidden = true; modal.innerHTML = ""; document.body.style.overflow = "";
+    lastFocus?.focus?.();
+  };
 
   document.addEventListener("click", (e) => {
     const t = e.target.closest("[data-ig]");
@@ -75,10 +82,62 @@
     if (chip) {
       const cat = chip.dataset.filter;
       document.querySelectorAll("[data-filter]").forEach((c) => c.setAttribute("aria-pressed", String(c === chip)));
-      document.querySelectorAll("[data-cat]").forEach((el) => { el.hidden = !(cat === "All" || el.dataset.cat === cat); });
+      let n = 0;
+      document.querySelectorAll("[data-cat]").forEach((el) => { el.hidden = !(cat === "All" || el.dataset.cat === cat); if (!el.hidden) n++; });
+      const live = document.getElementById("filter-status");
+      if (live) live.textContent = `Showing ${n} ${n === 1 ? "story" : "stories"}${cat === "All" ? "" : " in " + cat}`;
     }
   });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { close(); closeA11y(); }
+    if (e.key === "Tab" && modal && !modal.hidden) { // keep focus inside the open post
+      const f = [...modal.querySelectorAll("a[href],button,video[controls]")];
+      if (!f.length) return;
+      if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+    }
+  });
+
+  // ---- animated logo: plays for 5 seconds, then stops (WCAG 2.2.2). Hover or focus replays it. ----
+  const logos = [...document.querySelectorAll("video.logo-vid")];
+  const stopLogos = () => logos.forEach((v) => { v.pause(); });
+  logos.forEach((v) => {
+    const link = v.closest("a");
+    const play = () => { if (!document.documentElement.classList.contains("a11y-still")) v.play().catch(() => {}); };
+    link?.addEventListener("mouseenter", play); link?.addEventListener("focus", play);
+    link?.addEventListener("mouseleave", () => v.pause()); link?.addEventListener("blur", () => v.pause());
+  });
+  setTimeout(stopLogos, 5000);
+
+  // ---- accessibility menu (Israeli Standard 5568) ----
+  const KEY = "zz-a11y";
+  const OPTS = { "a11y-text": "Larger text", "a11y-contrast": "High contrast", "a11y-links": "Highlight links", "a11y-font": "Readable font", "a11y-still": "Stop animations" };
+  let prefs = {};
+  try { prefs = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch {}
+  const apply = () => {
+    for (const k of Object.keys(OPTS)) document.documentElement.classList.toggle(k, Boolean(prefs[k]));
+    if (prefs["a11y-still"]) stopLogos();
+    document.querySelectorAll("[data-a11y]").forEach((b) => b.setAttribute("aria-pressed", String(Boolean(prefs[b.dataset.a11y]))));
+  };
+  const panel = document.getElementById("a11y-panel"), toggle = document.getElementById("a11y-toggle");
+  function closeA11y() { if (panel && !panel.hidden) { panel.hidden = true; toggle.setAttribute("aria-expanded", "false"); toggle.focus(); } }
+  if (panel && toggle) {
+    panel.querySelector(".a11y-opts").innerHTML = Object.entries(OPTS).map(([k, label]) => `<button type="button" data-a11y="${k}" aria-pressed="false">${label}</button>`).join("") + `<button type="button" data-a11y-reset>Reset</button>`;
+    toggle.addEventListener("click", () => {
+      const open = panel.hidden;
+      panel.hidden = !open; toggle.setAttribute("aria-expanded", String(open));
+      if (open) panel.querySelector("button").focus();
+    });
+    panel.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-a11y]");
+      if (b) prefs[b.dataset.a11y] = !prefs[b.dataset.a11y];
+      if (e.target.closest("[data-a11y-reset]")) prefs = {};
+      if (e.target.closest("[data-a11y-close]")) return closeA11y();
+      try { localStorage.setItem(KEY, JSON.stringify(prefs)); } catch {}
+      apply();
+    });
+  }
+  apply();
 
   // ---- contact + store forms: open the visitor's email app with the message filled in ----
   document.querySelectorAll("form[data-mailto]").forEach((form) => {

@@ -81,10 +81,18 @@ ${body}
 </main>
 <footer class="site-footer"><div class="wrap">
   <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home"><img src="/assets/logo.png" alt="" width="56" height="56"></a>
-  <nav aria-label="Footer" class="label"><a href="/articles/">Articles</a><a href="/about/">Info &amp; contact</a><a href="/store/">Store</a></nav>
+  <nav aria-label="Footer" class="label"><a href="/articles/">Articles</a><a href="/about/">Info &amp; contact</a><a href="/store/">Store</a><a href="/accessibility/">Accessibility</a></nav>
   <div class="social"><a class="icon-btn" href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram @${SITE.handle}">${icon("instagram")}</a><a class="icon-btn" href="mailto:${SITE.email}" aria-label="Email ${SITE.email}">${icon("mail")}</a><span class="label">© ${new Date().getFullYear()} Zazzi</span></div>
 </div></footer>
 <div class="modal" id="modal" hidden></div>
+<div class="a11y">
+  <button class="a11y-toggle" id="a11y-toggle" type="button" aria-expanded="false" aria-controls="a11y-panel" aria-label="Accessibility options">${icon("accessibility")}</button>
+  <div class="a11y-panel" id="a11y-panel" role="dialog" aria-label="Accessibility options" hidden>
+    <h2>Accessibility <button class="a11y-close" type="button" data-a11y-close aria-label="Close accessibility options">${icon("x")}</button></h2>
+    <div class="a11y-opts"></div>
+    <a href="/accessibility/">Accessibility statement · הצהרת נגישות</a>
+  </div>
+</div>
 <script src="/assets/site.js" defer></script>
 </body>
 </html>`;
@@ -128,6 +136,7 @@ function articlesIndex() {
     title: "Articles", active: "articles", pathname: "/articles/",
     description: "All Zazzi stories: street style, trends, guides and interviews.",
     body: `<section class="wrap intro"><div><span class="label">${articles.length} stories</span><h1>Articles</h1></div></section>
+    <p id="filter-status" class="visually-hidden" aria-live="polite"></p>
     <div class="wrap filters" role="group" aria-label="Filter by category">${cats.map((c) => `<button class="chip" type="button" data-filter="${esc(c)}" aria-pressed="${c === "All"}">${esc(c)}</button>`).join("")}</div>
     <section class="wrap grid">${articles.map((a) => artTile(a)).join("")}</section>`,
   });
@@ -186,6 +195,69 @@ function store() {
   });
 }
 
+function accessibility() {
+  const updated = "October 24, 2026", updatedHe = "24.10.2026";
+  return layout({
+    title: "Accessibility statement", pathname: "/accessibility/",
+    description: "Zazzi Magazine accessibility statement, in line with Israeli Standard 5568 (WCAG 2.0 level AA).",
+    body: `<section class="wrap page statement">
+    <h1>Accessibility</h1>
+    <div class="lang-switch"><a class="chip" href="#en">English</a><a class="chip" href="#he" lang="he">עברית</a></div>
+
+    <div id="en" lang="en">
+      <p>Zazzi Magazine wants everyone to be able to read and enjoy the site, including people with disabilities. We designed it to meet Israeli Standard 5568 (Web Content Accessibility Guidelines) at level AA, which is based on the international WCAG 2.0 guidelines, as required by the Equal Rights for Persons with Disabilities (Service Accessibility Adjustments) Regulations, 2013.</p>
+      <h2>What we've done</h2>
+      <ul>
+        <li>Clear page structure with headings, landmarks and a "Skip to content" link.</li>
+        <li>Everything works with a keyboard. Focused items are clearly outlined, and Esc closes pop-ups.</li>
+        <li>Text and buttons meet AA colour-contrast requirements.</li>
+        <li>Images have text descriptions. Photo credits and captions are written as text.</li>
+        <li>The animated logo stops by itself after a few seconds. Motion is also turned off for visitors who ask their device to reduce motion.</li>
+        <li>Forms have visible labels, and errors are explained in words.</li>
+        <li>The layout adapts to phones, tablets and computers and supports zooming up to 200%.</li>
+      </ul>
+      <h2>Accessibility menu</h2>
+      <p>The round blue button at the bottom of every page opens a menu with: larger text, high contrast, highlighted links, a simpler readable font and stop animations. Your choices are remembered on this device.</p>
+      <h2>Known limitations</h2>
+      <ul>
+        <li>Instagram posts come straight from our Instagram account. Their descriptions are based on the post captions and may not describe every photo in detail.</li>
+        <li>Some article photos come from Wikimedia Commons and other external sites, and some links lead to sites we don't control.</li>
+      </ul>
+      <p>If you find a part of the site that isn't accessible, please tell us and we'll fix it.</p>
+      <h2>Contact our accessibility coordinator</h2>
+      <p>Email: <a href="mailto:${SITE.email}">${SITE.email}</a><br>Please include the page address, what you were trying to do, and the browser, device and any assistive technology you use. We aim to reply within 5 working days.</p>
+      <p class="label">Last updated: ${updated}</p>
+    </div>
+
+    <div id="he" lang="he" dir="rtl" style="margin-top:56px;border-top:1px solid var(--line);padding-top:8px">
+      <h2>הצהרת נגישות</h2>
+      <p>זאזי מגזין רוצה שכל אחד ואחת יוכלו לקרוא וליהנות מהאתר, כולל אנשים עם מוגבלות. האתר תוכנן לעמוד בדרישות תקן ישראלי 5568 (קווים מנחים לנגישות תכנים באינטרנט) ברמה AA, המבוסס על הנחיות WCAG 2.0 הבינלאומיות, בהתאם לתקנות שוויון זכויות לאנשים עם מוגבלות (התאמות נגישות לשירות), התשע"ג-2013.</p>
+      <h2>מה עשינו</h2>
+      <ul>
+        <li>מבנה עמודים ברור עם כותרות, אזורים מוגדרים וקישור "דלג לתוכן".</li>
+        <li>ניתן לנווט באתר כולו באמצעות המקלדת. הרכיב הפעיל מסומן בבירור, והמקש Esc סוגר חלונות קופצים.</li>
+        <li>הטקסטים והכפתורים עומדים בדרישות ניגודיות הצבעים ברמה AA.</li>
+        <li>לתמונות יש תיאור טקסטואלי, וקרדיטים וכיתובים מופיעים כטקסט.</li>
+        <li>הלוגו המונפש נעצר מעצמו אחרי כמה שניות, והאנימציות מבוטלות עבור מי שהגדיר במכשיר "הפחתת תנועה".</li>
+        <li>לטפסים יש תוויות גלויות, והודעות שגיאה מוסברות במילים.</li>
+        <li>העיצוב מותאם לטלפונים, טאבלטים ומחשבים, ותומך בהגדלה עד 200%.</li>
+      </ul>
+      <h2>תפריט הנגישות</h2>
+      <p>הכפתור הכחול העגול בתחתית כל עמוד פותח תפריט עם: הגדלת טקסט, ניגודיות גבוהה, הדגשת קישורים, גופן קריא ועצירת אנימציות. הבחירות נשמרות במכשיר שלכם.</p>
+      <h2>מגבלות ידועות</h2>
+      <ul>
+        <li>הפוסטים מאינסטגרם מגיעים ישירות מחשבון האינסטגרם שלנו. תיאור התמונות מבוסס על הכיתוב של הפוסט, ועשוי שלא לתאר כל תמונה בפירוט.</li>
+        <li>חלק מתמונות הכתבות מגיעות מוויקישיתוף (Wikimedia Commons) ומאתרים חיצוניים, וחלק מהקישורים מובילים לאתרים שאינם בשליטתנו.</li>
+      </ul>
+      <p>אם נתקלתם בחלק באתר שאינו נגיש, נשמח שתספרו לנו ונתקן.</p>
+      <h2>פנייה לרכז/ת הנגישות</h2>
+      <p>דוא"ל: <a href="mailto:${SITE.email}">${SITE.email}</a><br>נא לציין את כתובת העמוד, מה ניסיתם לעשות, ואת הדפדפן, המכשיר וכל טכנולוגיה מסייעת שבה אתם משתמשים. נשתדל להשיב בתוך 5 ימי עבודה.</p>
+      <p class="label">עודכן לאחרונה: ${updatedHe}</p>
+    </div>
+    </section>`,
+  });
+}
+
 function notFound() {
   return layout({ title: "Page not found", pathname: "/404", body: `<section class="wrap page"><h1>Not found</h1><p class="label">This page doesn't exist.</p><p><a class="btn alt" href="/">Back to home</a></p></section>` });
 }
@@ -223,14 +295,20 @@ function comingSoon() {
   .btn.dark{background:var(--fg)}
   a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .ic{width:18px;height:18px;flex:none}
+  .pause{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font:600 12px "Archivo",system-ui,sans-serif;color:var(--muted);cursor:pointer}
+  .pause .ic{width:14px;height:14px}
+  .pause:hover{color:var(--fg);border-color:var(--fg)}
+  .pause:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .a11y-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;text-decoration:underline;color:var(--fg)}
 </style>
 </head>
 <body>
-<main>
+<main id="main">
   <video class="logo" autoplay muted loop playsinline poster="/assets/logo-poster.png" aria-label="Zazzi magazine logo" preload="auto">
     <source src="/assets/logo-animated.mp4" type="video/mp4">
     <img src="/assets/logo-poster.png" alt="Zazzi magazine">
   </video>
+  <button class="pause" type="button" id="pp" aria-pressed="false">${icon("pause")}<span>Pause animation</span></button>
   <h1>Coming soon</h1>
   <p>${esc(SITE.tagline)} The full magazine is on its way.</p>
 </main>
@@ -238,7 +316,16 @@ function comingSoon() {
   <span class="label">Get in touch</span>
   <a class="btn" href="mailto:${SITE.email}">${icon("mail")}${SITE.email}</a>
   <a class="btn dark" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a>
+  <a class="a11y-link" href="/accessibility/">${icon("accessibility")}Accessibility statement · הצהרת נגישות</a>
 </footer>
+<script>
+(() => {
+  const v = document.querySelector("video.logo"), b = document.getElementById("pp");
+  const set = (paused) => { paused ? v.pause() : v.play().catch(() => {}); b.setAttribute("aria-pressed", String(paused)); b.lastChild.textContent = paused ? "Play animation" : "Pause animation"; };
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) set(true);
+  b.addEventListener("click", () => set(!v.paused));
+})();
+</script>
 </body>
 </html>`;
 }
@@ -254,6 +341,7 @@ write("articles/index.html", articlesIndex());
 for (const a of articles) write(`articles/${a.slug}/index.html`, articlePage(a));
 write("about/index.html", about());
 write("store/index.html", store());
+write("accessibility/index.html", accessibility());
 write("articles.json", JSON.stringify(articles.map(({ html, ...a }) => a), null, 2));
 // Admin console helpers (shared with the build so the preview matches the site)
 fs.copyFileSync("lib/markdown.js", path.join(OUT, "admin/markdown.js"));
