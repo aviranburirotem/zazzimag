@@ -53,7 +53,7 @@ async function gh(pathname, { method = "GET", body, raw = false } = {}) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (r.status === 404) return null;
+  if (r.status === 404 && method === "GET") return null;
   if (!r.ok) {
     const text = await r.text();
     const err = new Error(`GitHub ${r.status}: ${text.slice(0, 200)}`);
@@ -190,9 +190,12 @@ export default async function handler(req, res) {
     return fail(404, "Unknown action.");
   } catch (err) {
     console.error(err);
-    const msg = err.status === 401 || err.status === 403
-      ? "GitHub refused the request. Check that GITHUB_TOKEN is valid and has write access to the repository."
-      : "Something went wrong while talking to GitHub. Try again in a moment.";
+    const gh = (String(err.message).match(/"message":"([^"]+)"/) || [])[1] || "";
+    let msg = "Something went wrong while talking to GitHub. Try again in a moment.";
+    if (err.status === 401) msg = "GitHub doesn't recognise GITHUB_TOKEN (it may be mistyped or expired). Create a new token and update it in Vercel.";
+    else if (err.status === 403 || /not accessible/i.test(gh)) msg = "GITHUB_TOKEN can read the site but isn't allowed to save. On GitHub, edit the token and set Contents to \"Read and write\" for the zazzimag repository.";
+    else if (err.status === 404) msg = "GITHUB_TOKEN can't see the zazzimag repository. On GitHub, edit the token and add zazzimag under Repository access.";
+    if (gh) msg += ` (GitHub said: ${gh})`;
     return fail(502, msg);
   }
 }
