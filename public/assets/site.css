@@ -1,13 +1,13 @@
 /* Zazzi — mixed grid of Instagram posts (4:5) and article covers (2:3); the newest story spans 2×2. */
 :root{
   --bg:#ffffff; --fg:#111214; --muted:#6b6e76; --line:#e4e5e9; --soft:#f3f4f6;
-  --accent:#e30613; --on-accent:#ffffff;
+  --accent:#e30613; --accent-fill:#e30613; --on-accent:#ffffff;
   --display:"Archivo",system-ui,sans-serif;
   --serif:"Newsreader",Georgia,"Times New Roman",serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
 }
 @media (prefers-color-scheme:dark){:root{
-  --bg:#0f1012; --fg:#eceef2; --muted:#9a9ea8; --line:#26282d; --soft:#18191c; --accent:#ff3b3b; color-scheme:dark}}
+  --bg:#0f1012; --fg:#eceef2; --muted:#9a9ea8; --line:#26282d; --soft:#18191c; --accent:#ff4d4d; --accent-fill:#c8000f; color-scheme:dark}}
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -33,7 +33,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .with-ic{display:inline-flex;align-items:center;gap:6px}
 .icon-btn{display:inline-grid;place-items:center;width:38px;height:38px;border:1px solid var(--line);border-radius:50%;transition:background .15s,color .15s,border-color .15s}
 .icon-btn .ic{width:18px;height:18px}
-.icon-btn:hover{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.icon-btn:hover{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-accent)}
 .social{display:flex;align-items:center;gap:10px}
 .site-nav{display:flex;gap:22px;margin-left:auto;align-items:center}
 .site-nav a{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
@@ -41,7 +41,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .cta{display:inline-flex;align-items:center;gap:6px;background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:2px}
 .cta .ic{transition:transform .15s}.cta:hover .ic{transform:translateX(3px)}
 @media (max-width:420px){.cta .ic{display:none}}
-.site-nav a.cta[aria-current="page"]{background:var(--accent);color:var(--on-accent)}
+.site-nav a.cta[aria-current="page"]{background:var(--accent-fill);color:var(--on-accent)}
 @media (max-width:640px){.site-nav{gap:14px}.logo-vid{width:54px;height:54px}}
 
 /* heavy italic display, echoing the logo */
@@ -81,7 +81,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .tile:hover h3{text-decoration:underline;text-underline-offset:3px}
 .ig-slot .ph{animation:pulse 1.4s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.6}}
-.follow-tile .ph{display:grid;place-items:center;background:var(--accent);color:var(--on-accent);text-align:center;padding:16px}
+.follow-tile .ph{display:grid;place-items:center;background:var(--accent-fill);color:var(--on-accent);text-align:center;padding:16px}
 .follow-tile .ph .ic{width:34px;height:34px;margin:0 auto 10px}
 .follow-tile .ph b{font-size:22px;font-style:italic;font-weight:900;font-stretch:75%;text-transform:uppercase;line-height:1}
 
@@ -133,7 +133,7 @@ label{display:grid;gap:6px;font-size:13px;font-weight:600}
 input,textarea,select{font:inherit;padding:11px 12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:2px}
 textarea{min-height:120px;resize:vertical}
 .btn{display:inline-flex;align-items:center;gap:8px;background:var(--fg);color:var(--bg);border:0;padding:12px 18px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:13px;justify-self:start;border-radius:2px}
-.btn.alt{background:var(--accent);color:var(--on-accent)}
+.btn.alt{background:var(--accent-fill);color:var(--on-accent)}
 .contact-cards{display:grid;gap:10px;margin-top:20px;max-width:420px}
 .contact-card{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:4px;font-family:var(--mono);font-size:14px;transition:border-color .15s}
 .contact-card>.ic{width:22px;height:22px;color:var(--accent)}
@@ -177,7 +177,7 @@ textarea{min-height:120px;resize:vertical}
 .a11y-panel a{font-size:13px;text-decoration:underline}
 .a11y-close{background:none;border:0;display:grid;place-items:center;width:30px;height:30px;border-radius:50%}
 html.a11y-text .site-header,html.a11y-text main,html.a11y-text .site-footer{zoom:1.2}
-html.a11y-contrast{--bg:#ffffff;--fg:#000000;--muted:#1f1f1f;--line:#000000;--soft:#ffffff;--accent:#a3000c;--on-accent:#ffffff;color-scheme:light}
+html.a11y-contrast{--bg:#ffffff;--fg:#000000;--muted:#1f1f1f;--line:#000000;--soft:#ffffff;--accent:#a3000c;--accent-fill:#a3000c;--on-accent:#ffffff;color-scheme:light}
 html.a11y-contrast .badge{background:#000;color:#fff}
 html.a11y-contrast .ph img{filter:contrast(1.1)}
 html.a11y-links a:not(.btn):not(.cta):not(.logo):not(.icon-btn){text-decoration:underline!important;text-underline-offset:3px}
