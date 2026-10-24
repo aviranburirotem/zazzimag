@@ -267,6 +267,15 @@ html.a11y-still .ng:hover .d,html.a11y-still .product:hover .d{transform:none}
 .tk-word:nth-of-type(3n+2){color:transparent;-webkit-text-stroke:1px var(--fg)}
 .tk-heart{width:12px;height:12px;flex:none;fill:var(--accent);stroke:none}
 @keyframes tk-move{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-@media (max-width:720px){.ticker{display:none}}
+/* phones: the ticker becomes a slim full-width strip under the logo and buttons */
+@media (max-width:720px){
+  .bar{flex-wrap:wrap;row-gap:0}
+  .ticker{order:3;flex:0 0 calc(100% + 32px);margin:4px -16px 0;height:30px;border-top:1px solid var(--line)}
+  .ticker-space{display:none}
+  .site-nav{margin-left:auto}
+  .tk-word{font-size:13px}
+  .tk-heart{width:10px;height:10px}
+  .ticker-track{gap:14px}
+}
 @media (prefers-reduced-motion:reduce){.ticker-track{animation:none}}
 html.a11y-still .ticker-track{animation:none}
