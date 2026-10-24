@@ -400,12 +400,14 @@ function comingSoon() {
   .pause:hover{color:var(--fg);border-color:var(--fg)}
   .pause:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .legal{flex-basis:100%;text-align:center;margin:4px 0 0;font-family:"Archivo",system-ui,sans-serif;font-size:12px;color:var(--muted);max-width:none}
+  /* contact: round icon buttons (email, Instagram) on every screen size */
+  .btn{width:48px;height:48px;padding:0;border-radius:50%;justify-content:center;transition:transform .15s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn .t{display:none}
+  .btn .ic{width:22px;height:22px}
   @media (max-width:640px){
     footer{gap:12px 16px}
     footer .label{flex-basis:100%;text-align:center}
-    .btn{width:48px;height:48px;padding:0;border-radius:50%;justify-content:center}
-    .btn .t{display:none}
-    .btn .ic{width:22px;height:22px}
     .a11y-link{flex-basis:100%;justify-content:center}
   }
   .a11y-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;text-decoration:underline;color:var(--fg)}
