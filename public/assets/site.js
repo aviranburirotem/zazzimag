@@ -151,14 +151,27 @@
   // Screen readers get the plain text; motion stops with "Stop animations" or the device's reduce-motion setting.
   const COLORS = ["#e30613", "#1a3fbf", "#f2a900", "#00a86b", "#ff4fa3", "#7a3cff"];
   const escT = (t) => t.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-  // One digit per number gets the trick. In prices, a zero is picked when there is one, so it can blink.
+  // One digit per number gets the trick, except a pair of zeros ("00"), which act together as a pair of eyes.
+  // In prices a zero is picked when there is one (a "00" pair first), so it can blink.
   const digitHtml = (text, blink) => escT(text).replace(/[0-9]+(?:[.,][0-9]+)*/g, (num) => {
     const idx = [...num].map((ch, i) => (/[0-9]/.test(ch) ? i : -1)).filter((i) => i >= 0);
     const zeros = idx.filter((i) => num[i] === "0");
-    const pick = blink && zeros.length ? zeros[Math.floor(Math.random() * zeros.length)] : idx[Math.floor(Math.random() * idx.length)];
-    const d = num[pick], c = COLORS[Math.floor(Math.random() * COLORS.length)];
-    const delay = blink && d === "0" ? ` animation-delay:${(Math.random() * 4).toFixed(2)}s;` : "";
-    return `<span class="ng">${num.slice(0, pick)}<span class="d d${d}${blink && d === "0" ? " z0" : ""}" style="--c:${c};${delay}">${d}</span>${num.slice(pick + 1)}</span>`;
+    const pairs = zeros.filter((i) => num[i + 1] === "0");
+    const rnd = (a) => a[Math.floor(Math.random() * a.length)];
+    let pick = blink ? (pairs.length ? rnd(pairs) : zeros.length ? rnd(zeros) : rnd(idx)) : rnd(idx);
+    const active = new Set([pick]);
+    if (num[pick] === "0") {
+      if (num[pick + 1] === "0") active.add(pick + 1);
+      else if (num[pick - 1] === "0") active.add(pick - 1);
+    }
+    const c = COLORS[Math.floor(Math.random() * COLORS.length)];
+    const delay = (Math.random() * 4).toFixed(2);
+    const out = [...num].map((ch, i) => {
+      if (!active.has(i)) return ch;
+      const z = blink && ch === "0" ? ` z0" style="--c:${c}; animation-delay:${delay}s;"` : `" style="--c:${c};"`;
+      return `<span class="d d${ch}${z}>${ch}</span>`;
+    }).join("");
+    return `<span class="ng">${out}</span>`;
   });
   // prices: plain text for screen readers + decorated copy
   function eggify(el) {
