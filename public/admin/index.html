@@ -154,7 +154,7 @@ async function renderList(flash = "") {
     const rows = document.getElementById("rows");
     if (!articles.length) { rows.innerHTML = `<div class="panel empty">No articles yet. Click <b>New article</b> to write your first one.</div>`; return; }
     rows.innerHTML = articles.map((a) => `<div class="row" data-slug="${esc(a.slug)}">
-      ${a.cover ? `<img src="${esc(a.cover)}" alt="" loading="lazy">` : `<div class="noimg"></div>`}
+      ${a.cover ? `<img src="${esc(shown(a.cover))}" alt="" loading="lazy">` : `<div class="noimg"></div>`}
       <div><h3>${esc(a.title)}</h3><div class="meta-l"><span class="pill ${a.draft ? "draft" : "live"}">${a.draft ? "Draft" : "Published"}</span><span class="label">${esc(a.category)} · ${esc(a.date)}</span></div></div>
       <div class="row-actions">
         ${a.draft ? "" : `<a class="b" href="/articles/${esc(a.slug)}/" target="_blank" rel="noopener" aria-label="View">${icon("eye")}</a>`}
@@ -168,6 +168,9 @@ async function renderList(flash = "") {
 
 // ---------- editor ----------
 let ed = null; // { slug, isNew, data, extras, pending: Map(name -> {sha, url}) }
+// Photos saved in this session keep showing from memory while the site republishes (about a minute)
+const recent = new Map(); // "/images/articles/slug/name.jpg" -> data URL
+const shown = (u) => recent.get(u) || u;
 
 async function openEditor(slug) {
   if (!slug) {
@@ -305,7 +308,7 @@ function renderEditor() {
 function imgUrl(u) { // pending uploads show from memory until they're published
   const m = u && u.match(/^\/images\/articles\/[^/]+\/(.+)$/);
   const p = m && ed?.pending.get(m[1]);
-  return p ? p.preview : u;
+  return p ? p.preview : shown(u);
 }
 
 function status(text, kind = "") { const s = document.getElementById("st"); if (s) { s.textContent = text; s.className = `status ${kind}`; } }
@@ -377,6 +380,7 @@ async function save() {
   const btn = document.getElementById("save"); btn.disabled = true; status("Saving…");
   try {
     await api("save", { method: "POST", body: { slug: ed.slug, isNew: ed.isNew, content: compose(d, body), images: used } });
+    for (const { name } of used) recent.set(`/images/articles/${ed.slug}/${name}`, ed.pending.get(name).preview);
     renderList(d.draft ? `Saved "${d.title}" as a draft.` : `Saved "${d.title}". It will be live on the site in about a minute.`);
   } catch (err) { if (err.message !== "auth") { status(err.message, "err"); btn.disabled = false; } }
 }
