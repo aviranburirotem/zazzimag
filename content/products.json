@@ -2,7 +2,8 @@
   "products": [
     {
       "name": "Zazzi Book",
-      "price": "300",
+      "slug": "zazzi-book",
+      "price": "256",
       "description": "",
       "image": "/images/store/zazzi-book-mvmiijq7.jpg",
       "imageAlt": "Zazzi Book",
