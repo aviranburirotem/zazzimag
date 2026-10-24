@@ -250,7 +250,7 @@ html.a11y-still *,html.a11y-still *::before,html.a11y-still *::after{animation:n
 .d0{transform-origin:50% 55%}
 @keyframes zz-blink{0%,94%,100%{transform:scaleY(1)}96.5%{transform:scaleY(.08)}}
 @keyframes zz-blink-now{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.08)}}
-.num{white-space:nowrap}
+.ng{white-space:nowrap}
 @media (prefers-reduced-motion:reduce){.d,.z0,@keyframes zz-boing{0%,100%{transform:scale(1)}30%{transform:scale(1.25,.75)}60%{transform:scale(.85,1.2)}}
 @keyframes zz-squish{0%,100%{transform:scale(1)}40%{transform:scale(1.2,.8)}70%{transform:scale(.92,1.08)}}
 .d.pop{animation:none!important;transition:color .2s}.ng:hover .d,.product:hover .d{transform:none}}
