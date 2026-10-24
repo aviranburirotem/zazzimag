@@ -5,7 +5,7 @@
   --display:"Archivo",system-ui,sans-serif;
   --serif:"Newsreader",Georgia,"Times New Roman",serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
-  --text:"DM Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif; /* page intros & descriptions */
+  --text:"Archivo",system-ui,-apple-system,"Segoe UI",Arial,sans-serif; /* page intros & descriptions (same face as the home intro) */
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#0f1012; --fg:#eceef2; --muted:#9a9ea8; --line:#26282d; --soft:#18191c; --accent:#ff4d4d; --accent-fill:#c8000f; color-scheme:dark}}
@@ -50,7 +50,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 .intro{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding-block:40px 24px}
 .intro h1{margin:0;font-stretch:70%;font-size:clamp(40px,7vw,88px);line-height:.92;letter-spacing:-.02em;text-wrap:balance;text-transform:uppercase}
-.intro p{margin:12px 0 0;max-width:46ch;color:var(--muted);font-family:var(--text);font-size:16px;line-height:1.55}
+.intro p{margin:12px 0 0;max-width:46ch;color:var(--muted)}
 .handle{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:13px;border:1px solid var(--line);border-radius:999px;padding:8px 14px;justify-self:start;transition:border-color .15s,color .15s}
 .handle:hover{border-color:var(--accent);color:var(--accent)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
