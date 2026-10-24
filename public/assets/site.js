@@ -143,7 +143,20 @@
   apply();
 
   // ---- prices: shown in the visitor's currency (₪, ¥, ₩, € or $), rounded ----
+  // Easter eggs: the dotted zeros in prices blink like eyes, and an 8 tips over into ∞ when you point at it.
+  // Screen readers get the plain price; the decorated digits are hidden from them.
+  function eggify(el) {
+    const text = el.textContent;
+    let n = 0;
+    const deco = [...text].map((ch) => {
+      if (ch === "0") return `<span class="z0" style="animation-delay:${(Math.random() * 4 + n++ * 0.12).toFixed(2)}s">0</span>`;
+      if (ch === "8") return `<span class="z8">8</span>`;
+      return ch.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    }).join("");
+    el.innerHTML = `<span class="sr">${text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]))}</span><span aria-hidden="true">${deco}</span>`;
+  }
   const prices = document.querySelectorAll("[data-ils]");
+  prices.forEach(eggify);
   if (prices.length) {
     const STEP = { ILS: 1, USD: 1, EUR: 1, JPY: 10, KRW: 100 };
     const show = ({ currency, rate }) => {
@@ -155,6 +168,7 @@
         const step = STEP[currency] || 1;
         el.textContent = fmt.format(Math.max(step, Math.round((ils * rate) / step) * step));
         el.dataset.currency = currency;
+        eggify(el);
       });
     };
     let cached = null;
