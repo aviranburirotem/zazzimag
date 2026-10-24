@@ -94,7 +94,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .article-head{max-width:760px;margin:0 auto;padding-block:36px 0}
 .crumbs{display:flex;gap:8px}
 .article-head h1{font-size:clamp(34px,6vw,64px);font-stretch:68%;line-height:.95;text-transform:uppercase;letter-spacing:-.01em;margin:14px 0;text-wrap:balance}
-.dek{font-family:var(--text);font-size:20px;line-height:1.5;color:var(--muted);margin:0 0 20px}
+.dek{font-family:var(--text);font-size:15px;line-height:1.45;max-width:46ch;color:var(--muted);margin:0 0 20px}
 .meta{display:flex;gap:16px;flex-wrap:wrap;padding-block:12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .hero{margin:28px auto 0;max-width:1100px}
 .hero{max-width:960px}
@@ -128,7 +128,8 @@ figcaption{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:
 .page h1{margin:0 0 20px;font-size:clamp(40px,7vw,80px);font-stretch:68%;text-transform:uppercase;line-height:.92}
 .cols{display:grid;grid-template-columns:1.2fr 1fr;gap:48px}
 @media (max-width:820px){.cols{grid-template-columns:1fr}}
-.cols p{font-family:var(--text);font-size:18px;line-height:1.65;max-width:60ch}
+/* descriptions share the home intro's look: 15px Archivo, muted colour */
+.cols p{font-family:var(--text);font-size:15px;line-height:1.45;color:var(--muted);max-width:46ch;margin:0 0 .9em}
 form{display:grid;gap:12px}
 label{display:grid;gap:6px;font-size:13px;font-weight:600}
 input,textarea,select{font:inherit;padding:11px 12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:2px}
@@ -224,7 +225,7 @@ html.a11y-still *,html.a11y-still *::before,html.a11y-still *::after{animation:n
 @media (max-width:820px){.pp-info{position:static}}
 .pp-info h1{margin:0;font-style:italic;font-weight:900;font-stretch:70%;font-size:clamp(34px,5vw,60px);line-height:.95;text-transform:uppercase;text-wrap:balance}
 .pp-price{font-family:var(--mono);font-size:22px}
-.pp-desc{font-family:var(--text);font-size:17px;line-height:1.65;max-width:55ch}
+.pp-desc{font-family:var(--text);font-size:15px;line-height:1.45;color:var(--muted);max-width:46ch}
 .pp-desc p{margin:0 0 .9em}
 .pp-action{display:flex;gap:10px;flex-wrap:wrap}
 .p-status{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);padding:9px 14px}
