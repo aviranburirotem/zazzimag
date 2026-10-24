@@ -312,7 +312,7 @@ function accessibility() {
       </ul>
       <p>If you find a part of the site that isn't accessible, please tell us and we'll fix it.</p>
       <h2>Contact our accessibility coordinator</h2>
-      <p>Email: <a href="mailto:${SITE.email}">${SITE.email}</a><br>Please include the page address, what you were trying to do, and the browser, device and any assistive technology you use. We aim to reply within 5 working days.</p>
+      <p>Name: Aviran Rotem<br>Phone: <a href="tel:+972528131212">052-813-1212</a><br>Email: <a href="mailto:${SITE.email}">${SITE.email}</a><br>Please include the page address, what you were trying to do, and the browser, device and any assistive technology you use. We aim to reply within 5 working days.</p>
       <p class="label">Last updated: ${updated}</p>
     </div>
 
@@ -338,7 +338,7 @@ function accessibility() {
       </ul>
       <p>אם נתקלתם בחלק באתר שאינו נגיש, נשמח שתספרו לנו ונתקן.</p>
       <h2>פנייה לרכז/ת הנגישות</h2>
-      <p>דוא"ל: <a href="mailto:${SITE.email}">${SITE.email}</a><br>נא לציין את כתובת העמוד, מה ניסיתם לעשות, ואת הדפדפן, המכשיר וכל טכנולוגיה מסייעת שבה אתם משתמשים. נשתדל להשיב בתוך 5 ימי עבודה.</p>
+      <p>שם: אבירן רותם<br>טלפון: <a href="tel:+972528131212" dir="ltr">052-813-1212</a><br>דוא"ל: <a href="mailto:${SITE.email}">${SITE.email}</a><br>נא לציין את כתובת העמוד, מה ניסיתם לעשות, ואת הדפדפן, המכשיר וכל טכנולוגיה מסייעת שבה אתם משתמשים. נשתדל להשיב בתוך 5 ימי עבודה.</p>
       <p class="label">עודכן לאחרונה: ${updatedHe}</p>
     </div>
     </section>`,
