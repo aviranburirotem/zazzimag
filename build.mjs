@@ -75,7 +75,7 @@ function layout({ title, description, active, body, image, type = "website", pat
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="wrap bar">
-  <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home">${logoVideo(72)}</a>
+  <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home">${logoVideo(56)}</a>
   <nav class="site-nav" aria-label="Main">
     ${nav("/about/", "Info", "about")}
     ${nav("/store/", "Store", "store")}

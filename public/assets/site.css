@@ -25,8 +25,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .site-header{position:sticky;top:0;z-index:9;background:var(--bg);border-bottom:1px solid var(--line)}
 .bar{display:flex;align-items:center;gap:24px;padding-block:4px}
 .logo{display:block;line-height:0}
-.logo img,.logo-vid{width:72px;height:72px;display:block;object-fit:contain}
-.site-footer .logo img{width:64px;height:64px}
+.logo img,.logo-vid{width:56px;height:56px;display:block;object-fit:contain}
+.site-footer .logo img{width:56px;height:56px}
 @media (prefers-color-scheme:dark){.logo-vid,.site-footer .logo img{background:#fff;border-radius:14px}}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .ic{width:1.15em;height:1.15em;flex:none;vertical-align:-.2em}
@@ -42,7 +42,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .cta .ic{transition:transform .15s}.cta:hover .ic{transform:translateX(3px)}
 @media (max-width:420px){.cta .ic{display:none}}
 .site-nav a.cta[aria-current="page"]{background:var(--accent-fill);color:var(--on-accent)}
-@media (max-width:640px){.site-nav{gap:14px}.logo-vid{width:60px;height:60px}}
+@media (max-width:640px){.site-nav{gap:14px}.logo-vid{width:48px;height:48px}}
 
 /* heavy italic display, echoing the logo */
 .heavy,.intro h1,.article-head h1,.page h1,.band h2,.feat h3{font-style:italic;font-weight:900}
