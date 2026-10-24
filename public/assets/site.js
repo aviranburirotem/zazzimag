@@ -4,7 +4,6 @@
   const IG_URL = `https://www.instagram.com/${HANDLE}/`;
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const firstLine = (s) => (s || "").split("\n")[0];
-  const tagsOf = (s) => ((s || "").match(/#[\p{L}\p{N}_]+/gu) || []).slice(0, 3).join(" ");
   let posts = [];
   // Lucide icons (lucide.dev, ISC)
   const svg = (inner, extra = "") => `<svg class="ic"${extra} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
@@ -30,8 +29,8 @@
 
   function igTile(p, i) {
     return `<button class="tile ig" type="button" data-ig="${i}" aria-label="Open Instagram post">
-      <div class="ph"><img src="${esc(p.image)}" alt="${esc(firstLine(p.caption).slice(0, 120) || "Instagram post by @" + HANDLE)}" loading="lazy"><span class="badge">IG</span>${p.type === "VIDEO" ? `<span class="play" aria-hidden="true">${IC.play}</span>` : ""}</div>
-      <p class="cap">${esc(firstLine(p.caption))}</p><span class="label">${esc(tagsOf(p.caption))}</span></button>`;
+      <div class="ph"><img src="${esc(p.image)}" alt="${esc(firstLine(p.caption).slice(0, 120) || "Instagram post by @" + HANDLE)}" loading="lazy">${p.type === "VIDEO" ? `<span class="play" aria-hidden="true">${IC.play}</span>` : ""}</div>
+      <p class="cap">${esc(firstLine(p.caption))}</p></button>`;
   }
 
   function render() {

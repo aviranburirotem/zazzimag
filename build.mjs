@@ -75,7 +75,7 @@ function layout({ title, description, active, body, image, type = "website", pat
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="wrap bar">
-  <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home">${logoVideo(88)}</a>
+  <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home">${logoVideo(72)}</a>
   <nav class="site-nav" aria-label="Main">
     ${nav("/about/", "Info", "about")}
     ${nav("/store/", "Store", "store")}
@@ -106,7 +106,7 @@ ${body}
 }
 
 const artTile = (a, feat = false) => `<a class="tile art${feat ? " feat" : ""}" href="${a.url}" data-cat="${esc(a.category)}">
-  <div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"><span class="badge a">${esc(a.category)}</span></div>
+  <div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"></div>
   <span class="label">${fmtDate(a.date)} · ${a.readTime}</span><h3>${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap">${esc(a.dek)}</p>` : ""}</a>`;
 const igSlot = () => `<div class="tile ig ig-slot" aria-hidden="true"><div class="ph"></div></div>`;
 
