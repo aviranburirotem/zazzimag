@@ -95,7 +95,7 @@ ${body}
 </main>
 <footer class="site-footer"><div class="wrap">
   <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home"><img src="/assets/logo.png" alt="" width="56" height="56"></a>
-  <nav aria-label="Footer" class="label"><a href="/articles/">Articles</a><a href="/about/">Info &amp; contact</a><a href="/store/">Store</a><a href="/accessibility/">Accessibility</a></nav>
+  <nav aria-label="Footer" class="label"><a href="/articles/">Articles</a><a href="/about/">Info &amp; contact</a><a href="/store/">Store</a><a href="/accessibility/">Accessibility</a><a href="/privacy/">Privacy</a></nav>
   <div class="social"><a class="icon-btn" href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram @${SITE.handle}">${icon("instagram")}</a><a class="icon-btn" href="mailto:${SITE.email}" aria-label="Email ${SITE.email}">${icon("mail")}</a></div>
   <p class="legal">${LEGAL}</p>
 </div></footer>
@@ -345,6 +345,80 @@ function accessibility() {
   });
 }
 
+function privacy() {
+  const updated = "October 24, 2026", updatedHe = "24.10.2026";
+  const mail = `<a href="mailto:${SITE.email}">${SITE.email}</a>`;
+  return layout({
+    title: "Privacy policy", pathname: "/privacy/",
+    description: `How ${SITE.name} handles information when you visit zazzimag.com.`,
+    body: `<section class="wrap page statement">
+    <h1>Privacy</h1>
+    <div class="lang-switch"><a class="chip" href="#en">English</a><a class="chip" href="#he" lang="he">עברית</a></div>
+
+    <div id="en" lang="en">
+      <p>This policy explains what information is collected when you use zazzimag.com, run by ${esc(SITE.name)} ("we"). We keep it short because we collect very little: there are no visitor accounts, no advertising and no tracking cookies, and we never sell your information.</p>
+      <h2>Information you send us</h2>
+      <ul>
+        <li><strong>Contact form and store sign-up.</strong> These open your own email app with a message to ${mail}. We receive only what you choose to send, such as your name, email address and message, and use it to reply to you or to tell you about new store items you asked to hear about.</li>
+        <li><strong>Email.</strong> Mail sent to ${mail} is forwarded by ImprovMX and stored in our Google (Gmail) mailbox.</li>
+        <li>We keep these messages only as long as we need them, and you can ask us to delete them at any time.</li>
+      </ul>
+      <h2>Information collected automatically</h2>
+      <ul>
+        <li><strong>Hosting.</strong> The site is hosted by Vercel. Like any web host, Vercel processes technical data such as your IP address, browser type and the pages you request, to deliver the site and keep it secure.</li>
+        <li><strong>Showing prices in your currency.</strong> To show store prices in your local currency, the site checks which country you're browsing from, based on your IP address. We don't store this; your browser keeps the result only until you close the tab.</li>
+        <li><strong>Settings on your device.</strong> If you use the accessibility menu, your choices (for example larger text) are saved in your browser's local storage so they stay on next time. This never leaves your device.</li>
+        <li>We don't use analytics, advertising or tracking cookies.</li>
+      </ul>
+      <h2>Content from other services</h2>
+      <p>Some parts of the site load content directly from other companies, which means your browser connects to them and they receive your IP address:</p>
+      <ul>
+        <li><strong>Instagram (Meta):</strong> the photos in our feed and links to our Instagram account.</li>
+        <li><strong>Google Fonts:</strong> the typefaces used on the site.</li>
+        <li><strong>Wikimedia Commons</strong> and other image hosts: some photos in articles.</li>
+      </ul>
+      <p>These companies handle data under their own privacy policies. Links to other websites lead to sites we don't control.</p>
+      <h2>Your rights</h2>
+      <p>Under the Israeli Privacy Protection Law, you can ask to see the information we hold about you and to have it corrected or deleted. Write to ${mail} and we'll respond as soon as we can.</p>
+      <h2>Changes</h2>
+      <p>If we change how we handle information, for example when the store starts selling online, we'll update this page and the date below.</p>
+      <p class="label">Last updated: ${updated}</p>
+    </div>
+
+    <div id="he" lang="he" dir="rtl" style="margin-top:56px;border-top:1px solid var(--line);padding-top:8px">
+      <h2>מדיניות פרטיות</h2>
+      <p>מדיניות זו מסבירה איזה מידע נאסף בעת השימוש באתר zazzimag.com, המופעל על ידי זאזי מגזין ("אנחנו"). היא קצרה כי אנחנו אוספים מעט מאוד: אין באתר חשבונות משתמש, אין פרסומות ואין עוגיות מעקב, ואנחנו לעולם לא מוכרים את המידע שלכם.</p>
+      <h2>מידע שאתם שולחים לנו</h2>
+      <ul>
+        <li><strong>טופס יצירת קשר והרשמה לעדכוני החנות.</strong> אלה פותחים את אפליקציית הדואר שלכם עם הודעה אל ${mail}. אנחנו מקבלים רק את מה שתבחרו לשלוח, כמו שם, כתובת דוא"ל והודעה, ומשתמשים בזה כדי להשיב לכם או לעדכן אתכם על פריטים חדשים בחנות שביקשתם לשמוע עליהם.</li>
+        <li><strong>דואר אלקטרוני.</strong> הודעות הנשלחות אל ${mail} מועברות באמצעות ImprovMX ונשמרות בתיבת הדואר שלנו ב-Google (Gmail).</li>
+        <li>אנחנו שומרים הודעות אלה רק כל עוד הן נחוצות לנו, ואפשר לבקש מאיתנו למחוק אותן בכל עת.</li>
+      </ul>
+      <h2>מידע שנאסף באופן אוטומטי</h2>
+      <ul>
+        <li><strong>אחסון.</strong> האתר מאוחסן אצל Vercel. כמו כל שירות אחסון, Vercel מעבדת נתונים טכניים כמו כתובת IP, סוג הדפדפן והעמודים המבוקשים, כדי להציג את האתר ולשמור על אבטחתו.</li>
+        <li><strong>הצגת מחירים במטבע שלכם.</strong> כדי להציג את מחירי החנות במטבע המקומי, האתר בודק מאיזו מדינה אתם גולשים לפי כתובת ה-IP. איננו שומרים מידע זה; הדפדפן שלכם שומר את התוצאה רק עד סגירת הלשונית.</li>
+        <li><strong>הגדרות במכשיר שלכם.</strong> אם אתם משתמשים בתפריט הנגישות, הבחירות שלכם (למשל הגדלת טקסט) נשמרות באחסון המקומי של הדפדפן כדי שיישארו גם בפעם הבאה. מידע זה לא יוצא מהמכשיר.</li>
+        <li>איננו משתמשים בכלי סטטיסטיקה, בפרסום או בעוגיות מעקב.</li>
+      </ul>
+      <h2>תוכן משירותים אחרים</h2>
+      <p>חלקים מהאתר טוענים תוכן ישירות מחברות אחרות, ולכן הדפדפן שלכם מתחבר אליהן והן מקבלות את כתובת ה-IP שלכם:</p>
+      <ul>
+        <li><strong>אינסטגרם (Meta):</strong> התמונות בפיד וקישורים לחשבון האינסטגרם שלנו.</li>
+        <li><strong>Google Fonts:</strong> הגופנים שבאתר.</li>
+        <li><strong>ויקישיתוף (Wikimedia Commons)</strong> ושירותי תמונות נוספים: חלק מהתמונות בכתבות.</li>
+      </ul>
+      <p>חברות אלה מטפלות במידע לפי מדיניות הפרטיות שלהן. קישורים לאתרים אחרים מובילים לאתרים שאינם בשליטתנו.</p>
+      <h2>הזכויות שלכם</h2>
+      <p>לפי חוק הגנת הפרטיות, אתם רשאים לבקש לעיין במידע שאנו מחזיקים עליכם ולבקש לתקן או למחוק אותו. כתבו אלינו לכתובת ${mail} ונשיב בהקדם.</p>
+      <h2>שינויים</h2>
+      <p>אם נשנה את אופן הטיפול במידע, למשל כשהחנות תתחיל למכור באתר, נעדכן את העמוד הזה ואת התאריך שלמטה.</p>
+      <p class="label">עודכן לאחרונה: ${updatedHe}</p>
+    </div>
+    </section>`,
+  });
+}
+
 function notFound() {
   return layout({ title: "Page not found", pathname: "/404", body: `<section class="wrap page"><h1>Not found</h1><p class="label">This page doesn't exist.</p><p><a class="btn alt" href="/">Back to home</a></p></section>` });
 }
@@ -405,6 +479,7 @@ function comingSoon() {
   <a class="btn" href="mailto:${SITE.email}">${icon("mail")}${SITE.email}</a>
   <a class="btn dark" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a>
   <a class="a11y-link" href="/accessibility/">${icon("accessibility")}Accessibility statement · הצהרת נגישות</a>
+  <a class="a11y-link" href="/privacy/">Privacy policy · מדיניות פרטיות</a>
   <p class="legal">${esc(T("footer.copyright").replace(/\{year\}/g, new Date().getFullYear()).split(/(?<=reserved\.)/)[0])}</p>
 </footer>
 <script>
@@ -433,6 +508,7 @@ write("about/index.html", about());
 write("store/index.html", store());
 for (const p of PRODUCTS) write(`store/${p.slug}/index.html`, productPage(p));
 write("accessibility/index.html", accessibility());
+write("privacy/index.html", privacy());
 write("articles.json", JSON.stringify(articles.map(({ html, ...a }) => a), null, 2));
 // Admin console helpers (shared with the build so the preview matches the site)
 fs.copyFileSync("lib/markdown.js", path.join(OUT, "admin/markdown.js"));
@@ -446,7 +522,7 @@ if (COMING_SOON) {
   write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /preview/\nDisallow: /articles/\nDisallow: /about/\nDisallow: /store/\nDisallow: /admin/\n`);
 } else {
   write("404.html", notFound());
-  write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${["/", "/articles/", "/about/", "/store/", ...articles.map((a) => a.url), ...PRODUCTS.map((p) => p.url)].map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
+  write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${["/", "/articles/", "/about/", "/store/", "/accessibility/", "/privacy/", ...articles.map((a) => a.url), ...PRODUCTS.map((p) => p.url)].map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
   write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /preview/\nSitemap: ${SITE.url}/sitemap.xml\n`);
 }
 
