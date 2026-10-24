@@ -5,6 +5,7 @@
   --display:"Archivo",system-ui,sans-serif;
   --serif:"Newsreader",Georgia,"Times New Roman",serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --text:"DM Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif; /* page intros & descriptions */
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#0f1012; --fg:#eceef2; --muted:#9a9ea8; --line:#26282d; --soft:#18191c; --accent:#ff4d4d; --accent-fill:#c8000f; color-scheme:dark}}
@@ -49,7 +50,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 .intro{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding-block:40px 24px}
 .intro h1{margin:0;font-stretch:70%;font-size:clamp(40px,7vw,88px);line-height:.92;letter-spacing:-.02em;text-wrap:balance;text-transform:uppercase}
-.intro p{margin:12px 0 0;max-width:46ch;color:var(--muted)}
+.intro p{margin:12px 0 0;max-width:46ch;color:var(--muted);font-family:var(--text);font-size:16px;line-height:1.55}
 .handle{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:13px;border:1px solid var(--line);border-radius:999px;padding:8px 14px;justify-self:start;transition:border-color .15s,color .15s}
 .handle:hover{border-color:var(--accent);color:var(--accent)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
@@ -93,7 +94,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .article-head{max-width:760px;margin:0 auto;padding-block:36px 0}
 .crumbs{display:flex;gap:8px}
 .article-head h1{font-size:clamp(34px,6vw,64px);font-stretch:68%;line-height:.95;text-transform:uppercase;letter-spacing:-.01em;margin:14px 0;text-wrap:balance}
-.dek{font-family:var(--serif);font-size:21px;line-height:1.4;color:var(--muted);margin:0 0 20px}
+.dek{font-family:var(--text);font-size:20px;line-height:1.5;color:var(--muted);margin:0 0 20px}
 .meta{display:flex;gap:16px;flex-wrap:wrap;padding-block:12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .hero{margin:28px auto 0;max-width:1100px}
 .hero{max-width:960px}
@@ -127,7 +128,7 @@ figcaption{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:
 .page h1{margin:0 0 20px;font-size:clamp(40px,7vw,80px);font-stretch:68%;text-transform:uppercase;line-height:.92}
 .cols{display:grid;grid-template-columns:1.2fr 1fr;gap:48px}
 @media (max-width:820px){.cols{grid-template-columns:1fr}}
-.cols p{font-family:var(--serif);font-size:19px;line-height:1.6;max-width:60ch}
+.cols p{font-family:var(--text);font-size:18px;line-height:1.65;max-width:60ch}
 form{display:grid;gap:12px}
 label{display:grid;gap:6px;font-size:13px;font-weight:600}
 input,textarea,select{font:inherit;padding:11px 12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:2px}
@@ -187,7 +188,7 @@ html.a11y-still *,html.a11y-still *::before,html.a11y-still *::after{animation:n
 .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .statement{max-width:760px}
 .statement h2{font-size:22px;font-stretch:80%;font-weight:800;text-transform:uppercase;margin:1.6em 0 .4em}
-.statement p,.statement li{font-family:var(--serif);font-size:18px;line-height:1.6}
+.statement p,.statement li{font-family:var(--text);font-size:17px;line-height:1.65}
 .statement a{color:var(--accent);text-decoration:underline}
 .statement [lang="he"]{font-family:Arial,"Arial Hebrew",sans-serif}
 .statement [lang="he"] p,.statement [lang="he"] li{font-family:Arial,"Arial Hebrew",sans-serif;font-size:17px}
@@ -223,7 +224,7 @@ html.a11y-still *,html.a11y-still *::before,html.a11y-still *::after{animation:n
 @media (max-width:820px){.pp-info{position:static}}
 .pp-info h1{margin:0;font-style:italic;font-weight:900;font-stretch:70%;font-size:clamp(34px,5vw,60px);line-height:.95;text-transform:uppercase;text-wrap:balance}
 .pp-price{font-family:var(--mono);font-size:22px}
-.pp-desc{font-family:var(--serif);font-size:18px;line-height:1.6;max-width:55ch}
+.pp-desc{font-family:var(--text);font-size:17px;line-height:1.65;max-width:55ch}
 .pp-desc p{margin:0 0 .9em}
 .pp-action{display:flex;gap:10px;flex-wrap:wrap}
 .p-status{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);padding:9px 14px}
