@@ -122,19 +122,23 @@ function topBar(extra = "") {
 }
 
 // ---------- login ----------
-function renderLogin(msg = "") {
+// Pages protected by the preview password send people here with ?next=/the/page/
+const nextPage = (() => { const n = new URLSearchParams(location.search).get("next") || ""; return n.startsWith("/") && !n.startsWith("//") ? n : ""; })();
+function goNext() { if (!nextPage) return false; location.replace(nextPage); return true; }
+
+function renderLogin(msg = nextPage ? "Log in to see the full site preview." : "") {
   app.innerHTML = `<main class="wrap"><div class="panel login">
     <img src="/assets/logo.png" alt="Zazzi magazine">
     <h1>Console</h1>
     <form id="login"><label for="pw">Password<input id="pw" type="password" autocomplete="current-password" required></label>
     <button class="btn alt" type="submit" style="justify-self:stretch;justify-content:center">Log in ${icon("arrow-right")}</button>
-    <p class="status err" id="lmsg" ${msg ? "" : "hidden"}>${esc(msg)}</p></form></div></main>`;
+    <p class="status ${nextPage && !arguments.length ? "" : "err"}" id="lmsg" ${msg ? "" : "hidden"}>${esc(msg)}</p></form></div></main>`;
   document.getElementById("pw").focus();
   document.getElementById("login").onsubmit = async (e) => {
     e.preventDefault();
     const m = document.getElementById("lmsg");
     m.hidden = true;
-    try { await api("login", { method: "POST", body: { password: document.getElementById("pw").value } }); renderList(); }
+    try { await api("login", { method: "POST", body: { password: document.getElementById("pw").value } }); if (!goNext()) renderList(); }
     catch (err) { if (err.message !== "auth") { m.textContent = err.message; m.hidden = false; } }
   };
 }
@@ -398,7 +402,7 @@ app.addEventListener("click", async (e) => {
 });
 
 // ---------- start ----------
-api("me").then((m) => (m.loggedIn ? renderList() : renderLogin())).catch(() => renderLogin());
+api("me").then((m) => (m.loggedIn ? (goNext() || renderList()) : renderLogin())).catch(() => renderLogin());
 </script>
 </body>
 </html>

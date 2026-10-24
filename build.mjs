@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { markdown, frontmatter } from "./lib/markdown.js";
 import { icon } from "./lib/icons.js";
+import { LAUNCHED } from "./lib/site-config.js";
 
 const SITE = {
   name: "Zazzi Magazine",
@@ -20,8 +21,7 @@ const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.cs
 
 // Coming-soon mode: the live site (zazzimag.com) shows only the coming-soon page.
 // Preview deployments and local builds still show the full site so you can work on it.
-// When ready to launch, change LAUNCHED to true (or set COMING_SOON=0 in Vercel).
-const LAUNCHED = false;
+// When ready to launch, set LAUNCHED to true in lib/site-config.js.
 const COMING_SOON = process.env.COMING_SOON
   ? process.env.COMING_SOON === "1"
   : !LAUNCHED && process.env.VERCEL_ENV === "production";
