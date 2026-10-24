@@ -5,9 +5,8 @@ date: 2026-10-22
 category: Streetwear
 cover: https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Cat_Street%2C_Ura_Harajuku_1.jpg/1280px-Cat_Street%2C_Ura_Harajuku_1.jpg
 coverAlt: Cat Street in Ura-Harajuku, a quiet shopping street lined with low buildings
-coverCaption: Cat Street, Ura-Harajuku. Photo: Aw1805, CC BY-SA 3.0, via Wikimedia Commons
+coverCaption: Cat Street, Ura-Harajuku. Photo: Aw1805, CC BY-SA 3.0
 author: Zazzi
-aiAssisted: true
 tags: [Ura-Harajuku, streetwear, BAPE, UNDERCOVER]
 ---
 "Ura" means back or reverse, and Ura-Harajuku is exactly that: the web of side streets and alleys behind the crowds of Takeshita Street. Its spine is Cat Street, which runs between Omotesando and Shibuya. In the 1990s this quiet area became the birthplace of Japanese streetwear.
@@ -20,7 +19,7 @@ Most stories about Ura-Harajuku start with Hiroshi Fujiwara. According to Yokoga
 
 On April 1, 1993, NIGO and Takahashi opened a shop called Nowhere. It was small and crowded, and it was split in two by wire netting. One side carried Takahashi's UNDERCOVER, darker and punk-influenced. The other carried NIGO's A Bathing Ape, playful and built on graphics. Alongside their own designs, the shop sold vintage American clothing and deadstock sneakers. Nowhere closed in 2000, but by then it had done its job.
 
-![Cat Street on a rainy day](https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Cat_Street_Tokyo_2.JPG/1280px-Cat_Street_Tokyo_2.JPG "Cat Street. Photo: Harani0403, CC0")
+![Cat Street on a rainy day](https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Cat_Street_Tokyo_2.JPG/1280px-Cat_Street_Tokyo_2.JPG "Cat Street")
 ![Street style portrait in Harajuku, January 2018](https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Harajuku_Fashion_Street_Snap_%282018-01-08_18.42.04_by_Dick_Thomas_Johnson%29.jpg/1280px-Harajuku_Fashion_Street_Snap_%282018-01-08_18.42.04_by_Dick_Thomas_Johnson%29.jpg "Harajuku, January 2018. Photo: Dick Thomas Johnson, CC BY 2.0")
 
 ## Making people wait
@@ -34,15 +33,3 @@ Other labels grew from the same streets. Shinsuke Takizawa founded NEIGHBORHOOD 
 The area hasn't frozen into a museum. Yokogao describes a scene that still runs on small independent shops, pop-up galleries and short exhibitions. Yokogao also argues that later streetwear names such as Supreme, Palace and Off-White owe a debt to the groundwork laid here.
 
 ![Street style portrait in Harajuku, October 2017](https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Harajuku_Fashion_Street_Snap_%28October_08%2C_2017%29_%2831707735477%29.jpg/1280px-Harajuku_Fashion_Street_Snap_%28October_08%2C_2017%29_%2831707735477%29.jpg "Harajuku, October 2017. Photo: Dick Thomas Johnson, CC BY 2.0")
-
-## Sources
-
-- [The Complete History of Ura-Harajuku](https://www.yokogaomag.com/editorial/ura-harajuku-history), Yokogao Magazine
-- [NOWHERE: The Tiny Tokyo Shop That Revolutionized Streetwear](https://www.yokogaomag.com/editorial/nowhere-harajuku-japanese-streetwear-store), Yokogao Magazine
-- [A Bathing Ape](https://en.wikipedia.org/wiki/A_Bathing_Ape), Wikipedia
-
-## Photo credits
-
-- Cover: [Aw1805](https://commons.wikimedia.org/wiki/File:Cat_Street,_Ura_Harajuku_1.jpg), [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
-- Cat Street in the rain: [Harani0403](https://commons.wikimedia.org/wiki/File:Cat_Street_Tokyo_2.JPG), [CC0](https://creativecommons.org/publicdomain/zero/1.0/)
-- Street portraits: [Dick Thomas Johnson](https://commons.wikimedia.org/wiki/File:Harajuku_Fashion_Street_Snap_(2018-01-08_18.42.04_by_Dick_Thomas_Johnson).jpg), [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)

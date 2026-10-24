@@ -98,16 +98,19 @@
     }
   });
 
-  // ---- animated logo: plays for 5 seconds, then stops (WCAG 2.2.2). Hover or focus replays it. ----
+  // ---- animated logo: loops continuously. Hovering (or keyboard focus) pauses it; moving away resumes.
+  // "Stop animations" in the accessibility menu and the device's reduce-motion setting keep it still.
   const logos = [...document.querySelectorAll("video.logo-vid")];
-  const stopLogos = () => logos.forEach((v) => { v.pause(); });
+  const still = () => document.documentElement.classList.contains("a11y-still") || matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const stopLogos = () => logos.forEach((v) => v.pause());
+  const playLogos = () => { if (!still()) logos.forEach((v) => v.play().catch(() => {})); };
   logos.forEach((v) => {
     const link = v.closest("a");
-    const play = () => { if (!document.documentElement.classList.contains("a11y-still")) v.play().catch(() => {}); };
-    link?.addEventListener("mouseenter", play); link?.addEventListener("focus", play);
-    link?.addEventListener("mouseleave", () => v.pause()); link?.addEventListener("blur", () => v.pause());
+    link?.addEventListener("mouseenter", () => v.pause());
+    link?.addEventListener("mouseleave", () => { if (!still()) v.play().catch(() => {}); });
+    link?.addEventListener("focus", () => v.pause());
+    link?.addEventListener("blur", () => { if (!still()) v.play().catch(() => {}); });
   });
-  setTimeout(stopLogos, 5000);
 
   // ---- accessibility menu (Israeli Standard 5568) ----
   const KEY = "zz-a11y";
@@ -116,7 +119,7 @@
   try { prefs = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch {}
   const apply = () => {
     for (const k of Object.keys(OPTS)) document.documentElement.classList.toggle(k, Boolean(prefs[k]));
-    if (prefs["a11y-still"]) stopLogos();
+    if (prefs["a11y-still"]) stopLogos(); else playLogos();
     document.querySelectorAll("[data-a11y]").forEach((b) => b.setAttribute("aria-pressed", String(Boolean(prefs[b.dataset.a11y]))));
   };
   const panel = document.getElementById("a11y-panel"), toggle = document.getElementById("a11y-toggle");

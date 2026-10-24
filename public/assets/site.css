@@ -23,10 +23,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 /* header */
 .site-header{position:sticky;top:0;z-index:9;background:var(--bg);border-bottom:1px solid var(--line)}
-.bar{display:flex;align-items:center;gap:24px;padding-block:6px}
+.bar{display:flex;align-items:center;gap:24px;padding-block:4px}
 .logo{display:block;line-height:0}
-.logo img,.logo-vid{width:64px;height:64px;display:block;object-fit:contain}
-.site-footer .logo img{width:56px;height:56px}
+.logo img,.logo-vid{width:88px;height:88px;display:block;object-fit:contain}
+.site-footer .logo img{width:64px;height:64px}
 @media (prefers-color-scheme:dark){.logo-vid,.site-footer .logo img{background:#fff;border-radius:14px}}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .ic{width:1.15em;height:1.15em;flex:none;vertical-align:-.2em}
@@ -42,7 +42,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .cta .ic{transition:transform .15s}.cta:hover .ic{transform:translateX(3px)}
 @media (max-width:420px){.cta .ic{display:none}}
 .site-nav a.cta[aria-current="page"]{background:var(--accent-fill);color:var(--on-accent)}
-@media (max-width:640px){.site-nav{gap:14px}.logo-vid{width:54px;height:54px}}
+@media (max-width:640px){.site-nav{gap:14px}.logo-vid{width:68px;height:68px}}
 
 /* heavy italic display, echoing the logo */
 .heavy,.intro h1,.article-head h1,.page h1,.band h2,.feat h3{font-style:italic;font-weight:900}
@@ -192,3 +192,7 @@ html.a11y-still *,html.a11y-still *::before,html.a11y-still *::after{animation:n
 .statement [lang="he"]{font-family:Arial,"Arial Hebrew",sans-serif}
 .statement [lang="he"] p,.statement [lang="he"] li{font-family:Arial,"Arial Hebrew",sans-serif;font-size:17px}
 .lang-switch{display:flex;gap:8px;margin:0 0 20px}
+.legal{width:100%;margin:0;padding-top:14px;border-top:1px solid var(--line);font-size:12px;line-height:1.5;color:var(--muted);max-width:none}
+.follow-tile .ph>div{display:grid;justify-items:center;gap:10px}
+.follow-tile .ph>div .ic{margin:0}
+.site-footer{padding-bottom:72px}

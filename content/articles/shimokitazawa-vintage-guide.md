@@ -5,9 +5,8 @@ date: 2026-10-20
 category: Guide
 cover: https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Shimokitazawa_Street_2015.jpg/1280px-Shimokitazawa_Street_2015.jpg
 coverAlt: A narrow shopping street in Shimokitazawa with shop signs and pedestrians
-coverCaption: Shimokitazawa. Photo: Aw1805, CC BY-SA 4.0, via Wikimedia Commons
+coverCaption: Shimokitazawa. Photo: Aw1805, CC BY-SA 4.0
 author: Zazzi
-aiAssisted: true
 tags: [Shimokitazawa, vintage, furugi, Tokyo]
 ---
 Shimokitazawa, or "Shimokita" to locals, sits in Tokyo's Setagaya ward, where the Odakyu and Keio Inokashira lines cross. It's a short ride from Shinjuku on the Odakyu Line, but it feels like a different city: low buildings, narrow streets and a dense mix of cafes, bars, small theatres, live music venues and second-hand clothing shops.
@@ -37,15 +36,3 @@ These are the stores named in recent guides from DEEPTOKYO and Yokogao Magazine.
 In March 2013 the Odakyu tracks through the area were moved underground, which freed up the land above them for new projects. One of them, Reload, opened in June 2021 along the old line with more than 20 independent shops laid out like a street rather than a mall. Under the tracks near the station, Mikan Shimokita adds bookshops, food and entertainment. The new buildings sit right next to the older backstreets, so a walk through Shimokita still mixes old and new.
 
 ![Dorama store front in Shimokitazawa](https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Dorama_Store%2C_Shimokitazawa_%2853416985969%29.jpg/1280px-Dorama_Store%2C_Shimokitazawa_%2853416985969%29.jpg "Dorama, Shimokitazawa. Photo: Stephen Kelly, CC BY 2.0")
-
-## Sources
-
-- [Shimokitazawa, town of music and theater: 5 unique vintage clothing stores](https://deeptokyo.jp/en/?p=12311), DEEPTOKYO, June 2026
-- [Shimokitazawa Guide: Tokyo's Vintage Thrifting Wonderland](https://www.yokogaomag.com/tokyo-guide/shimokitazawa), Yokogao Magazine
-- [Reload Shimokitazawa](https://www.bring-you.info/en/reload-shimokitazawa), BRING YOU
-- [Shimokitazawa](https://en.wikipedia.org/wiki/Shimokitazawa), Wikipedia
-
-## Photo credits
-
-- Cover: [Aw1805](https://commons.wikimedia.org/wiki/File:Shimokitazawa_Street_2015.jpg), [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
-- Street, mural and Dorama: [Stephen Kelly](https://commons.wikimedia.org/wiki/File:Dense_Street_in_Shimokitazawa_(11919213554).jpg), [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)

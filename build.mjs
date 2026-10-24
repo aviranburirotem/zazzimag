@@ -43,6 +43,9 @@ for (const a of articles) {
   for (const k of ["title", "date", "category", "cover"]) if (!a[k]) throw new Error(`Article "${a.slug}" is missing "${k}" in its frontmatter`);
 }
 
+// Copyright notice shown in every footer
+const LEGAL = `© ${new Date().getFullYear()} Zazzi Magazine (zazzimag.com). All rights reserved. The text, photographs, graphics, logo and design on this site are protected by copyright and other intellectual property laws. You may not copy, reproduce, republish, distribute or use any of this content for commercial purposes without our prior written permission, except as permitted by law. Third-party content, including photos used under license, remains the property of its respective owners.`;
+
 // ---------- templates ----------
 function layout({ title, description, active, body, image, type = "website", pathname = "/" }) {
   const full = title ? `${title} · ${SITE.name}` : SITE.name;
@@ -72,7 +75,7 @@ function layout({ title, description, active, body, image, type = "website", pat
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="wrap bar">
-  <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home">${logoVideo(64)}</a>
+  <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home">${logoVideo(88)}</a>
   <nav class="site-nav" aria-label="Main">
     ${nav("/about/", "Info", "about")}
     ${nav("/store/", "Store", "store")}
@@ -85,7 +88,8 @@ ${body}
 <footer class="site-footer"><div class="wrap">
   <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home"><img src="/assets/logo.png" alt="" width="56" height="56"></a>
   <nav aria-label="Footer" class="label"><a href="/articles/">Articles</a><a href="/about/">Info &amp; contact</a><a href="/store/">Store</a><a href="/accessibility/">Accessibility</a></nav>
-  <div class="social"><a class="icon-btn" href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram @${SITE.handle}">${icon("instagram")}</a><a class="icon-btn" href="mailto:${SITE.email}" aria-label="Email ${SITE.email}">${icon("mail")}</a><span class="label">© ${new Date().getFullYear()} Zazzi</span></div>
+  <div class="social"><a class="icon-btn" href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram @${SITE.handle}">${icon("instagram")}</a><a class="icon-btn" href="mailto:${SITE.email}" aria-label="Email ${SITE.email}">${icon("mail")}</a></div>
+  <p class="legal">${LEGAL}</p>
 </div></footer>
 <div class="modal" id="modal" hidden></div>
 <div class="a11y">
@@ -156,7 +160,7 @@ function articlePage(a) {
       <h1>${esc(a.title)}</h1>${a.dek ? `<p class="dek">${esc(a.dek)}</p>` : ""}
       <div class="meta label"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${a.readTime} read</span><span>Words: ${esc(byline)}</span></div></div></header>
     <figure class="wrap hero"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}"></div>${a.coverCaption ? `<figcaption>${esc(a.coverCaption)}</figcaption>` : ""}</figure>
-    <div class="wrap"><div class="body">${a.aiAssisted === true ? `<p class="ai-note">${icon("info")}<span>Researched and drafted with AI from the sources listed at the end of this article.</span></p>` : ""}${a.html}</div>
+    <div class="wrap"><div class="body">${a.html}</div>
       <section data-ig-section><div class="section-h"><h2>From the feed</h2><a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a></div>
       <div class="strip" data-ig-strip>${'<div class="tile ig-slot" aria-hidden="true"><div class="ph"></div></div>'.repeat(6)}</div></section>
       ${more.length ? `<div class="section-h"><h2>Read next</h2><a class="label with-ic" href="/articles/">All articles ${icon("arrow-right")}</a></div><div class="grid">${more.map((x) => artTile(x)).join("")}</div>` : ""}
@@ -214,8 +218,8 @@ function accessibility() {
         <li>Clear page structure with headings, landmarks and a "Skip to content" link.</li>
         <li>Everything works with a keyboard. Focused items are clearly outlined, and Esc closes pop-ups.</li>
         <li>Text and buttons meet AA colour-contrast requirements.</li>
-        <li>Images have text descriptions. Photo credits and captions are written as text.</li>
-        <li>The animated logo stops by itself after a few seconds. Motion is also turned off for visitors who ask their device to reduce motion.</li>
+        <li>Images have text descriptions, and captions are written as text.</li>
+        <li>The animated logo pauses when you point at it or move keyboard focus to it, and the "Stop animations" option in the accessibility menu stops it completely. Motion is also turned off for visitors who ask their device to reduce motion.</li>
         <li>Forms have visible labels, and errors are explained in words.</li>
         <li>The layout adapts to phones, tablets and computers and supports zooming up to 200%.</li>
       </ul>
@@ -240,8 +244,8 @@ function accessibility() {
         <li>מבנה עמודים ברור עם כותרות, אזורים מוגדרים וקישור "דלג לתוכן".</li>
         <li>ניתן לנווט באתר כולו באמצעות המקלדת. הרכיב הפעיל מסומן בבירור, והמקש Esc סוגר חלונות קופצים.</li>
         <li>הטקסטים והכפתורים עומדים בדרישות ניגודיות הצבעים ברמה AA.</li>
-        <li>לתמונות יש תיאור טקסטואלי, וקרדיטים וכיתובים מופיעים כטקסט.</li>
-        <li>הלוגו המונפש נעצר מעצמו אחרי כמה שניות, והאנימציות מבוטלות עבור מי שהגדיר במכשיר "הפחתת תנועה".</li>
+        <li>לתמונות יש תיאור טקסטואלי, וכיתובים מופיעים כטקסט.</li>
+        <li>הלוגו המונפש נעצר כשמצביעים עליו או מגיעים אליו במקלדת, והאפשרות "עצירת אנימציות" בתפריט הנגישות עוצרת אותו לגמרי. האנימציות מבוטלות גם עבור מי שהגדיר במכשיר "הפחתת תנועה".</li>
         <li>לטפסים יש תוויות גלויות, והודעות שגיאה מוסברות במילים.</li>
         <li>העיצוב מותאם לטלפונים, טאבלטים ומחשבים, ותומך בהגדלה עד 200%.</li>
       </ul>
@@ -302,6 +306,7 @@ function comingSoon() {
   .pause .ic{width:14px;height:14px}
   .pause:hover{color:var(--fg);border-color:var(--fg)}
   .pause:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .legal{flex-basis:100%;text-align:center;margin:4px 0 0;font-family:"Archivo",system-ui,sans-serif;font-size:12px;color:var(--muted);max-width:none}
   .a11y-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;text-decoration:underline;color:var(--fg)}
 </style>
 </head>
@@ -320,6 +325,7 @@ function comingSoon() {
   <a class="btn" href="mailto:${SITE.email}">${icon("mail")}${SITE.email}</a>
   <a class="btn dark" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a>
   <a class="a11y-link" href="/accessibility/">${icon("accessibility")}Accessibility statement · הצהרת נגישות</a>
+  <p class="legal">© ${new Date().getFullYear()} Zazzi Magazine (zazzimag.com). All rights reserved.</p>
 </footer>
 <script>
 (() => {

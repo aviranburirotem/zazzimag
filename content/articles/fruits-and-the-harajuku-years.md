@@ -5,9 +5,8 @@ date: 2026-10-24
 category: History
 cover: https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Harajuku_Fashion_Street_Snap_%282018-01-03_18.09.31_by_Dick_Thomas_Johnson%29.jpg/1280px-Harajuku_Fashion_Street_Snap_%282018-01-03_18.09.31_by_Dick_Thomas_Johnson%29.jpg
 coverAlt: A person with turquoise hair and a black-and-white lettered jacket on a Harajuku street at night
-coverCaption: Harajuku, January 2018. Photo: Dick Thomas Johnson, CC BY 2.0, via Wikimedia Commons
+coverCaption: Harajuku, January 2018. Photo: Dick Thomas Johnson, CC BY 2.0
 author: Zazzi
-aiAssisted: true
 tags: [Harajuku, FRUiTS, Tokyo]
 ---
 If you've ever seen a photo of a Harajuku teenager in layered pastels, platform shoes and a face full of hair clips, there's a good chance it traces back to one magazine. Photographer Shoichi Aoki started FRUiTS in 1997, and for two decades it did one thing: full-length portraits of young people he found on the streets of Harajuku, with a short note on what they were wearing.
@@ -36,15 +35,3 @@ FRUiTS published its final monthly issue in February 2017, after 233 issues. Aok
 The photos didn't disappear. Phaidon had already collected them in two books, Fruits (2001) and Fresh Fruits (2005), and an Instagram account run by Christopher Tordoff, @fruits_magazine_archives, has introduced the archive to a new generation. In the 2024 nss interview, Aoki said he was working on bringing FRUiTS back.
 
 > Harajuku's legacy isn't a single trend. It's the idea that a street can be a runway that belongs to the people walking on it.
-
-## Sources
-
-- [The origins of Harajuku street style: interview with Shoichi Aoki](https://www.nssmag.com/en/fashion/21322/harajuku-style-interview-fruits-magazine-shoichi-aoki-christpher-tordoff), nss magazine, September 2024
-- [The editor of FRUiTS magazine on the rise and fall of Harajuku](https://i-d.co/article/the-editor-of-fruits-magazine-on-the-rise-and-fall-of-harajuku/), i-D, April 2017
-- [Fruits (magazine)](https://en.wikipedia.org/wiki/Fruits_(magazine)), Wikipedia
-
-## Photo credits
-
-- Cover and second photo: [Dick Thomas Johnson](https://commons.wikimedia.org/wiki/File:Harajuku_Fashion_Street_Snap_(2018-01-03_18.09.31_by_Dick_Thomas_Johnson).jpg), [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)
-- Gothic Lolita: [Chris 73](https://commons.wikimedia.org/wiki/File:Gothic_lolita_takeshita_street.jpg), [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
-- Takeshita Street: [Joe Mabel](https://commons.wikimedia.org/wiki/File:Harajuku_-_Takeshita_Street_05_(15738008421).jpg), [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
