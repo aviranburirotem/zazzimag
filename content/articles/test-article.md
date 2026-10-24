@@ -7,7 +7,6 @@ cover: /images/articles/test-article/cover-0b7a2750.jpg
 coverAlt: 0b7a2750
 coverCaption: The boss
 author: Zazzi the cat
-draft: true
 ---
 this is the **test** also *this* and 
 
