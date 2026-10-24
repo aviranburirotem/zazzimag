@@ -105,7 +105,7 @@ ${body}
   <div class="a11y-panel" id="a11y-panel" role="dialog" aria-label="Accessibility options" hidden>
     <h2>Accessibility <button class="a11y-close" type="button" data-a11y-close aria-label="Close accessibility options">${icon("x")}</button></h2>
     <div class="a11y-opts"></div>
-    <a href="/accessibility/">Accessibility statement · הצהרת נגישות</a>
+    <a href="/accessibility/">Accessibility statement</a>
   </div>
 </div>
 <script src="/assets/site.js?v=${V}" defer></script>
@@ -283,14 +283,12 @@ function store() {
 }
 
 function accessibility() {
-  const updated = "October 24, 2026", updatedHe = "24.10.2026";
+  const updated = "October 24, 2026";
   return layout({
     title: "Accessibility statement", pathname: "/accessibility/",
     description: "Zazzi Magazine accessibility statement, in line with Israeli Standard 5568 (WCAG 2.0 level AA).",
     body: `<section class="wrap page statement">
     <h1>Accessibility</h1>
-    <div class="lang-switch"><a class="chip" href="#en">English</a><a class="chip" href="#he" lang="he">עברית</a></div>
-
     <div id="en" lang="en">
       <p>Zazzi Magazine wants everyone to be able to read and enjoy the site, including people with disabilities. We designed it to meet Israeli Standard 5568 (Web Content Accessibility Guidelines) at level AA, which is based on the international WCAG 2.0 guidelines, as required by the Equal Rights for Persons with Disabilities (Service Accessibility Adjustments) Regulations, 2013.</p>
       <h2>What we've done</h2>
@@ -315,46 +313,18 @@ function accessibility() {
       <p>Name: Aviran Rotem<br>Phone: <a href="tel:+972528131212">052-813-1212</a><br>Email: <a href="mailto:${SITE.email}">${SITE.email}</a><br>Please include the page address, what you were trying to do, and the browser, device and any assistive technology you use. We aim to reply within 5 working days.</p>
       <p class="label">Last updated: ${updated}</p>
     </div>
-
-    <div id="he" lang="he" dir="rtl" style="margin-top:56px;border-top:1px solid var(--line);padding-top:8px">
-      <h2>הצהרת נגישות</h2>
-      <p>זאזי מגזין רוצה שכל אחד ואחת יוכלו לקרוא וליהנות מהאתר, כולל אנשים עם מוגבלות. האתר תוכנן לעמוד בדרישות תקן ישראלי 5568 (קווים מנחים לנגישות תכנים באינטרנט) ברמה AA, המבוסס על הנחיות WCAG 2.0 הבינלאומיות, בהתאם לתקנות שוויון זכויות לאנשים עם מוגבלות (התאמות נגישות לשירות), התשע"ג-2013.</p>
-      <h2>מה עשינו</h2>
-      <ul>
-        <li>מבנה עמודים ברור עם כותרות, אזורים מוגדרים וקישור "דלג לתוכן".</li>
-        <li>ניתן לנווט באתר כולו באמצעות המקלדת. הרכיב הפעיל מסומן בבירור, והמקש Esc סוגר חלונות קופצים.</li>
-        <li>הטקסטים והכפתורים עומדים בדרישות ניגודיות הצבעים ברמה AA.</li>
-        <li>לתמונות יש תיאור טקסטואלי, וכיתובים מופיעים כטקסט.</li>
-        <li>הלוגו המונפש נעצר כשמצביעים עליו או מגיעים אליו במקלדת, והאפשרות "עצירת אנימציות" בתפריט הנגישות עוצרת אותו לגמרי. האנימציות מבוטלות גם עבור מי שהגדיר במכשיר "הפחתת תנועה".</li>
-        <li>לטפסים יש תוויות גלויות, והודעות שגיאה מוסברות במילים.</li>
-        <li>העיצוב מותאם לטלפונים, טאבלטים ומחשבים, ותומך בהגדלה עד 200%.</li>
-      </ul>
-      <h2>תפריט הנגישות</h2>
-      <p>הכפתור הכחול העגול בתחתית כל עמוד פותח תפריט עם: הגדלת טקסט, ניגודיות גבוהה, הדגשת קישורים, גופן קריא ועצירת אנימציות. הבחירות נשמרות במכשיר שלכם.</p>
-      <h2>מגבלות ידועות</h2>
-      <ul>
-        <li>הפוסטים מאינסטגרם מגיעים ישירות מחשבון האינסטגרם שלנו. תיאור התמונות מבוסס על הכיתוב של הפוסט, ועשוי שלא לתאר כל תמונה בפירוט.</li>
-        <li>חלק מתמונות הכתבות מגיעות מוויקישיתוף (Wikimedia Commons) ומאתרים חיצוניים, וחלק מהקישורים מובילים לאתרים שאינם בשליטתנו.</li>
-      </ul>
-      <p>אם נתקלתם בחלק באתר שאינו נגיש, נשמח שתספרו לנו ונתקן.</p>
-      <h2>פנייה לרכז/ת הנגישות</h2>
-      <p>שם: אבירן רותם<br>טלפון: <a href="tel:+972528131212" dir="ltr">052-813-1212</a><br>דוא"ל: <a href="mailto:${SITE.email}">${SITE.email}</a><br>נא לציין את כתובת העמוד, מה ניסיתם לעשות, ואת הדפדפן, המכשיר וכל טכנולוגיה מסייעת שבה אתם משתמשים. נשתדל להשיב בתוך 5 ימי עבודה.</p>
-      <p class="label">עודכן לאחרונה: ${updatedHe}</p>
-    </div>
     </section>`,
   });
 }
 
 function privacy() {
-  const updated = "October 24, 2026", updatedHe = "24.10.2026";
+  const updated = "October 24, 2026";
   const mail = `<a href="mailto:${SITE.email}">${SITE.email}</a>`;
   return layout({
     title: "Privacy policy", pathname: "/privacy/",
     description: `How ${SITE.name} handles information when you visit zazzimag.com.`,
     body: `<section class="wrap page statement">
     <h1>Privacy</h1>
-    <div class="lang-switch"><a class="chip" href="#en">English</a><a class="chip" href="#he" lang="he">עברית</a></div>
-
     <div id="en" lang="en">
       <p>This policy explains what information is collected when you use zazzimag.com, run by ${esc(SITE.name)} ("we"). We keep it short because we collect very little: there are no visitor accounts, no advertising and no tracking cookies, and we never sell your information.</p>
       <h2>Information you send us</h2>
@@ -383,37 +353,6 @@ function privacy() {
       <h2>Changes</h2>
       <p>If we change how we handle information, for example when the store starts selling online, we'll update this page and the date below.</p>
       <p class="label">Last updated: ${updated}</p>
-    </div>
-
-    <div id="he" lang="he" dir="rtl" style="margin-top:56px;border-top:1px solid var(--line);padding-top:8px">
-      <h2>מדיניות פרטיות</h2>
-      <p>מדיניות זו מסבירה איזה מידע נאסף בעת השימוש באתר zazzimag.com, המופעל על ידי זאזי מגזין ("אנחנו"). היא קצרה כי אנחנו אוספים מעט מאוד: אין באתר חשבונות משתמש, אין פרסומות ואין עוגיות מעקב, ואנחנו לעולם לא מוכרים את המידע שלכם.</p>
-      <h2>מידע שאתם שולחים לנו</h2>
-      <ul>
-        <li><strong>טופס יצירת קשר והרשמה לעדכוני החנות.</strong> אלה פותחים את אפליקציית הדואר שלכם עם הודעה אל ${mail}. אנחנו מקבלים רק את מה שתבחרו לשלוח, כמו שם, כתובת דוא"ל והודעה, ומשתמשים בזה כדי להשיב לכם או לעדכן אתכם על פריטים חדשים בחנות שביקשתם לשמוע עליהם.</li>
-        <li><strong>דואר אלקטרוני.</strong> הודעות הנשלחות אל ${mail} מועברות באמצעות ImprovMX ונשמרות בתיבת הדואר שלנו ב-Google (Gmail).</li>
-        <li>אנחנו שומרים הודעות אלה רק כל עוד הן נחוצות לנו, ואפשר לבקש מאיתנו למחוק אותן בכל עת.</li>
-      </ul>
-      <h2>מידע שנאסף באופן אוטומטי</h2>
-      <ul>
-        <li><strong>אחסון.</strong> האתר מאוחסן אצל Vercel. כמו כל שירות אחסון, Vercel מעבדת נתונים טכניים כמו כתובת IP, סוג הדפדפן והעמודים המבוקשים, כדי להציג את האתר ולשמור על אבטחתו.</li>
-        <li><strong>הצגת מחירים במטבע שלכם.</strong> כדי להציג את מחירי החנות במטבע המקומי, האתר בודק מאיזו מדינה אתם גולשים לפי כתובת ה-IP. איננו שומרים מידע זה; הדפדפן שלכם שומר את התוצאה רק עד סגירת הלשונית.</li>
-        <li><strong>הגדרות במכשיר שלכם.</strong> אם אתם משתמשים בתפריט הנגישות, הבחירות שלכם (למשל הגדלת טקסט) נשמרות באחסון המקומי של הדפדפן כדי שיישארו גם בפעם הבאה. מידע זה לא יוצא מהמכשיר.</li>
-        <li>איננו משתמשים בכלי סטטיסטיקה, בפרסום או בעוגיות מעקב.</li>
-      </ul>
-      <h2>תוכן משירותים אחרים</h2>
-      <p>חלקים מהאתר טוענים תוכן ישירות מחברות אחרות, ולכן הדפדפן שלכם מתחבר אליהן והן מקבלות את כתובת ה-IP שלכם:</p>
-      <ul>
-        <li><strong>אינסטגרם (Meta):</strong> התמונות בפיד וקישורים לחשבון האינסטגרם שלנו.</li>
-        <li><strong>Google Fonts:</strong> הגופנים שבאתר.</li>
-        <li><strong>ויקישיתוף (Wikimedia Commons)</strong> ושירותי תמונות נוספים: חלק מהתמונות בכתבות.</li>
-      </ul>
-      <p>חברות אלה מטפלות במידע לפי מדיניות הפרטיות שלהן. קישורים לאתרים אחרים מובילים לאתרים שאינם בשליטתנו.</p>
-      <h2>הזכויות שלכם</h2>
-      <p>לפי חוק הגנת הפרטיות, אתם רשאים לבקש לעיין במידע שאנו מחזיקים עליכם ולבקש לתקן או למחוק אותו. כתבו אלינו לכתובת ${mail} ונשיב בהקדם.</p>
-      <h2>שינויים</h2>
-      <p>אם נשנה את אופן הטיפול במידע, למשל כשהחנות תתחיל למכור באתר, נעדכן את העמוד הזה ואת התאריך שלמטה.</p>
-      <p class="label">עודכן לאחרונה: ${updatedHe}</p>
     </div>
     </section>`,
   });
@@ -461,6 +400,14 @@ function comingSoon() {
   .pause:hover{color:var(--fg);border-color:var(--fg)}
   .pause:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .legal{flex-basis:100%;text-align:center;margin:4px 0 0;font-family:"Archivo",system-ui,sans-serif;font-size:12px;color:var(--muted);max-width:none}
+  @media (max-width:640px){
+    footer{gap:12px 16px}
+    footer .label{flex-basis:100%;text-align:center}
+    .btn{width:48px;height:48px;padding:0;border-radius:50%;justify-content:center}
+    .btn .t{display:none}
+    .btn .ic{width:22px;height:22px}
+    .a11y-link{flex-basis:100%;justify-content:center}
+  }
   .a11y-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;text-decoration:underline;color:var(--fg)}
 </style>
 </head>
@@ -476,10 +423,10 @@ function comingSoon() {
 </main>
 <footer>
   <span class="label">${tx("comingSoon.contactLabel")}</span>
-  <a class="btn" href="mailto:${SITE.email}">${icon("mail")}${SITE.email}</a>
-  <a class="btn dark" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a>
-  <a class="a11y-link" href="/accessibility/">${icon("accessibility")}Accessibility statement · הצהרת נגישות</a>
-  <a class="a11y-link" href="/privacy/">Privacy policy · מדיניות פרטיות</a>
+  <a class="btn" href="mailto:${SITE.email}" aria-label="Email ${SITE.email}">${icon("mail")}<span class="t">${SITE.email}</span></a>
+  <a class="btn dark" href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram @${SITE.handle}">${icon("instagram")}<span class="t">@${SITE.handle}</span></a>
+  <a class="a11y-link" href="/accessibility/">${icon("accessibility")}Accessibility statement</a>
+  <a class="a11y-link" href="/privacy/">Privacy policy</a>
   <p class="legal">${esc(T("footer.copyright").replace(/\{year\}/g, new Date().getFullYear()).split(/(?<=reserved\.)/)[0])}</p>
 </footer>
 <script>
