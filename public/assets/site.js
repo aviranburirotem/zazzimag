@@ -40,6 +40,7 @@
       else if (i === posts.length) slot.outerHTML = `<a class="tile ig follow-tile" href="${IG_URL}" target="_blank" rel="noopener"><div class="ph"><div>${IC.instagram}<b>${esc(FOLLOW)}<br>@${HANDLE}</b></div></div></a>`;
       else slot.remove();
     });
+    document.querySelectorAll(".tile.ig .cap").forEach((el) => window.zzEggify?.(el));
     if (strip) {
       if (!posts.length) { strip.closest("[data-ig-section]")?.remove(); return; }
       strip.innerHTML = posts.slice(0, 6).map((p, i) =>
@@ -143,18 +144,58 @@
   apply();
 
   // ---- prices: shown in the visitor's currency (₪, ¥, ₩, € or $), rounded ----
-  // Easter eggs: the dotted zeros in prices blink like eyes, and an 8 tips over into ∞ when you point at it.
-  // Screen readers get the plain price; the decorated digits are hidden from them.
+  // ---- number easter eggs ----
+  // In every number on the site, one digit has a trick that plays when you point at the number:
+  // 0 blinks · 1 and 7 jump · 2 wobbles · 3 mirrors · 4 leans · 5 spins · 6 and 9 flip into each other · 8 tips over into ∞
+  // It also changes colour. In prices that digit is a zero when possible, and it blinks by itself. Now and then a random number hops.
+  // Screen readers get the plain text; motion stops with "Stop animations" or the device's reduce-motion setting.
+  const COLORS = ["#e30613", "#1a3fbf", "#f2a900", "#00a86b", "#ff4fa3", "#7a3cff"];
+  const escT = (t) => t.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  // One digit per number gets the trick. In prices, a zero is picked when there is one, so it can blink.
+  const digitHtml = (text, blink) => escT(text).replace(/[0-9]+(?:[.,][0-9]+)*/g, (num) => {
+    const idx = [...num].map((ch, i) => (/[0-9]/.test(ch) ? i : -1)).filter((i) => i >= 0);
+    const zeros = idx.filter((i) => num[i] === "0");
+    const pick = blink && zeros.length ? zeros[Math.floor(Math.random() * zeros.length)] : idx[Math.floor(Math.random() * idx.length)];
+    const d = num[pick], c = COLORS[Math.floor(Math.random() * COLORS.length)];
+    const delay = blink && d === "0" ? ` animation-delay:${(Math.random() * 4).toFixed(2)}s;` : "";
+    return `<span class="ng">${num.slice(0, pick)}<span class="d d${d}${blink && d === "0" ? " z0" : ""}" style="--c:${c};${delay}">${d}</span>${num.slice(pick + 1)}</span>`;
+  });
+  // prices: plain text for screen readers + decorated copy
   function eggify(el) {
     const text = el.textContent;
-    let n = 0;
-    const deco = [...text].map((ch) => {
-      if (ch === "0") return `<span class="z0" style="animation-delay:${(Math.random() * 4 + n++ * 0.12).toFixed(2)}s">0</span>`;
-      if (ch === "8") return `<span class="z8">8</span>`;
-      return ch.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-    }).join("");
-    el.innerHTML = `<span class="sr">${text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]))}</span><span aria-hidden="true">${deco}</span>`;
+    el.innerHTML = `<span class="sr">${escT(text)}</span><span aria-hidden="true">${digitHtml(text, true)}</span>`;
   }
+  // everything else: wrap digits in text nodes
+  const SKIP = "script,style,textarea,input,select,option,svg,code,pre,.sr,[data-ils],.a11y,[aria-hidden='true'],title";
+  function eggifyTree(root) {
+    if (!root) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) => (/[0-9]/.test(n.nodeValue) && !n.parentElement.closest(SKIP) && !n.parentElement.classList.contains("d") ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+    });
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach((node) => {
+      const wrap = document.createElement("span");
+      wrap.className = "num";
+      wrap.innerHTML = `<span class="sr">${escT(node.nodeValue)}</span><span aria-hidden="true">${digitHtml(node.nodeValue, false)}</span>`;
+      node.replaceWith(wrap);
+    });
+  }
+  window.zzEggify = eggifyTree;
+  eggifyTree(document.querySelector(".site-header"));
+  eggifyTree(document.getElementById("main"));
+  eggifyTree(document.querySelector(".site-footer"));
+
+  // now and then, a random number on screen does a little hop
+  setInterval(() => {
+    if (still() || document.hidden) return;
+    const visible = [...document.querySelectorAll(".d")].filter((d) => { const r = d.getBoundingClientRect(); return r.top > 0 && r.bottom < innerHeight && r.width; });
+    const d = visible[Math.floor(Math.random() * visible.length)];
+    if (!d) return;
+    d.classList.add("pop");
+    setTimeout(() => d.classList.remove("pop"), 900);
+  }, 9000);
+
   const prices = document.querySelectorAll("[data-ils]");
   prices.forEach(eggify);
   if (prices.length) {
