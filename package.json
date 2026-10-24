@@ -1,0 +1,14 @@
+{
+  "name": "zazzimag",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Zazzi magazine website: Instagram feed + articles",
+  "scripts": {
+    "build": "node build.mjs",
+    "preview": "node build.mjs && python3 -m http.server 8080 --directory dist"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
