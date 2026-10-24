@@ -229,18 +229,20 @@ html.a11y-still *,html.a11y-still *::before,html.a11y-still *::after{animation:n
 .p-status{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);padding:9px 14px}
 .pp-back{margin-top:10px}
 
-/* number easter eggs — one digit per number has a trick (see site.js) */
+/* number easter eggs — one digit per number has a trick (see site.js).
+   Every trick keeps the digit readable: nothing flips or turns into another character. */
 .ng{display:inline-block;cursor:default}
 .d{display:inline-block;transition:transform .35s cubic-bezier(.3,1.6,.5,1),color .2s,margin .35s}
 .ng:hover .d,.product:hover .d{color:var(--c)}
 .ng:hover .d0,.product:hover .d0{animation:zz-blink-now .35s 1}
-.ng:hover .d1,.ng:hover .d7,.product:hover .d1,.product:hover .d7{transform:translateY(-.3em)}
-.ng:hover .d2,.product:hover .d2{transform:rotate(-14deg) scale(1.15)}
-.ng:hover .d3,.product:hover .d3{transform:scaleX(-1)}
+.ng:hover .d1,.ng:hover .d6,.ng:hover .d7,.product:hover .d1,.product:hover .d6,.product:hover .d7{transform:translateY(-.3em)}
+.ng:hover .d2,.ng:hover .d9,.product:hover .d2,.product:hover .d9{transform:rotate(-12deg) scale(1.12)}
+.ng:hover .d3,.product:hover .d3{animation:zz-boing .5s 1}
 .ng:hover .d4,.product:hover .d4{transform:rotate(16deg) translateY(-.05em)}
 .ng:hover .d5,.product:hover .d5{transform:rotate(360deg);transition-duration:.6s}
-.ng:hover .d6,.ng:hover .d9,.product:hover .d6,.product:hover .d9{transform:rotate(180deg)}
-.ng:hover .d8,.product:hover .d8{transform:rotate(90deg);margin:0 .15em}
+.ng:hover .d8,.product:hover .d8{animation:zz-squish .6s 1}
+@keyframes zz-boing{0%,100%{transform:scale(1)}30%{transform:scale(1.25,.75)}60%{transform:scale(.85,1.2)}}
+@keyframes zz-squish{0%,100%{transform:scale(1)}40%{transform:scale(1.2,.8)}70%{transform:scale(.92,1.08)}}
 .d.pop{animation:zz-pop .9s ease-out 1;color:var(--c)}
 @keyframes zz-pop{0%,100%{transform:translateY(0)}25%{transform:translateY(-.35em) rotate(-8deg)}50%{transform:translateY(0) rotate(0)}65%{transform:translateY(-.12em)}}
 .z0{transform-origin:50% 55%;animation:zz-blink 5s infinite}
@@ -248,5 +250,7 @@ html.a11y-still *,html.a11y-still *::before,html.a11y-still *::after{animation:n
 @keyframes zz-blink{0%,94%,100%{transform:scaleY(1)}96.5%{transform:scaleY(.08)}}
 @keyframes zz-blink-now{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.08)}}
 .num{white-space:nowrap}
-@media (prefers-reduced-motion:reduce){.d,.z0,.d.pop{animation:none!important;transition:color .2s}.ng:hover .d,.product:hover .d{transform:none}}
+@media (prefers-reduced-motion:reduce){.d,.z0,@keyframes zz-boing{0%,100%{transform:scale(1)}30%{transform:scale(1.25,.75)}60%{transform:scale(.85,1.2)}}
+@keyframes zz-squish{0%,100%{transform:scale(1)}40%{transform:scale(1.2,.8)}70%{transform:scale(.92,1.08)}}
+.d.pop{animation:none!important;transition:color .2s}.ng:hover .d,.product:hover .d{transform:none}}
 html.a11y-still .ng:hover .d,html.a11y-still .product:hover .d{transform:none}

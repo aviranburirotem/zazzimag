@@ -146,7 +146,7 @@
   // ---- prices: shown in the visitor's currency (₪, ¥, ₩, € or $), rounded ----
   // ---- number easter eggs ----
   // In every number on the site, one digit has a trick that plays when you point at the number:
-  // 0 blinks · 1 and 7 jump · 2 wobbles · 3 mirrors · 4 leans · 5 spins · 6 and 9 flip into each other · 8 tips over into ∞
+  // 0 blinks · 1, 6 and 7 jump · 2 and 9 wobble · 3 boings · 4 leans · 5 spins · 8 squishes. Nothing flips into another digit.
   // It also changes colour. In prices that digit is a zero when possible, and it blinks by itself. Now and then a random number hops.
   // Screen readers get the plain text; motion stops with "Stop animations" or the device's reduce-motion setting.
   const COLORS = ["#e30613", "#1a3fbf", "#f2a900", "#00a86b", "#ff4fa3", "#7a3cff"];
