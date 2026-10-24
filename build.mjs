@@ -83,6 +83,7 @@ function layout({ title, description, active, body, image, type = "website", pat
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="wrap bar">
   <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home">${logoVideo(56)}</a>
+  ${ticker()}
   <nav class="site-nav" aria-label="Main">
     ${nav("/about/", tx("nav.info"), "about")}
     ${nav("/store/", tx("nav.store"), "store")}
@@ -119,6 +120,15 @@ const igSlot = () => `<div class="tile ig ig-slot" aria-hidden="true"><div class
 
 // Animated heart logo (looping video, falls back to the still logo)
 const logoVideo = (size) => `<video class="logo-vid" width="${size}" height="${size}" autoplay muted loop playsinline preload="metadata" poster="/assets/logo.png" aria-hidden="true"><source src="/assets/logo-animated.mp4?v=${V}" type="video/mp4"></video><span class="sr">Zazzi magazine</span>`;
+
+// Header ticker: words drift slowly between the logo and the buttons (decorative, hidden from screen readers)
+function ticker() {
+  const words = T("header.ticker").split("\n").map((w) => w.trim()).filter(Boolean);
+  if (!words.length) return `<div class="ticker-space"></div>`;
+  const run = words.map((w) => `<span class="tk-word">${esc(w)}</span>${icon("heart", "tk-heart")}`).join("");
+  const dur = Math.max(18, words.join(" ").length * 0.45).toFixed(1);
+  return `<div class="ticker" aria-hidden="true"><div class="ticker-track" style="animation-duration:${dur}s">${run}${run}</div></div>`;
+}
 
 // ---------- pages ----------
 function home() {
