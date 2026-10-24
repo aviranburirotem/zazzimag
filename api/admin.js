@@ -202,6 +202,43 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
+    // Store products (content/products.json)
+    if (action === "products") {
+      const text = await gh(repo(`/contents/content/products.json?ref=${BRANCH}`), { raw: true });
+      let data = { products: [] };
+      try { data = JSON.parse(text || '{"products":[]}'); } catch {}
+      return res.json({ products: data.products || [] });
+    }
+
+    if (action === "saveProducts" && req.method === "POST") {
+      const list = Array.isArray(body.products) ? body.products : [];
+      if (list.length > 200) return fail(400, "That's too many products.");
+      const str = (v, max) => String(v ?? "").replace(/\s*\n\s*/g, " ").trim().slice(0, max);
+      const products = [];
+      for (const p of list) {
+        const name = str(p.name, 120);
+        if (!name) return fail(400, "Every product needs a name.");
+        const link = str(p.link, 500);
+        if (link && !/^https?:\/\//.test(link)) return fail(400, `The link for "${name}" must start with https://`);
+        const image = str(p.image, 500);
+        if (image && !/^(\/images\/store\/[a-z0-9._-]+|https:\/\/\S+)$/.test(image)) return fail(400, `The photo for "${name}" isn't valid.`);
+        products.push({
+          name, price: str(p.price, 40), description: String(p.description ?? "").trim().slice(0, 600),
+          image, imageAlt: str(p.imageAlt, 200),
+          status: ["available", "soon", "soldout"].includes(p.status) ? p.status : "soon",
+          link, hidden: p.hidden === true,
+        });
+      }
+      const entries = [{ path: "content/products.json", content: JSON.stringify({ products }, null, 2) + "\n" }];
+      for (const img of body.images || []) {
+        const name = String(img.name || "");
+        if (!IMG_NAME.test(name) || !/^[a-f0-9]{40}$/.test(img.sha)) return fail(400, `Invalid photo: ${name}`);
+        if (products.some((p) => p.image === `/images/store/${name}`)) entries.push({ path: `public/images/store/${name}`, sha: img.sha });
+      }
+      await commit(entries, "Update store products");
+      return res.json({ ok: true });
+    }
+
     if (action === "delete" && req.method === "POST") {
       const slug = String(body.slug || "");
       if (!SLUG.test(slug)) return fail(400, "Invalid article address.");

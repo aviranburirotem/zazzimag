@@ -38,6 +38,19 @@
   .texts .def{background:none;border:0;padding:0;font-size:12px;color:var(--muted);text-decoration:underline;justify-self:start}
   .texts .f{display:grid;gap:6px}
   .texts-bar{position:sticky;bottom:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:var(--bg);border:1px solid var(--line);border-radius:6px;max-width:820px;margin-top:16px}
+  .prods{display:grid;gap:12px;max-width:900px}
+  .prod{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:16px;padding:14px;background:var(--bg);border:1px solid var(--line);border-radius:6px;align-items:start}
+  .prod.hidden-p{opacity:.6}
+  .prod .pthumb{width:120px;aspect-ratio:4/5;border:1px dashed var(--line);border-radius:4px;background:var(--soft) center/cover;display:grid;place-items:center;color:var(--muted);padding:0}
+  .prod .pthumb .ic{width:26px;height:26px}
+  .prod .pf{display:grid;gap:10px;min-width:0}
+  .prod .pf input:not([type=checkbox]),.prod .pf textarea,.prod .pf select{width:100%}
+  .prod .switch{justify-self:start}
+  .prod .pf textarea{min-height:64px}
+  .prod .pctl{display:grid;gap:6px}
+  .prod .pctl .b{justify-content:center;padding:7px}
+  .three{display:grid;grid-template-columns:1fr 140px 170px;gap:10px}
+  @media (max-width:760px){.prod{grid-template-columns:90px minmax(0,1fr)}.prod .pthumb{width:90px}.prod .pctl{grid-column:1/-1;display:flex}.three{grid-template-columns:1fr 1fr}}
   .panel{background:var(--bg);border:1px solid var(--line);border-radius:6px}
   main.c{padding-block:24px 64px}
 
@@ -138,6 +151,7 @@ function topBar(extra = "") {
     <span class="c-title">Console</span>
     <nav class="c-tabs" aria-label="Console sections">
       <button type="button" data-act="tab-articles" ${tab === "articles" ? 'aria-current="page"' : ""}>${icon("newspaper")}<span>Articles</span></button>
+      <button type="button" data-act="tab-store" ${tab === "store" ? 'aria-current="page"' : ""}>${icon("shopping-bag")}<span>Store</span></button>
       <button type="button" data-act="tab-texts" ${tab === "texts" ? 'aria-current="page"' : ""}>${icon("pencil")}<span>Site texts</span></button>
     </nav>
     <div class="c-actions">${extra}
@@ -446,6 +460,88 @@ async function save() {
   } catch (err) { if (err.message !== "auth") { status(err.message, "err"); btn.disabled = false; } }
 }
 
+// ---------- store ----------
+let store = null; // { products: [], pending: Map(name -> {sha, preview}) }
+
+async function renderStore(flash = "") {
+  tab = "store";
+  app.innerHTML = topBar(`<button class="b primary" type="button" data-act="add-product">${icon("plus")}<span>Add product</span></button>`) +
+    `<main class="wrap c"><div class="list-head"><div><span class="label">Store</span><h1>Products</h1></div><p class="status ok" id="flash">${esc(flash)}</p></div><div id="prods" class="prods"><div class="panel empty">Loading…</div></div></main>`;
+  try {
+    const { products } = await api("products");
+    store = { products, pending: new Map() };
+    drawProducts();
+  } catch (err) { if (err.message !== "auth") document.getElementById("prods").innerHTML = `<div class="panel empty status err">${esc(err.message)}</div>`; }
+}
+
+const STATUSES = [["soon", "Coming soon"], ["available", "Available"], ["soldout", "Sold out"]];
+const storeImg = (u) => { const m = u && u.match(/^\/images\/store\/(.+)$/); const p = m && store?.pending.get(m[1]); return p ? p.preview : shown(u); };
+
+function drawProducts() {
+  const box = document.getElementById("prods");
+  const ps = store.products;
+  box.innerHTML = (ps.length ? ps.map((p, i) => `
+    <div class="prod${p.hidden ? " hidden-p" : ""}" data-i="${i}">
+      <button type="button" class="pthumb" data-act="p-photo" aria-label="Upload photo for ${esc(p.name || "product")}" style="${p.image ? `background-image:url('${esc(storeImg(p.image))}')` : ""}">${p.image ? "" : icon("image-plus")}</button>
+      <div class="pf">
+        <div class="three">
+          <label>Name<input data-f="name" value="${esc(p.name || "")}" required></label>
+          <label>Price<input data-f="price" value="${esc(p.price || "")}" placeholder="₪120"></label>
+          <label>Status<select data-f="status">${STATUSES.map(([v, l]) => `<option value="${v}" ${(p.status || "soon") === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+        </div>
+        <label>Description <span class="hint">optional, one or two sentences</span><textarea data-f="description">${esc(p.description || "")}</textarea></label>
+        <label>Buy link <span class="hint">optional: payment page, shop or Instagram link. Without one, "Ask about it" opens an email.</span><input data-f="link" value="${esc(p.link || "")}" placeholder="https://"></label>
+        <label>Describe the photo <span class="hint">for screen readers and Google</span><input data-f="imageAlt" value="${esc(p.imageAlt || "")}"></label>
+        <label class="switch"><input type="checkbox" data-f="hidden" ${p.hidden ? "checked" : ""}> Hide from the site</label>
+      </div>
+      <div class="pctl">
+        <button type="button" class="b" data-act="p-up" aria-label="Move up" ${i === 0 ? "disabled" : ""}>${icon("chevron-up")}</button>
+        <button type="button" class="b" data-act="p-down" aria-label="Move down" ${i === ps.length - 1 ? "disabled" : ""}>${icon("chevron-down")}</button>
+        <button type="button" class="b danger" data-act="p-del" aria-label="Remove product">${icon("trash-2")}</button>
+      </div>
+    </div>`).join("") : `<div class="panel empty">No products yet. Click <b>Add product</b>. Until you add some, the Store page shows the placeholder items from Site texts.</div>`) +
+    `<div class="texts-bar" style="max-width:900px"><button class="b primary" type="button" data-act="p-save">${icon("save")}<span>Save store</span></button><span class="status" id="st"></span></div>
+    <input type="file" id="p-file" accept="image/*" hidden>`;
+}
+
+function syncProducts() {
+  document.querySelectorAll(".prod").forEach((row) => {
+    const p = store.products[+row.dataset.i];
+    row.querySelectorAll("[data-f]").forEach((el) => { p[el.dataset.f] = el.type === "checkbox" ? el.checked : el.value; });
+  });
+}
+
+let photoFor = -1;
+document.addEventListener("change", async (e) => {
+  if (e.target.id !== "p-file" || photoFor < 0) return;
+  const file = e.target.files[0]; e.target.value = "";
+  if (!file) return;
+  syncProducts();
+  const p = store.products[photoFor];
+  status("Uploading photo…");
+  try {
+    const data = await resize(file, 1600);
+    const { sha } = await api("upload", { method: "POST", body: { data } });
+    const name = `${slugify(p.name || "product") || "product"}-${Date.now().toString(36)}.jpg`;
+    store.pending.set(name, { sha, preview: data });
+    p.image = `/images/store/${name}`;
+    if (!p.imageAlt) p.imageAlt = p.name || "";
+    drawProducts(); status("Photo added. Save the store to publish it.");
+  } catch (err) { if (err.message !== "auth") status(`Couldn't upload the photo: ${err.message}`, "err"); }
+});
+
+async function saveStore() {
+  syncProducts();
+  if (store.products.some((p) => !String(p.name || "").trim())) return status("Every product needs a name.", "err");
+  const used = [...store.pending.entries()].filter(([n]) => store.products.some((p) => p.image === `/images/store/${n}`)).map(([name, v]) => ({ name, sha: v.sha }));
+  status("Saving…");
+  try {
+    await api("saveProducts", { method: "POST", body: { products: store.products, images: used } });
+    for (const { name } of used) recent.set(`/images/store/${name}`, store.pending.get(name).preview);
+    renderStore("Store saved. The site will update in about a minute.");
+  } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+}
+
 // ---------- site texts ----------
 async function renderTexts() {
   tab = "texts";
@@ -491,6 +587,13 @@ app.addEventListener("click", async (e) => {
   if (act === "new") openEditor();
   if (act === "tab-articles") renderList();
   if (act === "tab-texts") renderTexts();
+  if (act === "tab-store") renderStore();
+  if (act === "add-product") { syncProducts(); store.products.push({ name: "", price: "", status: "soon", description: "", link: "", image: "", imageAlt: "", hidden: false }); drawProducts(); [...document.querySelectorAll(".prod [data-f=name]")].pop()?.focus(); }
+  const prow = e.target.closest(".prod"), pi = prow ? +prow.dataset.i : -1;
+  if (act === "p-photo") { photoFor = pi; document.getElementById("p-file").click(); }
+  if (act === "p-up" || act === "p-down") { syncProducts(); const j = act === "p-up" ? pi - 1 : pi + 1; [store.products[pi], store.products[j]] = [store.products[j], store.products[pi]]; drawProducts(); }
+  if (act === "p-del") { syncProducts(); store.products.splice(pi, 1); drawProducts(); status("Product removed. Save the store to apply."); }
+  if (act === "p-save") saveStore();
   if (act === "back") renderList();
   if (act === "edit") openEditor(slug);
   if (act === "ask-delete") {

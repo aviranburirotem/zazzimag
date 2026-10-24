@@ -196,16 +196,44 @@ function about() {
   });
 }
 
+// Store products, managed in the console (content/products.json)
+const PRODUCTS = (() => {
+  try { return (JSON.parse(fs.readFileSync("content/products.json", "utf8")).products || []).filter((p) => p && p.name && !p.hidden); }
+  catch { return []; }
+})();
+
+function productCard(p) {
+  const status = p.status || "soon";
+  const badge = status === "soldout" ? tx("store.soldOutBadge") : status === "soon" ? tx("store.soonBadge") : "";
+  const safeLink = /^https?:\/\//.test(p.link || "") ? p.link : "";
+  let action = "";
+  if (status === "available") {
+    action = safeLink
+      ? `<a class="btn alt" href="${esc(safeLink)}" target="_blank" rel="noopener">${tx("store.buyButton")} ${icon("arrow-up-right")}</a>`
+      : `<a class="btn" href="mailto:${SITE.email}?subject=${encodeURIComponent(`Store: ${p.name}`)}">${icon("mail")} ${tx("store.askButton")}</a>`;
+  }
+  return `<article class="product${status === "soldout" ? " sold" : ""}">
+    <div class="ph">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.imageAlt || p.name)}" loading="lazy">` : `<span>${esc(p.name)}</span>`}${badge ? `<span class="p-badge">${badge}</span>` : ""}</div>
+    <div class="p-info"><h3>${esc(p.name)}</h3>${p.price ? `<span class="p-price">${esc(p.price)}</span>` : ""}</div>
+    ${p.description ? `<p class="p-desc">${esc(p.description)}</p>` : ""}
+    ${action}
+  </article>`;
+}
+
 function store() {
   const items = T("store.items").split("\n").map((t) => t.trim()).filter(Boolean);
+  const notify = `<form data-mailto="${SITE.email}" data-subject="Store: notify me"><label for="notify">Email<input id="notify" name="email" type="email" required autocomplete="email"></label>
+      <button class="btn alt" type="submit">${icon("mail")} ${tx("store.button")}</button><p class="ok" hidden>${tx("store.sentMessage")}</p></form>`;
+  const grid = PRODUCTS.length
+    ? `<div class="products">${PRODUCTS.map(productCard).join("")}</div>`
+    : `<div class="store-grid">${items.map((t) => `<div class="tile"><div class="ph"><span>${tx("store.itemBadge")}</span></div><h3>${esc(t)}</h3></div>`).join("")}</div>`;
   return layout({
     title: T("nav.store"), active: "store", pathname: "/store/",
-    description: "The Zazzi store is coming soon.",
+    description: `${SITE.name} store. ${T("store.text").slice(0, 140)}`,
     body: `<section class="wrap page"><span class="label with-ic">${icon("shopping-bag")}${tx("store.label")}</span><h1>${tx("store.heading")}</h1>
-    <div class="cols"><div>${md("store.text")}</div>
-    <form data-mailto="${SITE.email}" data-subject="Store: notify me"><label for="notify">Email<input id="notify" name="email" type="email" required autocomplete="email"></label>
-      <button class="btn alt" type="submit">${icon("mail")} ${tx("store.button")}</button><p class="ok" hidden>${tx("store.sentMessage")}</p></form></div>
-    <div class="store-grid">${items.map((t) => `<div class="tile"><div class="ph"><span>${tx("store.itemBadge")}</span></div><h3>${esc(t)}</h3></div>`).join("")}</div></section>`,
+    <div class="cols"><div>${md("store.text")}</div>${PRODUCTS.length ? "" : notify}</div>
+    ${grid}
+    ${PRODUCTS.length ? `<div class="cols notify-row"><h2 class="section-title">${tx("store.notifyHeading")}</h2>${notify}</div>` : ""}</section>`,
   });
 }
 
