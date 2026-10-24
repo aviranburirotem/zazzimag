@@ -14,6 +14,9 @@ const SITE = {
 };
 const IG_URL = `https://www.instagram.com/${SITE.handle}/`;
 const OUT = "dist";
+import crypto from "node:crypto";
+// Version stamp for CSS/JS so browsers always load the latest files after a deploy
+const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.css")).update(fs.readFileSync("public/assets/site.js")).digest("hex").slice(0, 8);
 
 // Coming-soon mode: the live site (zazzimag.com) shows only the coming-soon page.
 // Preview deployments and local builds still show the full site so you can work on it.
@@ -64,7 +67,7 @@ function layout({ title, description, active, body, image, type = "website", pat
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,400..900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/site.css?v=${V}">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -93,7 +96,7 @@ ${body}
     <a href="/accessibility/">Accessibility statement · הצהרת נגישות</a>
   </div>
 </div>
-<script src="/assets/site.js" defer></script>
+<script src="/assets/site.js?v=${V}" defer></script>
 </body>
 </html>`;
 }
