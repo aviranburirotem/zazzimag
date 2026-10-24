@@ -3,10 +3,10 @@
     {
       "name": "Zazzi Book",
       "slug": "zazzi-book",
-      "price": "8",
-      "description": "",
+      "price": "350",
+      "description": "The ultimate guide for Tokyo's fashion neighbourhood, hard cover.",
       "image": "/images/store/zazzi-book-mvmiijq7.jpg",
-      "imageAlt": "Zazzi Book",
+      "imageAlt": "Zazzi Book, The ultimate guide for Tokyo's fashion neighbourhood, hard cover.",
       "status": "soon",
       "link": "",
       "hidden": false
