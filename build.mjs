@@ -197,27 +197,62 @@ function about() {
 }
 
 // Store products, managed in the console (content/products.json)
+const slugify = (t) => String(t).toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 70) || "item";
+const ilsNumber = (v) => Number(String(v ?? "").replace(/[^0-9.]/g, "")) || 0;
 const PRODUCTS = (() => {
-  try { return (JSON.parse(fs.readFileSync("content/products.json", "utf8")).products || []).filter((p) => p && p.name && !p.hidden); }
-  catch { return []; }
+  let list = [];
+  try { list = (JSON.parse(fs.readFileSync("content/products.json", "utf8")).products || []).filter((p) => p && p.name && !p.hidden); } catch {}
+  const used = new Set();
+  return list.map((p) => {
+    let slug = p.slug || slugify(p.name), n = 2;
+    while (used.has(slug)) slug = `${p.slug || slugify(p.name)}-${n++}`;
+    used.add(slug);
+    return { ...p, slug, ils: ilsNumber(p.price), url: `/store/${slug}/` };
+  });
 })();
 
+// Price in shekels; the page script converts it to the visitor's currency (₪ ¥ ₩ € $)
+const price = (p, cls = "p-price") => (p.ils ? `<span class="${cls}" data-ils="${p.ils}">₪${p.ils.toLocaleString("en-US")}</span>` : "");
+const badgeText = (p) => (p.status === "soldout" ? T("store.soldOutBadge") : (p.status || "soon") === "soon" ? T("store.soonBadge") : "");
+
 function productCard(p) {
+  const badge = badgeText(p);
+  return `<a class="product${p.status === "soldout" ? " sold" : ""}" href="${p.url}">
+    <div class="ph">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.imageAlt || p.name)}" loading="lazy">` : `<span class="p-name-ph">${esc(p.name)}</span>`}${badge ? `<span class="p-badge">${esc(badge)}</span>` : ""}</div>
+    <div class="p-info"><h3>${esc(p.name)}</h3>${price(p)}</div>
+  </a>`;
+}
+
+function productAction(p) {
   const status = p.status || "soon";
-  const badge = status === "soldout" ? tx("store.soldOutBadge") : status === "soon" ? tx("store.soonBadge") : "";
   const safeLink = /^https?:\/\//.test(p.link || "") ? p.link : "";
-  let action = "";
   if (status === "available") {
-    action = safeLink
+    return safeLink
       ? `<a class="btn alt" href="${esc(safeLink)}" target="_blank" rel="noopener">${tx("store.buyButton")} ${icon("arrow-up-right")}</a>`
       : `<a class="btn" href="mailto:${SITE.email}?subject=${encodeURIComponent(`Store: ${p.name}`)}">${icon("mail")} ${tx("store.askButton")}</a>`;
   }
-  return `<article class="product${status === "soldout" ? " sold" : ""}">
-    <div class="ph">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.imageAlt || p.name)}" loading="lazy">` : `<span>${esc(p.name)}</span>`}${badge ? `<span class="p-badge">${badge}</span>` : ""}</div>
-    <div class="p-info"><h3>${esc(p.name)}</h3>${p.price ? `<span class="p-price">${esc(p.price)}</span>` : ""}</div>
-    ${p.description ? `<p class="p-desc">${esc(p.description)}</p>` : ""}
-    ${action}
-  </article>`;
+  return `<span class="p-status">${esc(badgeText(p))}</span>`;
+}
+
+function productPage(p) {
+  return layout({
+    title: p.name, active: "store", pathname: p.url, image: p.image || undefined,
+    description: (p.description || `${p.name} from the ${SITE.name} store.`).replace(/\s+/g, " ").slice(0, 160),
+    body: `<section class="wrap page product-page">
+      <div class="crumbs label"><a href="/store/">${tx("store.heading")}</a><span>/</span><span>${esc(p.name)}</span></div>
+      <div class="pp-grid">
+        <div class="pp-image${p.status === "soldout" ? " sold" : ""}">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.imageAlt || p.name)}">` : `<span class="p-name-ph">${esc(p.name)}</span>`}</div>
+        <div class="pp-info">
+          ${badgeText(p) ? `<span class="label">${esc(badgeText(p))}</span>` : ""}
+          <h1>${esc(p.name)}</h1>
+          ${price(p, "pp-price")}
+          ${p.description ? `<div class="pp-desc">${markdown(p.description)}</div>` : ""}
+          <div class="pp-action">${productAction(p)}</div>
+          <a class="label with-ic pp-back" href="/store/">${tx("store.backLink")} ${icon("arrow-right")}</a>
+        </div>
+      </div>
+    </section>`,
+  });
 }
 
 function store() {
@@ -386,6 +421,7 @@ write("articles/index.html", articlesIndex());
 for (const a of articles) write(`articles/${a.slug}/index.html`, articlePage(a));
 write("about/index.html", about());
 write("store/index.html", store());
+for (const p of PRODUCTS) write(`store/${p.slug}/index.html`, productPage(p));
 write("accessibility/index.html", accessibility());
 write("articles.json", JSON.stringify(articles.map(({ html, ...a }) => a), null, 2));
 // Admin console helpers (shared with the build so the preview matches the site)
@@ -400,7 +436,7 @@ if (COMING_SOON) {
   write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /preview/\nDisallow: /articles/\nDisallow: /about/\nDisallow: /store/\nDisallow: /admin/\n`);
 } else {
   write("404.html", notFound());
-  write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${["/", "/articles/", "/about/", "/store/", ...articles.map((a) => a.url)].map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
+  write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${["/", "/articles/", "/about/", "/store/", ...articles.map((a) => a.url), ...PRODUCTS.map((p) => p.url)].map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
   write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /preview/\nSitemap: ${SITE.url}/sitemap.xml\n`);
 }
 

@@ -142,6 +142,27 @@
   }
   apply();
 
+  // ---- prices: shown in the visitor's currency (₪, ¥, ₩, € or $), rounded ----
+  const prices = document.querySelectorAll("[data-ils]");
+  if (prices.length) {
+    const STEP = { ILS: 1, USD: 1, EUR: 1, JPY: 10, KRW: 100 };
+    const show = ({ currency, rate }) => {
+      if (!currency || !rate) return;
+      const fmt = new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 0, minimumFractionDigits: 0, currencyDisplay: "narrowSymbol" });
+      prices.forEach((el) => {
+        const ils = Number(el.dataset.ils);
+        if (!ils) return;
+        const step = STEP[currency] || 1;
+        el.textContent = fmt.format(Math.max(step, Math.round((ils * rate) / step) * step));
+        el.dataset.currency = currency;
+      });
+    };
+    let cached = null;
+    try { cached = JSON.parse(sessionStorage.getItem("zz-geo") || "null"); } catch {}
+    if (cached) show(cached);
+    else fetch("/api/geo").then((r) => r.json()).then((g) => { try { sessionStorage.setItem("zz-geo", JSON.stringify(g)); } catch {} show(g); }).catch(() => {});
+  }
+
   // ---- contact + store forms: open the visitor's email app with the message filled in ----
   document.querySelectorAll("form[data-mailto]").forEach((form) => {
     form.addEventListener("submit", (e) => {

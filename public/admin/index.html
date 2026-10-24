@@ -49,7 +49,7 @@
   .prod .pf textarea{min-height:64px}
   .prod .pctl{display:grid;gap:6px}
   .prod .pctl .b{justify-content:center;padding:7px}
-  .three{display:grid;grid-template-columns:1fr 140px 170px;gap:10px}
+  .three{display:grid;grid-template-columns:1fr 170px 170px;gap:10px;align-items:end}
   @media (max-width:760px){.prod{grid-template-columns:90px minmax(0,1fr)}.prod .pthumb{width:90px}.prod .pctl{grid-column:1/-1;display:flex}.three{grid-template-columns:1fr 1fr}}
   .panel{background:var(--bg);border:1px solid var(--line);border-radius:6px}
   main.c{padding-block:24px 64px}
@@ -481,15 +481,15 @@ function drawProducts() {
   const box = document.getElementById("prods");
   const ps = store.products;
   box.innerHTML = (ps.length ? ps.map((p, i) => `
-    <div class="prod${p.hidden ? " hidden-p" : ""}" data-i="${i}">
+    <div class="prod${p.hidden ? " hidden-p" : ""}" data-i="${i}">${p.slug && !p.hidden ? "" : ""}
       <button type="button" class="pthumb" data-act="p-photo" aria-label="Upload photo for ${esc(p.name || "product")}" style="${p.image ? `background-image:url('${esc(storeImg(p.image))}')` : ""}">${p.image ? "" : icon("image-plus")}</button>
       <div class="pf">
         <div class="three">
           <label>Name<input data-f="name" value="${esc(p.name || "")}" required></label>
-          <label>Price<input data-f="price" value="${esc(p.price || "")}" placeholder="₪120"></label>
+          <label>Price in ₪ <span class="hint">shown in each visitor's currency</span><input data-f="price" inputmode="decimal" value="${esc(String(p.price || "").replace(/[^0-9.]/g, ""))}" placeholder="300"></label>
           <label>Status<select data-f="status">${STATUSES.map(([v, l]) => `<option value="${v}" ${(p.status || "soon") === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
         </div>
-        <label>Description <span class="hint">optional, one or two sentences</span><textarea data-f="description">${esc(p.description || "")}</textarea></label>
+        <label>Description <span class="hint">shown on the product page. Supports **bold**, *italic*, [links](https://…) and empty lines between paragraphs</span><textarea data-f="description" rows="5">${esc(p.description || "")}</textarea></label>
         <label>Buy link <span class="hint">optional: payment page, shop or Instagram link. Without one, "Ask about it" opens an email.</span><input data-f="link" value="${esc(p.link || "")}" placeholder="https://"></label>
         <label>Describe the photo <span class="hint">for screen readers and Google</span><input data-f="imageAlt" value="${esc(p.imageAlt || "")}"></label>
         <label class="switch"><input type="checkbox" data-f="hidden" ${p.hidden ? "checked" : ""}> Hide from the site</label>

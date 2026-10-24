@@ -222,8 +222,12 @@ export default async function handler(req, res) {
         if (link && !/^https?:\/\//.test(link)) return fail(400, `The link for "${name}" must start with https://`);
         const image = str(p.image, 500);
         if (image && !/^(\/images\/store\/[a-z0-9._-]+|https:\/\/\S+)$/.test(image)) return fail(400, `The photo for "${name}" isn't valid.`);
+        const ils = Number(String(p.price ?? "").replace(/[^0-9.]/g, "")) || 0;
+        let slug = String(name).toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 70) || "item";
+        const base = slug; let n = 2;
+        while (products.some((x) => x.slug === slug)) slug = `${base}-${n++}`;
         products.push({
-          name, price: str(p.price, 40), description: String(p.description ?? "").trim().slice(0, 600),
+          name, slug, price: ils ? String(Math.round(ils * 100) / 100) : "", description: String(p.description ?? "").replace(/\r/g, "").trim().slice(0, 3000),
           image, imageAlt: str(p.imageAlt, 200),
           status: ["available", "soon", "soldout"].includes(p.status) ? p.status : "soon",
           link, hidden: p.hidden === true,
