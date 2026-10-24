@@ -1,6 +1,6 @@
-// Password-protects the full site while it's in coming-soon mode.
-// Visitors to /preview/, articles, Info or Store are sent to the console login (/admin/).
-// Anyone logged in to the console can see these pages. After launch this does nothing.
+// Password protection, using the console login (/admin/).
+// - /preview/ is always private, before and after launch.
+// - Articles, Info and Store are private only while the site is in coming-soon mode.
 import { LAUNCHED } from "./lib/site-config.js";
 
 export const config = {
@@ -31,9 +31,11 @@ async function validSession(cookieHeader) {
 }
 
 export default async function middleware(request) {
-  if (LAUNCHED || process.env.VERCEL_ENV !== "production") return; // public after launch, and on preview deployments
-  if (await validSession(request.headers.get("cookie"))) return;   // logged in to the console
   const url = new URL(request.url);
+  const isPreview = url.pathname === "/preview" || url.pathname.startsWith("/preview/");
+  // /preview/ is always private. Articles, Info and Store are only locked before launch.
+  if (!isPreview && (LAUNCHED || process.env.VERCEL_ENV !== "production")) return;
+  if (await validSession(request.headers.get("cookie"))) return; // logged in to the console
   const login = new URL("/admin/", url);
   login.searchParams.set("next", url.pathname + url.search);
   return new Response(null, {

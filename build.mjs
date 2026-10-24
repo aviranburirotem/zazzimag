@@ -345,7 +345,8 @@ fs.cpSync("public", OUT, { recursive: true });
 const write = (p, html) => { const f = path.join(OUT, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, html); };
 
 // Full site. While coming-soon is on, the home page lives at /preview/ (hidden from search engines).
-write(COMING_SOON ? "preview/index.html" : "index.html", home());
+write("preview/index.html", home()); // private preview, always password-protected
+if (!COMING_SOON) write("index.html", home());
 write("articles/index.html", articlesIndex());
 for (const a of articles) write(`articles/${a.slug}/index.html`, articlePage(a));
 write("about/index.html", about());
@@ -364,7 +365,7 @@ if (COMING_SOON) {
 } else {
   write("404.html", notFound());
   write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${["/", "/articles/", "/about/", "/store/", ...articles.map((a) => a.url)].map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
-  write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /admin/\nSitemap: ${SITE.url}/sitemap.xml\n`);
+  write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /preview/\nSitemap: ${SITE.url}/sitemap.xml\n`);
 }
 
 console.log(COMING_SOON ? `Built coming-soon page into /${OUT}` : `Built ${articles.length} articles into /${OUT}`);
