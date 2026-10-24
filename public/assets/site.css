@@ -35,8 +35,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .icon-btn .ic{width:18px;height:18px}
 .icon-btn:hover{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-accent)}
 .social{display:flex;align-items:center;gap:10px}
-.site-nav{display:flex;gap:22px;align-items:center}
-.bar .logo{margin-left:auto}
+.site-nav{display:flex;gap:22px;margin-left:auto;align-items:center}
 .site-nav a{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
 .site-nav a[aria-current="page"]{color:var(--accent)}
 .cta{display:inline-flex;align-items:center;gap:6px;background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:2px}
@@ -51,14 +50,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .intro{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding-block:40px 24px}
 .intro h1{margin:0;font-stretch:70%;font-size:clamp(40px,7vw,88px);line-height:.92;letter-spacing:-.02em;text-wrap:balance;text-transform:uppercase}
 .intro p{margin:12px 0 0;max-width:46ch;color:var(--muted)}
-.handle{display:inline-flex;align-items:center;gap:12px;justify-self:start;background:var(--accent-fill);color:#fff;border-radius:999px;padding:12px 20px 12px 16px;box-shadow:0 6px 18px rgba(227,6,19,.28);transition:transform .15s,box-shadow .15s}
-.handle>.ic:first-child{width:26px;height:26px}
-.handle>.ic:last-child{width:18px;height:18px;transition:transform .15s}
-.handle span{display:grid;line-height:1.15;font-size:15px;font-weight:600}
-.handle b{font-weight:800}
-.handle small{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
-.handle:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(227,6,19,.35)}
-.handle:hover>.ic:last-child{transform:translate(2px,-2px)}
+.handle{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:13px;border:1px solid var(--line);border-radius:999px;padding:8px 14px;justify-self:start;transition:border-color .15s,color .15s}
+.handle:hover{border-color:var(--accent);color:var(--accent)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
 @media (max-width:720px){.intro{grid-template-columns:1fr}}
 
