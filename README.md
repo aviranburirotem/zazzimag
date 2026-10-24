@@ -2,7 +2,16 @@
 
 Street style site: the live @zazzimag Instagram feed mixed with Zazzi articles.
 
-## Writing an article
+## Console (easiest)
+Go to **/admin/**, log in, and write or edit articles and upload photos there.
+Each save is committed to this repo and goes live in about a minute.
+Needs `ADMIN_PASSWORD` and `GITHUB_TOKEN` in Vercel (see `.env.example`).
+
+## Coming-soon mode
+While `LAUNCHED = false` in `build.mjs`, zazzimag.com shows only the coming-soon page.
+The full site is still reachable at **/preview/** (hidden from search engines).
+
+## Writing an article by hand
 1. Add your photos to `public/images/articles/<article-name>/`.
 2. Create `content/articles/<article-name>.md`:
 

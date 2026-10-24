@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { markdown, frontmatter } from "./lib/markdown.js";
+import { icon } from "./lib/icons.js";
 
 const SITE = {
   name: "Zazzi Magazine",
@@ -22,6 +23,7 @@ const COMING_SOON = process.env.COMING_SOON
   ? process.env.COMING_SOON === "1"
   : !LAUNCHED && process.env.VERCEL_ENV === "production";
 
+const abs = (u) => (/^https?:/.test(u) ? u : SITE.url + u);
 const esc = (s = "") => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const fmtDate = (d) => new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
@@ -55,7 +57,7 @@ function layout({ title, description, active, body, image, type = "website", pat
 <meta property="og:description" content="${esc(description || SITE.tagline)}">
 <meta property="og:type" content="${type}">
 <meta property="og:url" content="${SITE.url}${pathname}">
-<meta property="og:image" content="${SITE.url}${image || "/assets/logo.png"}">
+<meta property="og:image" content="${abs(image || "/assets/logo-poster.png")}">${COMING_SOON ? '\n<meta name="robots" content="noindex">' : ""}
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#e30613">
 <link rel="icon" type="image/png" href="/assets/logo.png">
@@ -67,20 +69,20 @@ function layout({ title, description, active, body, image, type = "website", pat
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="wrap bar">
-  <a class="logo" href="/" aria-label="Zazzi magazine home"><img src="/assets/logo.png" alt="Zazzi magazine" width="60" height="60"></a>
+  <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home">${logoVideo(64)}</a>
   <nav class="site-nav" aria-label="Main">
     ${nav("/about/", "Info", "about")}
     ${nav("/store/", "Store", "store")}
-    ${nav("/articles/", "All articles", "articles", "cta")}
+    ${nav("/articles/", `All articles ${icon("arrow-right")}`, "articles", "cta")}
   </nav>
 </div></header>
 <main id="main">
 ${body}
 </main>
 <footer class="site-footer"><div class="wrap">
-  <a class="logo" href="/"><img src="/assets/logo.png" alt="Zazzi magazine" width="60" height="60"></a>
-  <nav aria-label="Footer" class="label"><a href="/articles/">Articles</a><a href="/about/">Info &amp; contact</a><a href="/store/">Store</a><a href="${IG_URL}" target="_blank" rel="noopener">Instagram ↗</a></nav>
-  <span class="label">© ${new Date().getFullYear()} Zazzi</span>
+  <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home"><img src="/assets/logo.png" alt="" width="56" height="56"></a>
+  <nav aria-label="Footer" class="label"><a href="/articles/">Articles</a><a href="/about/">Info &amp; contact</a><a href="/store/">Store</a></nav>
+  <div class="social"><a class="icon-btn" href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram @${SITE.handle}">${icon("instagram")}</a><a class="icon-btn" href="mailto:${SITE.email}" aria-label="Email ${SITE.email}">${icon("mail")}</a><span class="label">© ${new Date().getFullYear()} Zazzi</span></div>
 </div></footer>
 <div class="modal" id="modal" hidden></div>
 <script src="/assets/site.js" defer></script>
@@ -92,6 +94,9 @@ const artTile = (a, feat = false) => `<a class="tile art${feat ? " feat" : ""}" 
   <div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"><span class="badge a">${esc(a.category)}</span></div>
   <span class="label">${fmtDate(a.date)} · ${a.readTime}</span><h3>${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap">${esc(a.dek)}</p>` : ""}</a>`;
 const igSlot = () => `<div class="tile ig ig-slot" aria-hidden="true"><div class="ph"></div></div>`;
+
+// Animated heart logo (looping video, falls back to the still logo)
+const logoVideo = (size) => `<video class="logo-vid" width="${size}" height="${size}" autoplay muted loop playsinline preload="metadata" poster="/assets/logo.png" aria-hidden="true"><source src="/assets/logo-animated.mp4" type="video/mp4"></video><span class="sr">Zazzi magazine</span>`;
 
 // ---------- pages ----------
 function home() {
@@ -111,9 +116,9 @@ function home() {
     body: `<section class="wrap intro"><div>
       <h1>Street style,<br>straight from the feed</h1>
       <p>${esc(SITE.tagline)} Fresh looks from our Instagram, mixed with longer stories from the street.</p></div>
-      <a class="handle" href="${IG_URL}" target="_blank" rel="noopener"><span class="dot"></span>@${SITE.handle} ↗</a></section>
+      <a class="handle" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}${icon("arrow-up-right")}</a></section>
     <section class="wrap grid" aria-label="Latest posts and stories">${items.join("")}</section>
-    <section class="band"><div class="wrap"><h2>Every story, in one place</h2><a class="btn alt" href="/articles/">See all articles</a></div></section>`,
+    <section class="band"><div class="wrap"><h2>Every story, in one place</h2><a class="btn alt" href="/articles/">See all articles ${icon("arrow-right")}</a></div></section>`,
   });
 }
 
@@ -139,10 +144,10 @@ function articlePage(a) {
       <h1>${esc(a.title)}</h1>${a.dek ? `<p class="dek">${esc(a.dek)}</p>` : ""}
       <div class="meta label"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${a.readTime} read</span><span>Words: ${esc(byline)}</span></div></div></header>
     <figure class="wrap hero"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}"></div>${a.coverCaption ? `<figcaption>${esc(a.coverCaption)}</figcaption>` : ""}</figure>
-    <div class="wrap"><div class="body">${a.html}</div>
-      <section data-ig-section><div class="section-h"><h2>From the feed</h2><a class="label" href="${IG_URL}" target="_blank" rel="noopener">@${SITE.handle} ↗</a></div>
+    <div class="wrap"><div class="body">${a.aiAssisted === true ? `<p class="ai-note">${icon("info")}<span>Researched and drafted with AI from the sources listed at the end of this article.</span></p>` : ""}${a.html}</div>
+      <section data-ig-section><div class="section-h"><h2>From the feed</h2><a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a></div>
       <div class="strip" data-ig-strip>${'<div class="tile ig-slot" aria-hidden="true"><div class="ph"></div></div>'.repeat(6)}</div></section>
-      ${more.length ? `<div class="section-h"><h2>Read next</h2><a class="label" href="/articles/">All articles →</a></div><div class="grid">${more.map((x) => artTile(x)).join("")}</div>` : ""}
+      ${more.length ? `<div class="section-h"><h2>Read next</h2><a class="label with-ic" href="/articles/">All articles ${icon("arrow-right")}</a></div><div class="grid">${more.map((x) => artTile(x)).join("")}</div>` : ""}
     </div></article>`,
   });
 }
@@ -154,14 +159,16 @@ function about() {
     body: `<section class="wrap page"><h1>Who we are</h1><div class="cols">
     <div><p>Zazzi is a street style magazine about streetwear, trends, self-expression and city vibes. We spot great outfits on the street, share them every day on Instagram under <a href="${IG_URL}" target="_blank" rel="noopener">#ZazziSpotting</a>, and write longer stories about the people and ideas behind them.</p>
     <p>Spotted a look we should cover, want to be photographed, or have an idea for a story? Get in touch.</p>
-    <span class="label">Email</span><div class="contact-line"><span>${SITE.email}</span></div>
-    <span class="label">Instagram</span><div class="contact-line"><a href="${IG_URL}" target="_blank" rel="noopener">@${SITE.handle}</a></div></div>
+    <div class="contact-cards">
+      <a class="contact-card" href="mailto:${SITE.email}">${icon("mail")}<span><span class="label">Email</span>${SITE.email}</span></a>
+      <a class="contact-card" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}<span><span class="label">Instagram</span>@${SITE.handle}</span></a>
+    </div></div>
     <form data-mailto="${SITE.email}"><span class="label">Contact</span>
       <label for="name">Name<input id="name" name="name" required autocomplete="name"></label>
       <label for="email">Email<input id="email" name="email" type="email" required autocomplete="email"></label>
       <label for="topic">Topic<select id="topic" name="topic"><option>General</option><option>Collaboration</option><option>Press</option><option>Get photographed</option></select></label>
       <label for="message">Message<textarea id="message" name="message" required></textarea></label>
-      <button class="btn" type="submit">Send message</button>
+      <button class="btn" type="submit">Send message ${icon("arrow-right")}</button>
       <p class="ok" hidden>Your email app should open with the message ready to send.</p></form></div></section>`,
   });
 }
@@ -171,10 +178,10 @@ function store() {
   return layout({
     title: "Store", active: "store", pathname: "/store/",
     description: "The Zazzi store is coming soon.",
-    body: `<section class="wrap page"><span class="label">Coming soon</span><h1>Store</h1>
+    body: `<section class="wrap page"><span class="label with-ic">${icon("shopping-bag")}Coming soon</span><h1>Store</h1>
     <div class="cols"><p>Our first drop is on the way: printed zines of our best street photos and a small run of Zazzi merch. Leave your email and you'll hear first.</p>
     <form data-mailto="${SITE.email}" data-subject="Store: notify me"><label for="notify">Email<input id="notify" name="email" type="email" required autocomplete="email"></label>
-      <button class="btn alt" type="submit">Notify me</button><p class="ok" hidden>Your email app should open. Send it and you're on the list.</p></form></div>
+      <button class="btn alt" type="submit">${icon("mail")} Notify me</button><p class="ok" hidden>Your email app should open. Send it and you're on the list.</p></form></div>
     <div class="store-grid">${items.map((t) => `<div class="tile"><div class="ph"><span>Soon</span></div><h3>${t}</h3></div>`).join("")}</div></section>`,
   });
 }
@@ -215,11 +222,12 @@ function comingSoon() {
   .btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;text-decoration:none;padding:10px 16px;border-radius:2px;font-family:"Archivo",system-ui,sans-serif;font-weight:700;font-size:13px;letter-spacing:.04em;text-transform:uppercase}
   .btn.dark{background:var(--fg)}
   a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .ic{width:18px;height:18px;flex:none}
 </style>
 </head>
 <body>
 <main>
-  <video class="logo" autoplay muted loop playsinline poster="/assets/logo-poster.png" aria-label="Zazzi magazine logo">
+  <video class="logo" autoplay muted loop playsinline poster="/assets/logo-poster.png" aria-label="Zazzi magazine logo" preload="auto">
     <source src="/assets/logo-animated.mp4" type="video/mp4">
     <img src="/assets/logo-poster.png" alt="Zazzi magazine">
   </video>
@@ -228,8 +236,8 @@ function comingSoon() {
 </main>
 <footer>
   <span class="label">Get in touch</span>
-  <a class="btn" href="mailto:${SITE.email}">Email ${SITE.email}</a>
-  <a class="btn dark" href="${IG_URL}" target="_blank" rel="noopener">Instagram @${SITE.handle} ↗</a>
+  <a class="btn" href="mailto:${SITE.email}">${icon("mail")}${SITE.email}</a>
+  <a class="btn dark" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a>
 </footer>
 </body>
 </html>`;
@@ -240,21 +248,26 @@ fs.rmSync(OUT, { recursive: true, force: true });
 fs.cpSync("public", OUT, { recursive: true });
 const write = (p, html) => { const f = path.join(OUT, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, html); };
 
+// Full site. While coming-soon is on, the home page lives at /preview/ (hidden from search engines).
+write(COMING_SOON ? "preview/index.html" : "index.html", home());
+write("articles/index.html", articlesIndex());
+for (const a of articles) write(`articles/${a.slug}/index.html`, articlePage(a));
+write("about/index.html", about());
+write("store/index.html", store());
+write("articles.json", JSON.stringify(articles.map(({ html, ...a }) => a), null, 2));
+// Admin console helpers (shared with the build so the preview matches the site)
+fs.copyFileSync("lib/markdown.js", path.join(OUT, "admin/markdown.js"));
+fs.copyFileSync("lib/icons.js", path.join(OUT, "admin/icons.js"));
+
 if (COMING_SOON) {
   const page = comingSoon();
   write("index.html", page);
   write("404.html", page);
-  write("robots.txt", `User-agent: *\nAllow: /\n`);
+  write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /preview/\nDisallow: /articles/\nDisallow: /about/\nDisallow: /store/\nDisallow: /admin/\n`);
 } else {
-  write("index.html", home());
-  write("articles/index.html", articlesIndex());
-  for (const a of articles) write(`articles/${a.slug}/index.html`, articlePage(a));
-  write("about/index.html", about());
-  write("store/index.html", store());
   write("404.html", notFound());
-  write("articles.json", JSON.stringify(articles.map(({ html, ...a }) => a), null, 2));
   write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${["/", "/articles/", "/about/", "/store/", ...articles.map((a) => a.url)].map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
-  write("robots.txt", `User-agent: *\nAllow: /\nSitemap: ${SITE.url}/sitemap.xml\n`);
+  write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /admin/\nSitemap: ${SITE.url}/sitemap.xml\n`);
 }
 
 console.log(COMING_SOON ? `Built coming-soon page into /${OUT}` : `Built ${articles.length} articles into /${OUT}`);

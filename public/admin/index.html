@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Zazzi Console</title>
+<link rel="icon" type="image/png" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,400..900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/assets/site.css">
+<style>
+  /* Console: two-pane editor (form left, live article preview right); list view of all articles. */
+  body{background:var(--soft)}
+  .c-top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+  .c-top .wrap{display:flex;align-items:center;gap:14px;padding-block:8px}
+  .c-top .logo img{width:44px;height:44px}
+  .c-title{font-style:italic;font-weight:900;font-stretch:75%;font-size:22px;text-transform:uppercase}
+  .c-actions{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .b{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--bg);padding:8px 12px;border-radius:4px;font-size:13px;font-weight:600}
+  .b:hover{border-color:var(--fg)}
+  .b.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .b.dark{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+  .b.danger{color:var(--accent)}
+  .b[disabled]{opacity:.5;cursor:default}
+  .b .ic{width:16px;height:16px}
+  .panel{background:var(--bg);border:1px solid var(--line);border-radius:6px}
+  main.c{padding-block:24px 64px}
+
+  /* login */
+  .login{max-width:380px;margin:12vh auto 0;padding:28px;display:grid;gap:14px;text-align:center}
+  .login img{width:120px;height:120px;margin:0 auto}
+  .login h1{margin:0;font-style:italic;font-weight:900;font-stretch:70%;font-size:34px;text-transform:uppercase}
+  .login form{text-align:left}
+
+  /* list */
+  .list-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+  .list-head h1{margin:0;font-style:italic;font-weight:900;font-stretch:70%;font-size:40px;text-transform:uppercase;line-height:1}
+  .rows{display:grid;gap:8px}
+  .row{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:14px;align-items:center;padding:10px;background:var(--bg);border:1px solid var(--line);border-radius:6px}
+  .row img,.row .noimg{width:64px;height:80px;object-fit:cover;background:var(--soft);border-radius:3px}
+  .row h3{margin:0 0 4px;font-size:16px;font-weight:700;font-stretch:85%}
+  .row .meta-l{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .pill{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:999px;border:1px solid var(--line)}
+  .pill.live{background:#e7f6ec;border-color:#bfe5cb;color:#1d6b36}
+  .pill.draft{background:#fff4e0;border-color:#f3d9a6;color:#8a5a00}
+  .row-actions{display:flex;gap:6px}
+  @media (max-width:640px){.row{grid-template-columns:52px minmax(0,1fr)}.row img,.row .noimg{width:52px;height:66px}.row-actions{grid-column:1/-1}}
+
+  /* editor */
+  .editor{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+  @media (max-width:980px){.editor{grid-template-columns:1fr}}
+  .form{padding:20px;display:grid;gap:14px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:520px){.two{grid-template-columns:1fr}}
+  .hint{font-weight:400;color:var(--muted);font-size:12px}
+  .slug-row{display:flex;align-items:center;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+  .slug-row span{padding:11px 0 11px 12px;color:var(--muted);font-family:var(--mono);font-size:12px;white-space:nowrap}
+  .slug-row input{border:0;flex:1;min-width:0;font-family:var(--mono);font-size:13px;padding-left:2px}
+  .cover-box{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;align-items:start}
+  .cover-box .thumb{width:110px;aspect-ratio:4/5;background:var(--soft) center/cover;border:1px dashed var(--line);border-radius:4px;display:grid;place-items:center;color:var(--muted)}
+  .cover-box .thumb .ic{width:26px;height:26px}
+  .tb{display:flex;gap:4px;flex-wrap:wrap;padding:6px;border:1px solid var(--line);border-bottom:0;border-radius:2px 2px 0 0;background:var(--soft)}
+  .tb button{display:grid;place-items:center;width:34px;height:32px;border:0;background:none;border-radius:3px}
+  .tb button:hover{background:var(--bg)}
+  .tb .ic{width:17px;height:17px}
+  .tb .sep{width:1px;background:var(--line);margin:4px}
+  .tb .wide{width:auto;padding:0 10px;display:inline-flex;gap:6px;font-size:12px;font-weight:600}
+  #ed input:not([type=checkbox]),#ed textarea,#ed select{width:100%}
+  #body{min-height:420px;font-family:var(--mono);font-size:13px;line-height:1.6;border-radius:0 0 2px 2px}
+  .switch{display:flex;align-items:center;gap:10px;font-weight:600}
+  .switch input{width:18px;height:18px;accent-color:var(--accent)}
+  .save-bar{position:sticky;bottom:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 20px;background:var(--bg);border-top:1px solid var(--line);border-radius:0 0 6px 6px;margin:6px -20px -20px}
+  .status{font-size:13px;color:var(--muted)}
+  .status.err{color:var(--accent)}
+  .status.ok{color:#1d6b36}
+  .preview{padding:0 0 24px;overflow:hidden}
+  .preview .pv-label{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line)}
+  .preview .article-head{padding:24px 20px 0}
+  .preview .article-head h1{font-size:clamp(28px,4vw,46px)}
+  .preview .hero{margin:20px 20px 0;max-width:none}
+  .preview .body{margin:24px 20px 0;font-size:17px}
+  .uploading{display:flex;gap:8px;flex-wrap:wrap}
+  .confirm{display:flex;gap:6px;align-items:center;font-size:13px}
+  .empty{padding:40px;text-align:center;color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+import { markdown, frontmatter } from "./markdown.js";
+import { icon } from "./icons.js";
+
+const app = document.getElementById("app");
+const esc = (s = "") => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const slugify = (s) => s.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 70);
+const today = () => new Date().toISOString().slice(0, 10);
+const KNOWN = ["title", "dek", "date", "category", "cover", "coverAlt", "coverCaption", "author", "draft"];
+
+async function api(action, { method = "GET", body, query = "" } = {}) {
+  const r = await fetch(`/api/admin?action=${action}${query}`, {
+    method, credentials: "same-origin",
+    headers: body ? { "Content-Type": "application/json" } : {},
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let data = {};
+  try { data = await r.json(); } catch {}
+  if (r.status === 401 && action !== "login") { renderLogin("Your session ended. Please log in again."); throw new Error("auth"); }
+  if (!r.ok) throw new Error(data.error || `Request failed (${r.status})`);
+  return data;
+}
+
+function topBar(extra = "") {
+  return `<header class="c-top"><div class="wrap">
+    <a class="logo" href="/admin/" aria-label="Console home"><img src="/assets/logo.png" alt=""></a>
+    <span class="c-title">Console</span>
+    <div class="c-actions">${extra}
+      <a class="b" href="/preview/" target="_blank" rel="noopener">${icon("eye")}<span>View site</span></a>
+      <button class="b" type="button" data-act="logout">${icon("log-out")}<span>Log out</span></button>
+    </div></div></header>`;
+}
+
+// ---------- login ----------
+function renderLogin(msg = "") {
+  app.innerHTML = `<main class="wrap"><div class="panel login">
+    <img src="/assets/logo.png" alt="Zazzi magazine">
+    <h1>Console</h1>
+    <form id="login"><label for="pw">Password<input id="pw" type="password" autocomplete="current-password" required></label>
+    <button class="btn alt" type="submit" style="justify-self:stretch;justify-content:center">Log in ${icon("arrow-right")}</button>
+    <p class="status err" id="lmsg" ${msg ? "" : "hidden"}>${esc(msg)}</p></form></div></main>`;
+  document.getElementById("pw").focus();
+  document.getElementById("login").onsubmit = async (e) => {
+    e.preventDefault();
+    const m = document.getElementById("lmsg");
+    m.hidden = true;
+    try { await api("login", { method: "POST", body: { password: document.getElementById("pw").value } }); renderList(); }
+    catch (err) { if (err.message !== "auth") { m.textContent = err.message; m.hidden = false; } }
+  };
+}
+
+// ---------- list ----------
+let categories = [];
+async function renderList(flash = "") {
+  app.innerHTML = topBar(`<button class="b primary" type="button" data-act="new">${icon("plus")}<span>New article</span></button>`) +
+    `<main class="wrap c"><div class="list-head"><div><span class="label">Articles</span><h1>Your stories</h1></div><p class="status ok" id="flash">${esc(flash)}</p></div><div class="rows" id="rows"><div class="panel empty">Loading articles…</div></div></main>`;
+  try {
+    const { articles } = await api("list");
+    categories = [...new Set(articles.map((a) => a.category).filter(Boolean))];
+    const rows = document.getElementById("rows");
+    if (!articles.length) { rows.innerHTML = `<div class="panel empty">No articles yet. Click <b>New article</b> to write your first one.</div>`; return; }
+    rows.innerHTML = articles.map((a) => `<div class="row" data-slug="${esc(a.slug)}">
+      ${a.cover ? `<img src="${esc(a.cover)}" alt="" loading="lazy">` : `<div class="noimg"></div>`}
+      <div><h3>${esc(a.title)}</h3><div class="meta-l"><span class="pill ${a.draft ? "draft" : "live"}">${a.draft ? "Draft" : "Published"}</span><span class="label">${esc(a.category)} · ${esc(a.date)}</span></div></div>
+      <div class="row-actions">
+        ${a.draft ? "" : `<a class="b" href="/articles/${esc(a.slug)}/" target="_blank" rel="noopener" aria-label="View">${icon("eye")}</a>`}
+        <button class="b" type="button" data-act="edit">${icon("pencil")}<span>Edit</span></button>
+        <button class="b danger" type="button" data-act="ask-delete" aria-label="Delete">${icon("trash-2")}</button>
+      </div></div>`).join("");
+  } catch (err) {
+    if (err.message !== "auth") document.getElementById("rows").innerHTML = `<div class="panel empty status err">${esc(err.message)}</div>`;
+  }
+}
+
+// ---------- editor ----------
+let ed = null; // { slug, isNew, data, extras, pending: Map(name -> {sha, url}) }
+
+async function openEditor(slug) {
+  if (!slug) {
+    ed = { slug: "", isNew: true, data: { date: today(), author: "Zazzi", draft: true }, extras: {}, body: "", pending: new Map() };
+    return renderEditor();
+  }
+  app.innerHTML = topBar() + `<main class="wrap c"><div class="panel empty">Loading…</div></main>`;
+  try {
+    const { raw } = await api("article", { query: `&slug=${encodeURIComponent(slug)}` });
+    const { data, body } = frontmatter(raw);
+    const extras = Object.fromEntries(Object.entries(data).filter(([k]) => !KNOWN.includes(k)));
+    ed = { slug, isNew: false, data, extras, body: body.replace(/^\n+/, ""), pending: new Map() };
+    renderEditor();
+  } catch (err) { if (err.message !== "auth") renderList(); }
+}
+
+function field(id, label, value = "", attrs = "", hint = "") {
+  return `<label for="${id}">${label}${hint ? ` <span class="hint">${hint}</span>` : ""}<input id="${id}" value="${esc(value)}" ${attrs}></label>`;
+}
+
+function renderEditor() {
+  const d = ed.data;
+  app.innerHTML = topBar(`<button class="b" type="button" data-act="back">${icon("newspaper")}<span>All articles</span></button>`) + `
+  <main class="wrap c"><div class="editor">
+    <form class="panel form" id="ed" autocomplete="off">
+      <span class="label">${ed.isNew ? "New article" : "Edit article"}</span>
+      ${field("f-title", "Title", d.title, "required")}
+      <label for="f-slug">Web address <span class="hint">${ed.isNew ? "set automatically from the title" : "can't be changed after publishing"}</span>
+        <div class="slug-row"><span>zazzimag.com/articles/</span><input id="f-slug" value="${esc(ed.slug)}" ${ed.isNew ? "" : "disabled"} pattern="[a-z0-9][a-z0-9\-]*"></div></label>
+      <label for="f-dek">Summary <span class="hint">one or two sentences under the headline</span><textarea id="f-dek" style="min-height:70px">${esc(d.dek || "")}</textarea></label>
+      <div class="two">
+        <label for="f-cat">Category<input id="f-cat" list="cats" value="${esc(d.category || "")}" required><datalist id="cats">${[...new Set([...categories, "Street Style", "Trends", "Guide", "History", "Streetwear", "Interview"])].map((c) => `<option value="${esc(c)}">`).join("")}</datalist></label>
+        ${field("f-date", "Date", d.date, 'type="date" required')}
+      </div>
+      ${field("f-author", "Author", d.author || "Zazzi")}
+      <div><span class="label">Cover photo</span>
+        <div class="cover-box" style="margin-top:6px">
+          <button type="button" class="thumb" id="cover-pick" aria-label="Choose cover photo" style="${d.cover ? `background-image:url('${esc(imgUrl(d.cover))}')` : ""}">${d.cover ? "" : icon("image-plus")}</button>
+          <div style="display:grid;gap:8px">
+            <button type="button" class="b" id="cover-btn">${icon("image-plus")}<span>${d.cover ? "Replace cover" : "Upload cover"}</span></button>
+            ${field("f-coverAlt", "Describe the photo", d.coverAlt, "", "for screen readers")}
+            ${field("f-coverCaption", "Caption / photo credit", d.coverCaption)}
+          </div>
+        </div>
+        <input type="file" id="cover-file" accept="image/*" hidden>
+      </div>
+      <div>
+        <label for="body">Article text</label>
+        <div class="tb" role="toolbar" aria-label="Formatting">
+          <button type="button" data-md="h2" title="Subheading">${icon("heading-2")}</button>
+          <button type="button" data-md="bold" title="Bold">${icon("bold")}</button>
+          <button type="button" data-md="italic" title="Italic">${icon("italic")}</button>
+          <button type="button" data-md="link" title="Link">${icon("link")}</button>
+          <button type="button" data-md="quote" title="Quote">${icon("quote")}</button>
+          <button type="button" data-md="list" title="List">${icon("list")}</button>
+          <span class="sep"></span>
+          <button type="button" class="wide" id="photo-btn" title="Insert photos">${icon("image-plus")}Add photos</button>
+        </div>
+        <textarea id="body" spellcheck="true">${esc(ed.body)}</textarea>
+        <input type="file" id="photo-file" accept="image/*" multiple hidden>
+        <p class="hint" style="margin:6px 0 0">Leave an empty line between paragraphs. Photos added together appear side by side.</p>
+        <div class="uploading" id="uploading"></div>
+      </div>
+      <label class="switch"><input type="checkbox" id="f-draft" ${d.draft === true ? "" : "checked"}> Published <span class="hint">untick to keep it as a hidden draft</span></label>
+      <div class="save-bar">
+        <button class="b primary" type="submit" id="save">${icon("save")}<span>Save</span></button>
+        ${ed.isNew ? "" : `<a class="b" href="/articles/${esc(ed.slug)}/" target="_blank" rel="noopener">${icon("eye")}<span>Open live page</span></a>`}
+        <span class="status" id="st"></span>
+      </div>
+    </form>
+    <section class="panel preview" aria-label="Preview"><div class="pv-label label">${icon("eye")}Preview</div><div id="pv"></div></section>
+  </div></main>`;
+
+  const $ = (id) => document.getElementById(id);
+  const titleEl = $("f-title"), slugEl = $("f-slug"), body = $("body");
+  let slugTouched = !ed.isNew || Boolean(ed.slug);
+
+  titleEl.oninput = () => { if (ed.isNew && !slugTouched) setSlug(slugify(titleEl.value)); preview(); };
+  slugEl.oninput = () => { slugTouched = true; setSlug(slugify(slugEl.value), true); };
+  app.querySelectorAll("#ed input, #ed textarea").forEach((el) => el.addEventListener("input", preview));
+
+  function setSlug(next, keepCaret) {
+    const prev = ed.slug;
+    ed.slug = next;
+    if (!keepCaret || slugEl.value !== next) slugEl.value = next;
+    if (prev && prev !== next) { // keep photo links pointing at the right folder
+      const a = `/images/articles/${prev}/`, b = `/images/articles/${next}/`;
+      body.value = body.value.split(a).join(b);
+      if (ed.data.cover) ed.data.cover = ed.data.cover.split(a).join(b);
+    }
+    preview();
+  }
+
+  // formatting toolbar
+  app.querySelectorAll("[data-md]").forEach((btn) => btn.onclick = () => {
+    const s = body.selectionStart, e = body.selectionEnd, sel = body.value.slice(s, e);
+    const kind = btn.dataset.md;
+    let text = sel, before = "", after = "";
+    if (kind === "bold") { before = after = "**"; text ||= "bold text"; }
+    if (kind === "italic") { before = after = "*"; text ||= "italic text"; }
+    if (kind === "link") { before = "["; after = "](https://)"; text ||= "link text"; }
+    if (kind === "h2") { before = "\n\n## "; after = "\n\n"; text ||= "Subheading"; }
+    if (kind === "quote") { before = "\n\n> "; after = "\n\n"; text ||= "Quote"; }
+    if (kind === "list") { text = (sel || "First item\nSecond item").split("\n").map((l) => `- ${l.replace(/^- /, "")}`).join("\n"); before = "\n\n"; after = "\n\n"; }
+    body.setRangeText(before + text + after, s, e, "end");
+    body.focus(); preview();
+  });
+
+  // photos
+  $("photo-btn").onclick = () => { if (needSlug()) $("photo-file").click(); };
+  $("photo-file").onchange = async (e) => {
+    const files = [...e.target.files]; e.target.value = "";
+    const lines = [];
+    for (const f of files) { const p = await addPhoto(f); if (p) lines.push(`![${p.alt}](${p.url} "")`); }
+    if (lines.length) { const at = body.selectionStart; body.setRangeText(`\n\n${lines.join("\n")}\n\n`, at, at, "end"); preview(); }
+  };
+  const pickCover = () => { if (needSlug()) $("cover-file").click(); };
+  $("cover-btn").onclick = pickCover; $("cover-pick").onclick = pickCover;
+  $("cover-file").onchange = async (e) => {
+    const f = e.target.files[0]; e.target.value = "";
+    if (!f) return;
+    const p = await addPhoto(f, "cover");
+    if (p) { ed.data.cover = p.url; $("cover-pick").style.backgroundImage = `url('${imgUrl(p.url)}')`; $("cover-pick").innerHTML = ""; if (!$("f-coverAlt").value) $("f-coverAlt").value = p.alt; preview(); }
+  };
+
+  function needSlug() {
+    if (ed.slug) return true;
+    status("Add a title first, so the photos have a folder.", "err"); titleEl.focus(); return false;
+  }
+
+  $("ed").onsubmit = (e) => { e.preventDefault(); save(); };
+  preview();
+}
+
+function imgUrl(u) { // pending uploads show from memory until they're published
+  const m = u && u.match(/^\/images\/articles\/[^/]+\/(.+)$/);
+  const p = m && ed?.pending.get(m[1]);
+  return p ? p.preview : u;
+}
+
+function status(text, kind = "") { const s = document.getElementById("st"); if (s) { s.textContent = text; s.className = `status ${kind}`; } }
+
+async function resize(file, max = 2000) {
+  const url = URL.createObjectURL(file);
+  const img = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = url; });
+  const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement("canvas");
+  c.width = Math.round(img.naturalWidth * scale); c.height = Math.round(img.naturalHeight * scale);
+  const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+  URL.revokeObjectURL(url);
+  return c.toDataURL("image/jpeg", 0.85);
+}
+
+async function addPhoto(file, prefix = "") {
+  const box = document.getElementById("uploading");
+  const chip = document.createElement("span"); chip.className = "pill"; chip.textContent = `Uploading ${file.name}…`; box.append(chip);
+  try {
+    const data = await resize(file);
+    const { sha } = await api("upload", { method: "POST", body: { data } });
+    const base = slugify(file.name.replace(/\.[^.]+$/, "")) || "photo";
+    let name = `${prefix ? prefix + "-" : ""}${base}.jpg`, n = 2;
+    while (ed.pending.has(name)) name = `${prefix ? prefix + "-" : ""}${base}-${n++}.jpg`;
+    ed.pending.set(name, { sha, preview: data });
+    chip.remove();
+    return { url: `/images/articles/${ed.slug}/${name}`, alt: base.replace(/-/g, " ") };
+  } catch (err) {
+    chip.textContent = `Couldn't upload ${file.name}: ${err.message}`; chip.style.color = "var(--accent)";
+    return null;
+  }
+}
+
+function collect() {
+  const v = (id) => document.getElementById(id).value.trim().replace(/\s*\n\s*/g, " ");
+  return {
+    title: v("f-title"), dek: v("f-dek"), date: v("f-date"), category: v("f-cat"),
+    cover: ed.data.cover || "", coverAlt: v("f-coverAlt"), coverCaption: v("f-coverCaption"),
+    author: v("f-author"), draft: !document.getElementById("f-draft").checked,
+  };
+}
+
+function compose(d, body) {
+  const line = (k, val) => (val === "" || val === undefined || val === null ? "" : `${k}: ${Array.isArray(val) ? `[${val.join(", ")}]` : val}\n`);
+  let fm = "";
+  for (const k of KNOWN) fm += k === "draft" ? (d.draft ? "draft: true\n" : "") : line(k, d[k]);
+  for (const [k, val] of Object.entries(ed.extras)) fm += line(k, val === true ? "true" : val);
+  return `---\n${fm}---\n${body.trim()}\n`;
+}
+
+function preview() {
+  const pv = document.getElementById("pv"); if (!pv) return;
+  const d = collect(), body = document.getElementById("body").value;
+  const html = markdown(body || "*Start writing…*").replace(/src="(\/images\/articles\/[^"]+)"/g, (m, u) => `src="${imgUrl(u)}"`);
+  pv.innerHTML = `<div class="article-head"><div class="crumbs label"><span>Articles</span><span>/</span><span>${esc(d.category || "Category")}</span></div>
+    <h1>${esc(d.title || "Your headline")}</h1>${d.dek ? `<p class="dek">${esc(d.dek)}</p>` : ""}
+    <div class="meta label"><span>${esc(d.date)}</span><span>Words: ${esc(d.author || "Zazzi")}</span></div></div>
+    ${d.cover ? `<figure class="hero"><div class="ph"><img src="${esc(imgUrl(d.cover))}" alt=""></div>${d.coverCaption ? `<figcaption>${esc(d.coverCaption)}</figcaption>` : ""}</figure>` : ""}
+    <div class="body">${html}</div>`;
+}
+
+async function save() {
+  const d = collect(), body = document.getElementById("body").value;
+  if (!d.title) return status("Add a title.", "err");
+  if (!ed.slug) return status("Add a web address.", "err");
+  if (!d.category) return status("Choose a category.", "err");
+  if (!d.cover && !d.draft) return status("Published articles need a cover photo. Upload one, or untick Published to save a draft.", "err");
+  const used = [...ed.pending.entries()].filter(([name]) => (body + d.cover).includes(`/images/articles/${ed.slug}/${name}`)).map(([name, p]) => ({ name, sha: p.sha }));
+  const btn = document.getElementById("save"); btn.disabled = true; status("Saving…");
+  try {
+    await api("save", { method: "POST", body: { slug: ed.slug, isNew: ed.isNew, content: compose(d, body), images: used } });
+    renderList(d.draft ? `Saved "${d.title}" as a draft.` : `Saved "${d.title}". It will be live on the site in about a minute.`);
+  } catch (err) { if (err.message !== "auth") { status(err.message, "err"); btn.disabled = false; } }
+}
+
+// ---------- global clicks ----------
+app.addEventListener("click", async (e) => {
+  const act = e.target.closest("[data-act]")?.dataset.act;
+  if (!act) return;
+  const row = e.target.closest(".row"), slug = row?.dataset.slug;
+  if (act === "logout") { await api("logout", { method: "POST" }).catch(() => {}); renderLogin(); }
+  if (act === "new") openEditor();
+  if (act === "back") renderList();
+  if (act === "edit") openEditor(slug);
+  if (act === "ask-delete") {
+    row.querySelector(".row-actions").innerHTML = `<span class="confirm">Delete this article and its photos? <button class="b danger" type="button" data-act="delete">${icon("trash-2")}Delete</button><button class="b" type="button" data-act="cancel">Cancel</button></span>`;
+  }
+  if (act === "cancel") renderList();
+  if (act === "delete") {
+    row.querySelector(".row-actions").innerHTML = `<span class="status">Deleting…</span>`;
+    try { await api("delete", { method: "POST", body: { slug } }); renderList("Deleted. The site updates in about a minute."); }
+    catch (err) { if (err.message !== "auth") row.querySelector(".row-actions").innerHTML = `<span class="status err">${esc(err.message)}</span>`; }
+  }
+});
+
+// ---------- start ----------
+api("me").then((m) => (m.loggedIn ? renderList() : renderLogin())).catch(() => renderLogin());
+</script>
+</body>
+</html>

@@ -6,6 +6,16 @@
   const firstLine = (s) => (s || "").split("\n")[0];
   const tagsOf = (s) => ((s || "").match(/#[\p{L}\p{N}_]+/gu) || []).slice(0, 3).join(" ");
   let posts = [];
+  // Lucide icons (lucide.dev, ISC)
+  const svg = (inner, extra = "") => `<svg class="ic"${extra} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+  const IC = {
+    instagram: svg('<rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>'),
+    x: svg('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'),
+    play: svg('<polygon points="5 3 19 12 5 21 5 3"/>'),
+    out: svg('<path d="M7 7h10v10"/><path d="M7 17 17 7"/>'),
+  };
+  // Respect reduced-motion for the animated logo
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.querySelectorAll("video.logo-vid").forEach((v) => { v.removeAttribute("autoplay"); v.pause(); });
 
   // ---- feed ----
   const slots = [...document.querySelectorAll(".ig-slot")];
@@ -20,14 +30,14 @@
 
   function igTile(p, i) {
     return `<button class="tile ig" type="button" data-ig="${i}" aria-label="Open Instagram post">
-      <div class="ph"><img src="${esc(p.image)}" alt="${esc(firstLine(p.caption).slice(0, 120) || "Instagram post by @" + HANDLE)}" loading="lazy"><span class="badge">IG</span>${p.type === "VIDEO" ? '<span class="play" aria-hidden="true">▶</span>' : ""}</div>
+      <div class="ph"><img src="${esc(p.image)}" alt="${esc(firstLine(p.caption).slice(0, 120) || "Instagram post by @" + HANDLE)}" loading="lazy"><span class="badge">IG</span>${p.type === "VIDEO" ? '<span class="play" aria-hidden="true">${IC.play}</span>' : ""}</div>
       <p class="cap">${esc(firstLine(p.caption))}</p><span class="label">${esc(tagsOf(p.caption))}</span></button>`;
   }
 
   function render() {
     slots.forEach((slot, i) => {
       if (posts[i]) slot.outerHTML = igTile(posts[i], i);
-      else if (i === posts.length) slot.outerHTML = `<a class="tile ig follow-tile" href="${IG_URL}" target="_blank" rel="noopener"><div class="ph"><b>Follow<br>@${HANDLE}</b></div></a>`;
+      else if (i === posts.length) slot.outerHTML = `<a class="tile ig follow-tile" href="${IG_URL}" target="_blank" rel="noopener"><div class="ph"><div>${IC.instagram}<b>Follow<br>@${HANDLE}</b></div></div></a>`;
       else slot.remove();
     });
     if (strip) {
@@ -48,9 +58,9 @@
     const date = p.date ? new Date(p.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
     modal.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Instagram post">
       <div class="ph">${media}</div>
-      <div class="txt"><div style="display:flex;align-items:center;gap:10px"><span class="dot"></span><b>@${HANDLE}</b><button class="x" type="button" aria-label="Close">×</button></div>
+      <div class="txt"><div style="display:flex;align-items:center;gap:10px">${IC.instagram}<b>@${HANDLE}</b><button class="x" type="button" aria-label="Close">${IC.x}</button></div>
       <p>${esc(p.caption)}</p><span class="label">${date}</span>
-      <a class="btn" style="margin-top:auto" href="${esc(p.url)}" target="_blank" rel="noopener">View on Instagram ↗</a></div></div>`;
+      <a class="btn" style="margin-top:auto" href="${esc(p.url)}" target="_blank" rel="noopener">View on Instagram ${IC.out}</a></div></div>`;
     modal.hidden = false;
     modal.querySelector(".x").focus();
   }
