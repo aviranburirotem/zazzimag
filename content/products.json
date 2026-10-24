@@ -1,1 +1,14 @@
-{ "products": [] }
+{
+  "products": [
+    {
+      "name": "Zazzi Book",
+      "price": "300",
+      "description": "",
+      "image": "/images/store/zazzi-book-mvmiijq7.jpg",
+      "imageAlt": "Zazzi Book",
+      "status": "soon",
+      "link": "",
+      "hidden": false
+    }
+  ]
+}
