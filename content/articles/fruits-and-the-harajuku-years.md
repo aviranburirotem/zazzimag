@@ -3,10 +3,11 @@ title: FRUiTS and the Harajuku years
 dek: For twenty years one photographer documented the most inventive dressers in Tokyo. Here's what that archive tells us about Harajuku street style.
 date: 2026-10-24
 category: History
-cover: https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Harajuku_Fashion_Street_Snap_%282018-01-03_18.09.31_by_Dick_Thomas_Johnson%29.jpg/1280px-Harajuku_Fashion_Street_Snap_%282018-01-03_18.09.31_by_Dick_Thomas_Johnson%29.jpg
+cover: /images/articles/fruits-and-the-harajuku-years/cover-img-2233.jpg
 coverAlt: A person with turquoise hair and a black-and-white lettered jacket on a Harajuku street at night
 coverCaption: Harajuku, January 2018. Photo: Dick Thomas Johnson, CC BY 2.0
 author: Zazzi
+draft: true
 tags: [Harajuku, FRUiTS, Tokyo]
 ---
 If you've ever seen a photo of a Harajuku teenager in layered pastels, platform shoes and a face full of hair clips, there's a good chance it traces back to one magazine. Photographer Shoichi Aoki started FRUiTS in 1997, and for two decades it did one thing: full-length portraits of young people he found on the streets of Harajuku, with a short note on what they were wearing.
