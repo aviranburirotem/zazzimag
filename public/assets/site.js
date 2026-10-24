@@ -1,6 +1,7 @@
 // Zazzi site script: live Instagram feed, post viewer, article filters, contact form.
 (() => {
-  const HANDLE = "zazzimag";
+  const HANDLE = document.body.dataset.handle || "zazzimag";
+  const FOLLOW = document.body.dataset.follow || "Follow";
   const IG_URL = `https://www.instagram.com/${HANDLE}/`;
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const firstLine = (s) => (s || "").split("\n")[0];
@@ -36,7 +37,7 @@
   function render() {
     slots.forEach((slot, i) => {
       if (posts[i]) slot.outerHTML = igTile(posts[i], i);
-      else if (i === posts.length) slot.outerHTML = `<a class="tile ig follow-tile" href="${IG_URL}" target="_blank" rel="noopener"><div class="ph"><div>${IC.instagram}<b>Follow<br>@${HANDLE}</b></div></div></a>`;
+      else if (i === posts.length) slot.outerHTML = `<a class="tile ig follow-tile" href="${IG_URL}" target="_blank" rel="noopener"><div class="ph"><div>${IC.instagram}<b>${esc(FOLLOW)}<br>@${HANDLE}</b></div></div></a>`;
       else slot.remove();
     });
     if (strip) {

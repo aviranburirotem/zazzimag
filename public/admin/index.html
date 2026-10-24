@@ -25,6 +25,19 @@
   .b.danger{color:var(--accent)}
   .b[disabled]{opacity:.5;cursor:default}
   .b .ic{width:16px;height:16px}
+  .c-tabs{display:flex;gap:4px;margin-left:8px}
+  .c-tabs button{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:8px 12px;border-radius:4px;font-size:13px;font-weight:600;color:var(--muted)}
+  .c-tabs button[aria-current="page"]{background:var(--soft);color:var(--fg)}
+  .c-tabs .ic{width:16px;height:16px}
+  @media (max-width:700px){.c-title{display:none}.c-actions .b span{display:none}}
+  .texts{display:grid;gap:16px;max-width:820px}
+  .texts fieldset{border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:18px 20px 20px;margin:0;display:grid;gap:14px}
+  .texts legend{font-style:italic;font-weight:900;font-stretch:75%;font-size:20px;text-transform:uppercase;padding:0 6px}
+  .texts input,.texts textarea{width:100%}
+  .texts textarea{min-height:90px}
+  .texts .def{background:none;border:0;padding:0;font-size:12px;color:var(--muted);text-decoration:underline;justify-self:start}
+  .texts .f{display:grid;gap:6px}
+  .texts-bar{position:sticky;bottom:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:var(--bg);border:1px solid var(--line);border-radius:6px;max-width:820px;margin-top:16px}
   .panel{background:var(--bg);border:1px solid var(--line);border-radius:6px}
   main.c{padding-block:24px 64px}
 
@@ -97,6 +110,7 @@
 <script type="module">
 import { markdown, frontmatter } from "./markdown.js";
 import { icon } from "./icons.js";
+import { SCHEMA } from "./site-schema.js";
 
 const app = document.getElementById("app");
 const esc = (s = "") => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -117,10 +131,15 @@ async function api(action, { method = "GET", body, query = "" } = {}) {
   return data;
 }
 
+let tab = "articles";
 function topBar(extra = "") {
   return `<header class="c-top"><div class="wrap">
     <a class="logo" href="/admin/" aria-label="Console home"><img src="/assets/logo.png" alt=""></a>
     <span class="c-title">Console</span>
+    <nav class="c-tabs" aria-label="Console sections">
+      <button type="button" data-act="tab-articles" ${tab === "articles" ? 'aria-current="page"' : ""}>${icon("newspaper")}<span>Articles</span></button>
+      <button type="button" data-act="tab-texts" ${tab === "texts" ? 'aria-current="page"' : ""}>${icon("pencil")}<span>Site texts</span></button>
+    </nav>
     <div class="c-actions">${extra}
       <a class="b" href="/preview/" target="_blank" rel="noopener">${icon("eye")}<span>View site</span></a>
       <button class="b" type="button" data-act="logout">${icon("log-out")}<span>Log out</span></button>
@@ -152,6 +171,7 @@ function renderLogin(msg = nextPage ? "Log in to see the full site preview." : "
 // ---------- list ----------
 let categories = [];
 async function renderList(flash = "") {
+  tab = "articles";
   app.innerHTML = topBar(`<button class="b primary" type="button" data-act="new">${icon("plus")}<span>New article</span></button>`) +
     `<main class="wrap c"><div class="list-head"><div><span class="label">Articles</span><h1>Your stories</h1></div><p class="status ok" id="flash">${esc(flash)}</p></div><div class="rows" id="rows"><div class="panel empty">Loading articles…</div></div></main>`;
   try {
@@ -426,6 +446,42 @@ async function save() {
   } catch (err) { if (err.message !== "auth") { status(err.message, "err"); btn.disabled = false; } }
 }
 
+// ---------- site texts ----------
+async function renderTexts() {
+  tab = "texts";
+  app.innerHTML = topBar() + `<main class="wrap c"><div class="list-head"><div><span class="label">Site texts</span><h1>Wording</h1></div></div><div class="panel empty">Loading…</div></main>`;
+  let saved = {};
+  try { ({ saved } = await api("settings")); } catch (err) { if (err.message === "auth") return; }
+  const get = (k) => k.split(".").reduce((o, x) => (o && typeof o === "object" ? o[x] : undefined), saved);
+  const fieldHtml = (f) => {
+    const v = get(f.key) ?? f.default, id = "t-" + f.key.replace(".", "-");
+    const control = f.type === "text"
+      ? `<input id="${id}" data-key="${f.key}" value="${esc(v)}">`
+      : `<textarea id="${id}" data-key="${f.key}" rows="${f.type === "list" ? 4 : 3}">${esc(v)}</textarea>`;
+    return `<div class="f"><label for="${id}">${esc(f.label)}${f.hint ? ` <span class="hint">${esc(f.hint)}</span>` : ""}</label>${control}
+      <button type="button" class="def" data-def="${f.key}">Use original text</button></div>`;
+  };
+  app.querySelector("main").innerHTML = `<div class="list-head"><div><span class="label">Site texts</span><h1>Wording</h1></div>
+      <p class="hint" style="max-width:46ch;margin:0">Change any text on the site. In longer texts you can use **bold**, *italic* and [links](https://…). Changes go live about a minute after saving.</p></div>
+    <form id="texts" class="texts" autocomplete="off">${SCHEMA.map((g) => `<fieldset><legend>${esc(g.group)}</legend>${g.fields.map(fieldHtml).join("")}</fieldset>`).join("")}</form>
+    <div class="texts-bar"><button class="b primary" type="submit" form="texts" id="tsave">${icon("save")}<span>Save texts</span></button><span class="status" id="st"></span></div>`;
+  const form = document.getElementById("texts");
+  form.addEventListener("click", (e) => {
+    const key = e.target.closest("[data-def]")?.dataset.def; if (!key) return;
+    const f = SCHEMA.flatMap((g) => g.fields).find((x) => x.key === key);
+    form.querySelector(`[data-key="${key}"]`).value = f.default;
+    status("Original text restored. Save to apply.");
+  });
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const values = Object.fromEntries([...form.querySelectorAll("[data-key]")].map((el) => [el.dataset.key, el.value]));
+    const btn = document.getElementById("tsave"); btn.disabled = true; status("Saving…");
+    try { await api("saveSettings", { method: "POST", body: { values } }); status("Saved. The site will update in about a minute.", "ok"); }
+    catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+    btn.disabled = false;
+  };
+}
+
 // ---------- global clicks ----------
 app.addEventListener("click", async (e) => {
   const act = e.target.closest("[data-act]")?.dataset.act;
@@ -433,6 +489,8 @@ app.addEventListener("click", async (e) => {
   const row = e.target.closest(".row"), slug = row?.dataset.slug;
   if (act === "logout") { await api("logout", { method: "POST" }).catch(() => {}); renderLogin(); }
   if (act === "new") openEditor();
+  if (act === "tab-articles") renderList();
+  if (act === "tab-texts") renderTexts();
   if (act === "back") renderList();
   if (act === "edit") openEditor(slug);
   if (act === "ask-delete") {

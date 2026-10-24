@@ -1,0 +1,54 @@
+{
+  "brand": {
+    "name": "Zazzi Magazine",
+    "tagline": "Streetwear, trends, self-expression and city vibes.",
+    "email": "hello@zazzimag.com",
+    "instagram": "zazzimag"
+  },
+  "nav": {
+    "info": "Info",
+    "store": "Store",
+    "articles": "All articles"
+  },
+  "home": {
+    "headline": "Street style,\nstraight from the feed",
+    "intro": "Streetwear, trends, self-expression and city vibes. Fresh looks from our Instagram, mixed with longer stories from the street.",
+    "followTile": "Follow",
+    "bandHeading": "Every story, in one place",
+    "bandButton": "See all articles"
+  },
+  "articles": {
+    "heading": "Articles",
+    "count": "{n} stories",
+    "allFilter": "All",
+    "byline": "Words:",
+    "feedHeading": "From the feed",
+    "readNext": "Read next",
+    "allLink": "All articles"
+  },
+  "about": {
+    "heading": "Who we are",
+    "text": "Zazzi is a street style magazine about streetwear, trends, self-expression and city vibes. We spot great outfits on the street, share them every day on Instagram under [#ZazziSpotting](https://www.instagram.com/zazzimag/), and write longer stories about the people and ideas behind them.\n\nSpotted a look we should cover, want to be photographed, or have an idea for a story? Get in touch.",
+    "formHeading": "Contact",
+    "topics": "General\nCollaboration\nPress\nGet photographed",
+    "sendButton": "Send message",
+    "sentMessage": "Your email app should open with the message ready to send."
+  },
+  "store": {
+    "label": "Coming soon",
+    "heading": "Store",
+    "text": "Our first drop is on the way: printed zines of our best street photos and a small run of Zazzi merch. Leave your email and you'll hear first.",
+    "items": "Tote bag\nLogo tee\nPhoto zine Vol. 1\nCap",
+    "itemBadge": "Soon",
+    "button": "Notify me",
+    "sentMessage": "Your email app should open. Send it and you're on the list."
+  },
+  "comingSoon": {
+    "heading": "Coming soon",
+    "text": "Streetwear, trends, self-expression and city vibes. The full magazine is on its way.",
+    "contactLabel": "Get in touch"
+  },
+  "footer": {
+    "copyright": "© {year} Zazzi Magazine (zazzimag.com). All rights reserved. The text, photographs, graphics, logo and design on this site are protected by copyright and other intellectual property laws. You may not copy, reproduce, republish, distribute or use any of this content for commercial purposes without our prior written permission, except as permitted by law. Third-party content, including photos used under license, remains the property of its respective owners."
+  }
+}

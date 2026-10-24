@@ -8,6 +8,7 @@
 //   GITHUB_REPO     optional, defaults to aviranburirotem/zazzimag
 import crypto from "node:crypto";
 import { frontmatter } from "../lib/markdown.js";
+import { SCHEMA } from "../lib/site-schema.js";
 
 const REPO = process.env.GITHUB_REPO || "aviranburirotem/zazzimag";
 const BRANCH = process.env.GITHUB_BRANCH || "main";
@@ -176,6 +177,29 @@ export default async function handler(req, res) {
       const title = (content.match(/\ntitle:\s*(.+)/) || [])[1] || slug;
       const sha = await commit(entries, `${body.isNew ? "Add" : "Update"} article: ${title.slice(0, 70)}`);
       return res.json({ ok: true, commit: sha });
+    }
+
+    // Site texts (content/site.json)
+    if (action === "settings") {
+      const text = await gh(repo(`/contents/content/site.json?ref=${BRANCH}`), { raw: true });
+      let saved = {};
+      try { saved = JSON.parse(text || "{}"); } catch {}
+      return res.json({ saved });
+    }
+
+    if (action === "saveSettings" && req.method === "POST") {
+      const input = body.values || {};
+      const out = {};
+      for (const g of SCHEMA) for (const f of g.fields) {
+        const v = input[f.key];
+        if (v === undefined) continue;
+        if (typeof v !== "string" || v.length > 5000) return fail(400, `"${f.label}" is too long.`);
+        const [a, b] = f.key.split(".");
+        (out[a] ??= {})[b] = v.replace(/\r/g, "");
+      }
+      if (out.brand?.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(out.brand.email.trim())) return fail(400, "The contact email doesn't look right.");
+      await commit([{ path: "content/site.json", content: JSON.stringify(out, null, 2) + "\n" }], "Update site texts");
+      return res.json({ ok: true });
     }
 
     if (action === "delete" && req.method === "POST") {
