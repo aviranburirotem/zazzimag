@@ -102,6 +102,18 @@
   // ---- animated logo: loops continuously. Hovering (or keyboard focus) pauses it; moving away resumes.
   // "Stop animations" in the accessibility menu and the device's reduce-motion setting keep it still.
   const logos = [...document.querySelectorAll("video.logo-vid")];
+  // Dark theme: switch to the version of the animation with a dark background (videos can't be transparent).
+  // High-contrast mode forces a white page, so it keeps the light version.
+  const darkMQ = matchMedia("(prefers-color-scheme: dark)");
+  const pickLogo = () => logos.forEach((v) => {
+    const want = darkMQ.matches && !document.documentElement.classList.contains("a11y-contrast") ? v.dataset.dark : v.dataset.light;
+    if (!want || v.currentSrc.endsWith(want) || v.getAttribute("src") === want) return;
+    const t = v.currentTime, paused = v.paused;
+    v.src = want;
+    v.addEventListener("loadedmetadata", () => { try { v.currentTime = t; } catch {} if (!paused && !still()) v.play().catch(() => {}); }, { once: true });
+  });
+  pickLogo();
+  darkMQ.addEventListener?.("change", pickLogo);
   const still = () => document.documentElement.classList.contains("a11y-still") || matchMedia("(prefers-reduced-motion: reduce)").matches;
   const stopLogos = () => logos.forEach((v) => v.pause());
   const playLogos = () => { if (!still()) logos.forEach((v) => v.play().catch(() => {})); };
@@ -121,6 +133,7 @@
   const apply = () => {
     for (const k of Object.keys(OPTS)) document.documentElement.classList.toggle(k, Boolean(prefs[k]));
     if (prefs["a11y-still"]) stopLogos(); else playLogos();
+    pickLogo();
     document.querySelectorAll("[data-a11y]").forEach((b) => b.setAttribute("aria-pressed", String(Boolean(prefs[b.dataset.a11y]))));
   };
   const panel = document.getElementById("a11y-panel"), toggle = document.getElementById("a11y-toggle");

@@ -28,7 +28,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 .logo{display:block;line-height:0}
 .logo img,.logo-vid{width:56px;height:56px;display:block;object-fit:contain}
 .site-footer .logo img{width:56px;height:56px}
-@media (prefers-color-scheme:dark){.logo-vid,.site-footer .logo img{background:#fff;border-radius:14px}}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .ic{width:1.15em;height:1.15em;flex:none;vertical-align:-.2em}
 .with-ic{display:inline-flex;align-items:center;gap:6px}

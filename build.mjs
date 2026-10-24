@@ -24,7 +24,7 @@ const IG_URL = `https://www.instagram.com/${SITE.handle}/`;
 const OUT = "dist";
 import crypto from "node:crypto";
 // Version stamp for CSS/JS so browsers always load the latest files after a deploy
-const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.css")).update(fs.readFileSync("public/assets/site.js")).update(fs.readFileSync("public/assets/logo-animated.mp4")).digest("hex").slice(0, 8);
+const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.css")).update(fs.readFileSync("public/assets/site.js")).update(fs.readFileSync("public/assets/logo-animated.mp4")).update(fs.readFileSync("public/assets/logo-animated-dark.mp4")).digest("hex").slice(0, 8);
 
 // Coming-soon mode: the live site (zazzimag.com) shows only the coming-soon page.
 // Preview deployments and local builds still show the full site so you can work on it.
@@ -119,7 +119,7 @@ const artTile = (a, feat = false) => `<a class="tile art${feat ? " feat" : ""}" 
 const igSlot = () => `<div class="tile ig ig-slot" aria-hidden="true"><div class="ph"></div></div>`;
 
 // Animated heart logo (looping video, falls back to the still logo)
-const logoVideo = (size) => `<video class="logo-vid" width="${size}" height="${size}" autoplay muted loop playsinline preload="metadata" poster="/assets/logo.png" aria-hidden="true"><source src="/assets/logo-animated.mp4?v=${V}" type="video/mp4"></video><span class="sr">Zazzi magazine</span>`;
+const logoVideo = (size) => `<video class="logo-vid" width="${size}" height="${size}" autoplay muted loop playsinline preload="metadata" poster="/assets/logo.png" aria-hidden="true" data-light="/assets/logo-animated.mp4?v=${V}" data-dark="/assets/logo-animated-dark.mp4?v=${V}"><source src="/assets/logo-animated.mp4?v=${V}" type="video/mp4"></video><span class="sr">Zazzi magazine</span>`;
 
 // Header ticker: words drift slowly between the logo and the buttons (decorative, hidden from screen readers)
 function ticker() {
