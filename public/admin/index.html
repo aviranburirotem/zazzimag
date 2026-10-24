@@ -82,6 +82,12 @@
   .preview .hero{margin:20px 20px 0;max-width:none}
   .preview .body{margin:24px 20px 0;font-size:17px}
   .uploading{display:flex;gap:8px;flex-wrap:wrap}
+  .photos{display:grid;gap:10px;margin-top:14px}
+  .photos:empty{display:none}
+  .photo-row{display:grid;grid-template-columns:84px minmax(0,1fr);gap:12px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:4px}
+  .photo-row img{width:84px;height:105px;object-fit:cover;border-radius:3px;background:var(--soft)}
+  .photo-row .fields{display:grid;gap:8px}
+  .photo-row .num{font-family:var(--mono);font-size:11px;color:var(--muted)}
   .confirm{display:flex;gap:6px;align-items:center;font-size:13px}
   .empty{padding:40px;text-align:center;color:var(--muted)}
 </style>
@@ -233,6 +239,7 @@ function renderEditor() {
         <input type="file" id="photo-file" accept="image/*" multiple hidden>
         <p class="hint" style="margin:6px 0 0">Leave an empty line between paragraphs. Photos added together appear side by side.</p>
         <div class="uploading" id="uploading"></div>
+        <div class="photos" id="photos"></div>
       </div>
       <label class="switch"><input type="checkbox" id="f-draft" ${d.draft === true ? "" : "checked"}> Published <span class="hint">untick to keep it as a hidden draft</span></label>
       <div class="save-bar">
@@ -285,7 +292,7 @@ function renderEditor() {
     const files = [...e.target.files]; e.target.value = "";
     const lines = [];
     for (const f of files) { const p = await addPhoto(f); if (p) lines.push(`![${p.alt}](${p.url} "")`); }
-    if (lines.length) { const at = body.selectionStart; body.setRangeText(`\n\n${lines.join("\n")}\n\n`, at, at, "end"); preview(); }
+    if (lines.length) { const at = body.selectionStart; body.setRangeText(`\n\n${lines.join("\n")}\n\n`, at, at, "end"); preview(); renderPhotos(); }
   };
   const pickCover = () => { if (needSlug()) $("cover-file").click(); };
   $("cover-btn").onclick = pickCover; $("cover-pick").onclick = pickCover;
@@ -302,7 +309,41 @@ function renderEditor() {
   }
 
   $("ed").onsubmit = (e) => { e.preventDefault(); save(); };
+
+  // "Photos in this article": caption/credit and description for every photo in the text
+  const box = $("photos");
+  let t;
+  body.addEventListener("input", () => { clearTimeout(t); t = setTimeout(renderPhotos, 400); });
+  box.addEventListener("input", (e) => {
+    const row = e.target.closest(".photo-row"); if (!row) return;
+    const i = +row.dataset.i, k = e.target.dataset.k;
+    const clean = (v) => v.replace(/\s*\n\s*/g, " ").replace(/"([^"]*)"/g, "\u201c$1\u201d").replace(/"/g, "\u201d");
+    let n = 0;
+    body.value = body.value.replace(IMG_RE, (full, alt, src, cap = "") => {
+      if (n++ !== i) return full;
+      const a = k === "alt" ? clean(e.target.value).replace(/[\[\]]/g, "") : alt;
+      const c = k === "cap" ? clean(e.target.value) : cap;
+      return `![${a}](${src} "${c}")`;
+    });
+    preview();
+  });
+  renderPhotos();
   preview();
+}
+
+const IMG_RE = /!\[([^\]]*)\]\((\S+?)(?:\s+"([^"]*)")?\)/g;
+function renderPhotos() {
+  const box = document.getElementById("photos"), body = document.getElementById("body");
+  if (!box || !body) return;
+  const list = [...body.value.matchAll(IMG_RE)];
+  box.innerHTML = list.length ? `<span class="label">Photos in this article</span>` + list.map((m, i) => `
+    <div class="photo-row" data-i="${i}">
+      <img src="${esc(imgUrl(m[2]))}" alt="">
+      <div class="fields"><span class="num">Photo ${i + 1}</span>
+        <label for="pc-${i}">Caption / photo credit<input id="pc-${i}" data-k="cap" value="${esc(m[3] || "")}" placeholder="e.g. Shibuya, October 2026. Photo: Your Name"></label>
+        <label for="pa-${i}">Describe the photo <span class="hint">for screen readers</span><input id="pa-${i}" data-k="alt" value="${esc(m[1] || "")}"></label>
+      </div>
+    </div>`).join("") : "";
 }
 
 function imgUrl(u) { // pending uploads show from memory until they're published
