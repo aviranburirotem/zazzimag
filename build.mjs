@@ -75,12 +75,12 @@ function layout({ title, description, active, body, image, type = "website", pat
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="wrap bar">
-  <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home">${logoVideo(56)}</a>
   <nav class="site-nav" aria-label="Main">
     ${nav("/about/", "Info", "about")}
     ${nav("/store/", "Store", "store")}
     ${nav("/articles/", `All articles ${icon("arrow-right")}`, "articles", "cta")}
   </nav>
+  <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home">${logoVideo(56)}</a>
 </div></header>
 <main id="main">
 ${body}
@@ -131,7 +131,7 @@ function home() {
     body: `<section class="wrap intro"><div>
       <h1>Street style,<br>straight from the feed</h1>
       <p>${esc(SITE.tagline)} Fresh looks from our Instagram, mixed with longer stories from the street.</p></div>
-      <a class="handle" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}${icon("arrow-up-right")}</a></section>
+      <a class="handle" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}<span>Follow <b>@${SITE.handle}</b><small>on Instagram</small></span>${icon("arrow-up-right")}</a></section>
     <section class="wrap grid" aria-label="Latest posts and stories">${items.join("")}</section>
     <section class="band"><div class="wrap"><h2>Every story, in one place</h2><a class="btn alt" href="/articles/">See all articles ${icon("arrow-right")}</a></div></section>`,
   });
