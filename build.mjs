@@ -14,6 +14,14 @@ const SITE = {
 const IG_URL = `https://www.instagram.com/${SITE.handle}/`;
 const OUT = "dist";
 
+// Coming-soon mode: the live site (zazzimag.com) shows only the coming-soon page.
+// Preview deployments and local builds still show the full site so you can work on it.
+// When ready to launch, change LAUNCHED to true (or set COMING_SOON=0 in Vercel).
+const LAUNCHED = false;
+const COMING_SOON = process.env.COMING_SOON
+  ? process.env.COMING_SOON === "1"
+  : !LAUNCHED && process.env.VERCEL_ENV === "production";
+
 const esc = (s = "") => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const fmtDate = (d) => new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
@@ -175,19 +183,78 @@ function notFound() {
   return layout({ title: "Page not found", pathname: "/404", body: `<section class="wrap page"><h1>Not found</h1><p class="label">This page doesn't exist.</p><p><a class="btn alt" href="/">Back to home</a></p></section>` });
 }
 
+function comingSoon() {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zazzi Magazine · Coming soon</title>
+<meta name="description" content="Zazzi Magazine is coming soon. ${esc(SITE.tagline)}">
+<meta property="og:title" content="Zazzi Magazine · Coming soon">
+<meta property="og:description" content="${esc(SITE.tagline)}">
+<meta property="og:image" content="${SITE.url}/assets/logo-poster.png">
+<meta property="og:url" content="${SITE.url}/">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" type="image/png" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@1,62..125,700..900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{--bg:#ffffff;--fg:#111214;--muted:#6b6e76;--line:#e4e5e9;--accent:#e30613;color-scheme:light}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:"Archivo",system-ui,sans-serif;display:flex;flex-direction:column;min-height:100%}
+  main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:32px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+  .logo{width:min(420px,78vw);aspect-ratio:1;display:block}
+  h1{margin:0;font-style:italic;font-weight:900;font-stretch:70%;font-size:clamp(44px,9vw,96px);line-height:.9;letter-spacing:-.02em;text-transform:uppercase}
+  p{margin:6px 0 0;color:var(--muted);font-size:15px;max-width:40ch}
+  footer{border-top:1px solid var(--line);padding:20px max(16px,env(safe-area-inset-right,0px)) max(24px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:center;align-items:center;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px}
+  .label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  a{color:inherit}
+  .btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;text-decoration:none;padding:10px 16px;border-radius:2px;font-family:"Archivo",system-ui,sans-serif;font-weight:700;font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+  .btn.dark{background:var(--fg)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<main>
+  <video class="logo" autoplay muted loop playsinline poster="/assets/logo-poster.png" aria-label="Zazzi magazine logo">
+    <source src="/assets/logo-animated.mp4" type="video/mp4">
+    <img src="/assets/logo-poster.png" alt="Zazzi magazine">
+  </video>
+  <h1>Coming soon</h1>
+  <p>${esc(SITE.tagline)} The full magazine is on its way.</p>
+</main>
+<footer>
+  <span class="label">Get in touch</span>
+  <a class="btn" href="mailto:${SITE.email}">Email ${SITE.email}</a>
+  <a class="btn dark" href="${IG_URL}" target="_blank" rel="noopener">Instagram @${SITE.handle} ↗</a>
+</footer>
+</body>
+</html>`;
+}
+
 // ---------- write ----------
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.cpSync("public", OUT, { recursive: true });
 const write = (p, html) => { const f = path.join(OUT, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, html); };
 
-write("index.html", home());
-write("articles/index.html", articlesIndex());
-for (const a of articles) write(`articles/${a.slug}/index.html`, articlePage(a));
-write("about/index.html", about());
-write("store/index.html", store());
-write("404.html", notFound());
-write("articles.json", JSON.stringify(articles.map(({ html, ...a }) => a), null, 2));
-write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${["/", "/articles/", "/about/", "/store/", ...articles.map((a) => a.url)].map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
-write("robots.txt", `User-agent: *\nAllow: /\nSitemap: ${SITE.url}/sitemap.xml\n`);
+if (COMING_SOON) {
+  const page = comingSoon();
+  write("index.html", page);
+  write("404.html", page);
+  write("robots.txt", `User-agent: *\nAllow: /\n`);
+} else {
+  write("index.html", home());
+  write("articles/index.html", articlesIndex());
+  for (const a of articles) write(`articles/${a.slug}/index.html`, articlePage(a));
+  write("about/index.html", about());
+  write("store/index.html", store());
+  write("404.html", notFound());
+  write("articles.json", JSON.stringify(articles.map(({ html, ...a }) => a), null, 2));
+  write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${["/", "/articles/", "/about/", "/store/", ...articles.map((a) => a.url)].map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
+  write("robots.txt", `User-agent: *\nAllow: /\nSitemap: ${SITE.url}/sitemap.xml\n`);
+}
 
-console.log(`Built ${articles.length} articles into /${OUT}`);
+console.log(COMING_SOON ? `Built coming-soon page into /${OUT}` : `Built ${articles.length} articles into /${OUT}`);
