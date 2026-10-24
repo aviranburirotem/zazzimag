@@ -17,7 +17,7 @@ const IG_URL = `https://www.instagram.com/${SITE.handle}/`;
 const OUT = "dist";
 import crypto from "node:crypto";
 // Version stamp for CSS/JS so browsers always load the latest files after a deploy
-const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.css")).update(fs.readFileSync("public/assets/site.js")).digest("hex").slice(0, 8);
+const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.css")).update(fs.readFileSync("public/assets/site.js")).update(fs.readFileSync("public/assets/logo-animated.mp4")).digest("hex").slice(0, 8);
 
 // Coming-soon mode: the live site (zazzimag.com) shows only the coming-soon page.
 // Preview deployments and local builds still show the full site so you can work on it.
@@ -111,7 +111,7 @@ const artTile = (a, feat = false) => `<a class="tile art${feat ? " feat" : ""}" 
 const igSlot = () => `<div class="tile ig ig-slot" aria-hidden="true"><div class="ph"></div></div>`;
 
 // Animated heart logo (looping video, falls back to the still logo)
-const logoVideo = (size) => `<video class="logo-vid" width="${size}" height="${size}" autoplay muted loop playsinline preload="metadata" poster="/assets/logo.png" aria-hidden="true"><source src="/assets/logo-animated.mp4" type="video/mp4"></video><span class="sr">Zazzi magazine</span>`;
+const logoVideo = (size) => `<video class="logo-vid" width="${size}" height="${size}" autoplay muted loop playsinline preload="metadata" poster="/assets/logo.png" aria-hidden="true"><source src="/assets/logo-animated.mp4?v=${V}" type="video/mp4"></video><span class="sr">Zazzi magazine</span>`;
 
 // ---------- pages ----------
 function home() {
@@ -313,7 +313,7 @@ function comingSoon() {
 <body>
 <main id="main">
   <video class="logo" autoplay muted loop playsinline poster="/assets/logo-poster.png" aria-label="Zazzi magazine logo" preload="auto">
-    <source src="/assets/logo-animated.mp4" type="video/mp4">
+    <source src="/assets/logo-animated.mp4?v=${V}" type="video/mp4">
     <img src="/assets/logo-poster.png" alt="Zazzi magazine">
   </video>
   <button class="pause" type="button" id="pp" aria-pressed="false">${icon("pause")}<span>Pause animation</span></button>
