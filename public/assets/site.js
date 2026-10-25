@@ -120,8 +120,9 @@
     if (!cord) return;
     const off = isDark();
     cord.setAttribute("aria-pressed", String(off));
-    cord.setAttribute("aria-label", off ? "Turn on the lights" : "Turn off the lights");
-    cord.title = cord.getAttribute("aria-label");
+    const tip = off ? "Turn on the light" : "Turn off the light";
+    cord.setAttribute("aria-label", tip);
+    cord.dataset.tip = tip;
   };
   syncCord();
   cord?.addEventListener("click", () => {
