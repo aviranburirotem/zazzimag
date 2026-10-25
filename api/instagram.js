@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     // ask for extra posts so hidden ones don't leave gaps
     const all = await fetchPosts(token, Math.min(limit + hidden.size, 50));
     const posts = all.filter((p) => !hidden.has(p.id)).slice(0, limit);
-    res.setHeader("Cache-Control", "public, s-maxage=120, stale-while-revalidate=86400");
+    res.setHeader("Cache-Control", "public, max-age=0, must-revalidate, s-maxage=120, stale-while-revalidate=86400");
     res.status(200).json({ username: "zazzimag", posts });
   } catch (err) {
     console.error("Instagram API error:", err.detail || err.message);

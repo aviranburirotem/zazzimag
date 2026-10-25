@@ -22,7 +22,7 @@
   const strip = document.querySelector("[data-ig-strip]");
 
   if (slots.length || strip) {
-    fetch("/api/instagram")
+    fetch("/api/instagram/", { cache: "no-cache" })
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((data) => { posts = data.posts || []; render(); })
       .catch(() => { posts = []; render(); });
