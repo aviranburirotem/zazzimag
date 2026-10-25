@@ -160,7 +160,9 @@ function ticker() {
 function home() {
   // Newest article large, then two Instagram posts per article.
   const items = [];
-  const [first, ...rest] = stories;
+  // the big tile is the newest article; issues always sit in the grid at normal size
+  const fi = Math.max(0, stories.findIndex((s) => s.kind !== "issue"));
+  const first = stories[fi], rest = stories.filter((_, i) => i !== fi);
   if (first) items.push(artTile(first, true));
   if (on("show.feed")) {
     const IG_COUNT = 12;
