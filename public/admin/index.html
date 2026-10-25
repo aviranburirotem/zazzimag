@@ -146,6 +146,17 @@
   .photo-row .num{font-family:var(--mono);font-size:11px;color:var(--muted)}
   .confirm{display:flex;gap:6px;align-items:center;font-size:13px}
   .empty{padding:40px;text-align:center;color:var(--muted)}
+/* Video tab */
+.vid-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px}
+.vid-box{display:flex;flex-direction:column;gap:12px;padding:18px}
+.vid-frame{background:#111;border-radius:8px;overflow:hidden;display:grid;place-items:center;min-height:120px}
+.vid-frame video{display:block;width:100%;max-height:360px;object-fit:contain}
+.vid-frame.wide video,#vid-now video{aspect-ratio:1120/472;object-fit:cover;max-height:none}
+.vid-fields{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+.vid-fields label{display:flex;flex-direction:column;gap:4px;font-size:13px}
+.vid-fields input{width:120px}
+.vid-actions{display:flex;gap:10px;flex-wrap:wrap}
+@media (max-width:800px){.vid-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -184,6 +195,7 @@ function topBar(extra = "") {
       <button type="button" data-act="tab-issues" ${tab === "issues" ? 'aria-current="page"' : ""}>${icon("book-open")}<span>Issues</span></button>
       <button type="button" data-act="tab-store" ${tab === "store" ? 'aria-current="page"' : ""}>${icon("shopping-bag")}<span>Store</span></button>
       <button type="button" data-act="tab-insta" ${tab === "insta" ? 'aria-current="page"' : ""}>${icon("instagram")}<span>Instagram</span></button>
+      <button type="button" data-act="tab-video" ${tab === "video" ? 'aria-current="page"' : ""}>${icon("film")}<span>Video</span></button>
       <button type="button" data-act="tab-texts" ${tab === "texts" ? 'aria-current="page"' : ""}>${icon("pencil")}<span>Site texts</span></button>
     </nav>
     <div class="c-actions">${extra}
@@ -628,6 +640,142 @@ async function saveInsta() {
   } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
 }
 
+// ---------- footer video ----------
+// The chosen video is shrunk right here in the browser (cropped to a wide strip, sound removed,
+// made small enough to load fast), then uploaded in parts. Preparing plays the clip once in real time.
+let vid = null; // { file, url, duration, result:{wide,small,poster}, previewUrl }
+const VID_MAX = 40;
+async function renderVideo(flash = "") {
+  tab = "video";
+  vid = null;
+  app.innerHTML = topBar() + `<main class="wrap c"><div class="list-head"><div><span class="label">Video</span><h1>Footer video</h1></div>
+    <p class="hint" style="max-width:52ch;margin:0">The silent, looping video at the top of the footer on every page. Choose any video: it's cropped to a wide strip, the sound is removed, and it's shrunk so the site stays fast.</p></div>
+    <p class="status ok" id="flash">${esc(flash)}</p>
+    <div class="vid-grid">
+      <section class="panel vid-box"><span class="label">On the site now</span><div id="vid-now" class="vid-frame"><span class="hint">Loading…</span></div><div id="vid-now-meta" class="hint"></div></section>
+      <section class="panel vid-box"><span class="label">New video</span>
+        <div id="vid-new">
+          <input type="file" id="vid-file" accept="video/*" hidden>
+          <button class="b primary" type="button" data-act="vid-choose">${icon("upload")}<span>Choose a video</span></button>
+          <p class="hint">MP4 or MOV from your phone or computer. Any length: you pick which part to use (up to ${VID_MAX} seconds).</p>
+        </div>
+      </section>
+    </div>
+    <div class="texts-bar" style="max-width:1100px"><span class="status" id="st"></span></div></main>`;
+  document.getElementById("vid-file").onchange = (e) => { const f = e.target.files[0]; if (f) pickVideo(f); };
+  try {
+    const { video } = await api("video");
+    const src = video ? `/assets/footer-video/${video.id}-wide.mp4` : "/assets/strip-wide.mp4";
+    document.getElementById("vid-now").innerHTML = `<video src="${src}" muted loop autoplay playsinline></video>`;
+    document.getElementById("vid-now-meta").innerHTML = video
+      ? `Uploaded ${esc(new Date(video.updated).toLocaleString())}. <button class="b" type="button" data-act="vid-reset">${icon("rotate-ccw")}<span>Back to the original video</span></button>`
+      : "The original video.";
+  } catch (err) { if (err.message !== "auth") document.getElementById("vid-now").innerHTML = `<span class="status err">${esc(err.message)}</span>`; }
+}
+function pickVideo(file) {
+  if (vid?.url) URL.revokeObjectURL(vid.url);
+  vid = { file, url: URL.createObjectURL(file) };
+  const box = document.getElementById("vid-new");
+  box.innerHTML = `<div class="vid-frame"><video id="vid-src" src="${vid.url}" muted playsinline controls preload="metadata"></video></div>
+    <div class="vid-fields">
+      <label>Start at (seconds)<input type="number" id="vid-start" min="0" step="0.5" value="0"></label>
+      <label>Length (seconds)<input type="number" id="vid-len" min="3" max="${VID_MAX}" step="1" value="24"></label>
+      <button class="b" type="button" data-act="vid-here">Start from where the video is paused</button>
+    </div>
+    <p class="hint">Tip: skip intros, outros and white or black frames. Shorter clips load faster; 15–25 seconds works well.</p>
+    <div class="vid-actions"><button class="b primary" type="button" data-act="vid-prepare">${icon("film")}<span>Prepare video</span></button><button class="b" type="button" data-act="vid-choose">Choose another</button><input type="file" id="vid-file" accept="video/*" hidden></div>`;
+  document.getElementById("vid-file").onchange = (e) => { const f = e.target.files[0]; if (f) pickVideo(f); };
+  const v = document.getElementById("vid-src");
+  v.onloadedmetadata = () => { vid.duration = v.duration; const l = document.getElementById("vid-len"); l.value = Math.max(3, Math.min(24, Math.floor(v.duration))); status(`Video length: ${Math.round(v.duration)} seconds.`); };
+  v.onerror = () => status("This video can't be opened in this browser. Try an MP4 file.", "err");
+}
+const recMime = () => typeof MediaRecorder !== "undefined" && ["video/mp4;codecs=avc1.4d002a", "video/mp4;codecs=avc1", "video/mp4"].find((m) => MediaRecorder.isTypeSupported(m));
+async function shrinkVideo(file, start, len, onProgress) {
+  const mime = recMime();
+  if (!mime) throw new Error("This browser can't prepare videos. Please use Chrome, Edge or Safari on a computer.");
+  const v = document.createElement("video");
+  v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = URL.createObjectURL(file);
+  await new Promise((ok, no) => { v.onloadedmetadata = ok; v.onerror = () => no(new Error("This video can't be read.")); });
+  start = Math.max(0, Math.min(start, v.duration - 1));
+  len = Math.max(1, Math.min(len, VID_MAX, v.duration - start));
+  const canvas = (w, h) => Object.assign(document.createElement("canvas"), { width: w, height: h });
+  const outs = [{ c: canvas(1120, 472), bps: 1_200_000 }, { c: canvas(576, 324), bps: 450_000 }];
+  const draw = () => outs.forEach(({ c }) => { // fill the frame, cropping the edges (like the site does)
+    const s = Math.max(c.width / v.videoWidth, c.height / v.videoHeight), w = v.videoWidth * s, h = v.videoHeight * s;
+    c.getContext("2d").drawImage(v, (c.width - w) / 2, (c.height - h) / 2, w, h);
+  });
+  v.currentTime = start;
+  await new Promise((ok) => (v.onseeked = ok));
+  draw();
+  const recs = outs.map(({ c, bps }) => {
+    const r = new MediaRecorder(c.captureStream(30), { mimeType: mime, videoBitsPerSecond: bps });
+    const parts = [];
+    r.ondataavailable = (e) => e.data.size && parts.push(e.data);
+    const done = new Promise((ok) => (r.onstop = () => ok(new Blob(parts, { type: "video/mp4" }))));
+    return { r, done };
+  });
+  let poster = null;
+  const posterAt = start + Math.min(2, len / 2);
+  recs.forEach(({ r }) => r.start(1000));
+  await v.play();
+  await new Promise((ok) => {
+    const tick = () => {
+      draw();
+      const t = v.currentTime - start;
+      onProgress(Math.min(t, len), len);
+      if (!poster && v.currentTime >= posterAt) { poster = "pending"; outs[0].c.toBlob((b) => (poster = b), "image/jpeg", 0.78); }
+      if (t >= len || v.ended) return ok();
+      v.requestVideoFrameCallback ? v.requestVideoFrameCallback(tick) : requestAnimationFrame(tick);
+    };
+    tick();
+  });
+  v.pause();
+  recs.forEach(({ r }) => r.stop());
+  const [wide, small] = await Promise.all(recs.map((x) => x.done));
+  if (!poster || poster === "pending") poster = await new Promise((ok) => outs[0].c.toBlob(ok, "image/jpeg", 0.78));
+  URL.revokeObjectURL(v.src);
+  return { wide, small, poster, start, len };
+}
+async function prepareVideo() {
+  const start = Number(document.getElementById("vid-start").value) || 0;
+  const len = Number(document.getElementById("vid-len").value) || 24;
+  const btns = document.querySelectorAll("#vid-new button"); btns.forEach((b) => (b.disabled = true));
+  status("Preparing… keep this tab open (it plays the clip once).");
+  try {
+    vid.result = await shrinkVideo(vid.file, start, len, (t, l) => status(`Preparing… ${Math.floor(t)} / ${Math.round(l)} seconds. Keep this tab open.`));
+    const r = vid.result, mb = (b) => (b.size / 1048576).toFixed(1);
+    if (vid.previewUrl) URL.revokeObjectURL(vid.previewUrl);
+    vid.previewUrl = URL.createObjectURL(r.wide);
+    document.getElementById("vid-new").innerHTML = `<div class="vid-frame wide"><video src="${vid.previewUrl}" muted loop autoplay playsinline></video></div>
+      <p class="hint">Ready: ${mb(r.wide)} MB on computers, ${mb(r.small)} MB on phones (was ${mb(vid.file)} MB). This is how it will look.</p>
+      <div class="vid-actions"><button class="b primary" type="button" data-act="vid-save">${icon("save")}<span>Save to the site</span></button><button class="b" type="button" data-act="vid-again">Change the clip</button></div>`;
+    status("Check the preview, then save.", "ok");
+  } catch (err) { status(err.message, "err"); btns.forEach((b) => (b.disabled = false)); }
+}
+const toB64 = (blob) => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = () => no(new Error("Could not read the video.")); r.readAsDataURL(blob); });
+async function saveVideo() {
+  const r = vid?.result; if (!r) return;
+  const btns = document.querySelectorAll("#vid-new button"); btns.forEach((b) => (b.disabled = true));
+  const CHUNK = 2_500_000;
+  const jobs = [["wide", r.wide], ["small", r.small], ["poster", r.poster]];
+  const total = jobs.reduce((n, [, b]) => n + Math.ceil(b.size / CHUNK), 0);
+  let sent = 0;
+  try {
+    const shas = {};
+    for (const [kind, blob] of jobs) {
+      shas[kind] = [];
+      for (let i = 0; i < blob.size; i += CHUNK) {
+        status(`Uploading… ${Math.round((sent / total) * 100)}%`);
+        const { sha } = await api("videoPart", { method: "POST", body: { data: await toB64(blob.slice(i, i + CHUNK)) } });
+        shas[kind].push(sha); sent++;
+      }
+    }
+    status("Saving…");
+    await api("saveVideo", { method: "POST", body: { ...shas, start: r.start, length: r.len } });
+    renderVideo("Saved. The new video shows on the site in about a minute.");
+  } catch (err) { if (err.message !== "auth") { status(err.message, "err"); btns.forEach((b) => (b.disabled = false)); } }
+}
+
 // ---------- issues (flip-through magazines) ----------
 let iss = null; // { slug, isNew, data:{title,dek,date,draft,pages:[{image,caption,alt}]}, pending: Map(name -> {sha, preview}) }
 async function renderIssues(flash = "") {
@@ -791,6 +939,17 @@ app.addEventListener("click", async (e) => {
   if (act === "new") openEditor();
   if (act === "tab-articles") renderList();
   if (act === "tab-texts") renderTexts();
+  if (act === "tab-video") renderVideo();
+  if (act === "vid-choose") document.getElementById("vid-file").click();
+  if (act === "vid-here") { const v = document.getElementById("vid-src"); document.getElementById("vid-start").value = Math.floor(v.currentTime * 2) / 2; status(`Starts at ${Math.floor(v.currentTime * 2) / 2} seconds.`); }
+  if (act === "vid-prepare") prepareVideo();
+  if (act === "vid-again") pickVideo(vid.file);
+  if (act === "vid-save") saveVideo();
+  if (act === "vid-reset") {
+    e.target.closest("[data-act]").disabled = true; status("Saving…");
+    try { await api("resetVideo", { method: "POST" }); renderVideo("Back to the original video. The site updates in about a minute."); }
+    catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+  }
   if (act === "tab-store") renderStore();
   if (act === "tab-insta") renderInsta();
   if (act === "tab-issues") renderIssues();

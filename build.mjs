@@ -25,7 +25,14 @@ const IG_URL = `https://www.instagram.com/${SITE.handle}/`;
 const OUT = "dist";
 import crypto from "node:crypto";
 // Version stamp for CSS/JS so browsers always load the latest files after a deploy
-const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.css")).update(fs.readFileSync("public/assets/site.js")).update(fs.readFileSync("public/assets/flipbook.js")).update(fs.readFileSync("public/assets/logo-animated.mp4")).update(fs.readFileSync("public/assets/logo-animated-dark.mp4")).update(fs.readFileSync("public/assets/strip-wide.mp4")).update(fs.readFileSync("public/assets/strip-small.mp4")).digest("hex").slice(0, 8);
+const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.css")).update(fs.readFileSync("public/assets/site.js")).update(fs.readFileSync("public/assets/flipbook.js")).update(fs.readFileSync("public/assets/logo-animated.mp4")).update(fs.readFileSync("public/assets/logo-animated-dark.mp4")).digest("hex").slice(0, 8);
+
+// Footer video. The console can replace it (content/video/footer.json lists the uploaded parts,
+// which are joined back into files at build time). Without an upload, the original video is used.
+const VIDEO_MANIFEST = fs.existsSync("content/video/footer.json") ? JSON.parse(fs.readFileSync("content/video/footer.json", "utf8")) : null;
+const VIDEO = VIDEO_MANIFEST
+  ? { wide: `/assets/footer-video/${VIDEO_MANIFEST.id}-wide.mp4`, small: `/assets/footer-video/${VIDEO_MANIFEST.id}-small.mp4`, poster: `/assets/footer-video/${VIDEO_MANIFEST.id}-poster.jpg` }
+  : { wide: `/assets/strip-wide.mp4?v=${V}`, small: `/assets/strip-small.mp4?v=${V}`, poster: `/assets/strip-poster.jpg?v=${V}` };
 
 // Coming-soon mode: the live site (zazzimag.com) shows only the coming-soon page.
 // Preview deployments and local builds still show the full site so you can work on it.
@@ -112,7 +119,13 @@ function layout({ title, description, active, body, image, type = "website", pat
 <main id="main">
 ${body}
 </main>
-<footer class="site-footer"><div class="wrap">
+<footer class="site-footer">${on("show.videoStrip") ? `<div class="vstrip" role="img" aria-label="${esc(T("home.videoLabel"))}">
+  <video muted loop playsinline preload="none" poster="${VIDEO.poster}" aria-hidden="true" tabindex="-1">
+    <source media="(max-width: 700px)" src="${VIDEO.small}" type="video/mp4">
+    <source src="${VIDEO.wide}" type="video/mp4">
+  </video>
+  <button class="vstrip-btn" type="button" aria-label="Pause video" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button>
+</div>` : ""}<div class="wrap">
   <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home"><img src="/assets/logo.png" alt="" width="56" height="56"></a>
   <nav aria-label="Footer" class="label"><a href="/articles/">Articles</a><a href="/about/">Info &amp; contact</a>${on("show.storeNav") ? `<a href="/store/">Store</a>` : ""}<a href="/accessibility/">Accessibility</a><a href="/privacy/">Privacy</a></nav>
   <div class="social"><a class="icon-btn" href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram @${SITE.handle}">${icon("instagram")}</a><a class="icon-btn" href="mailto:${SITE.email}" aria-label="Email ${SITE.email}">${icon("mail")}</a></div>
@@ -183,13 +196,6 @@ function home() {
       <h1>${br("home.headline")}</h1>
       ${md("home.intro")}</div>
       ${on("show.igButton") ? `<a class="handle" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}${icon("arrow-up-right")}</a>` : ""}</section>
-    ${on("show.videoStrip") ? `<section class="vstrip" aria-label="${esc(T("home.videoLabel"))}">
-      <video muted loop playsinline preload="none" poster="/assets/strip-poster.jpg?v=${V}" aria-hidden="true" tabindex="-1">
-        <source media="(max-width: 700px)" src="/assets/strip-small.mp4?v=${V}" type="video/mp4">
-        <source src="/assets/strip-wide.mp4?v=${V}" type="video/mp4">
-      </video>
-      <button class="vstrip-btn" type="button" aria-label="Pause video" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button>
-    </section>` : ""}
     <section class="wrap grid" aria-label="Latest posts and stories">${items.join("")}</section>
     ${on("show.band") ? `<section class="band"><div class="wrap"><h2>${tx("home.bandHeading")}</h2><a class="btn alt" href="/articles/">${tx("home.bandButton")} ${icon("arrow-right")}</a></div></section>` : ""}`,
   });
@@ -513,6 +519,14 @@ function comingSoon() {
 // ---------- write ----------
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.cpSync("public", OUT, { recursive: true });
+if (VIDEO_MANIFEST) { // join the uploaded parts back into the footer video files
+  const dir = path.join(OUT, "assets/footer-video");
+  fs.mkdirSync(dir, { recursive: true });
+  for (const [kind, ext] of [["wide", "mp4"], ["small", "mp4"], ["poster", "jpg"]]) {
+    const parts = (VIDEO_MANIFEST[kind] || []).map((p) => fs.readFileSync(path.join("content/video", VIDEO_MANIFEST.id, p)));
+    fs.writeFileSync(path.join(dir, `${VIDEO_MANIFEST.id}-${kind}.${ext}`), Buffer.concat(parts));
+  }
+}
 const write = (p, html) => { const f = path.join(OUT, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, html); };
 
 // Full site. While coming-soon is on, the home page lives at /preview/ (hidden from search engines).

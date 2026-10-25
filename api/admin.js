@@ -314,6 +314,44 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
+    // ---- footer video (Video tab) ----
+    // The console shrinks the video in the browser, then sends it in parts small enough for the server.
+    if (action === "video") {
+      const text = await gh(repo(`/contents/content/video/footer.json?ref=${BRANCH}`), { raw: true });
+      return res.json({ video: text ? JSON.parse(text) : null });
+    }
+    if (action === "videoPart" && req.method === "POST") {
+      const data = String(body.data || "").replace(/^data:[^,]+,/, "");
+      if (!data) return fail(400, "No video data received.");
+      if (data.length > 4_000_000) return fail(413, "That part is too large.");
+      const blob = await gh(repo("/git/blobs"), { method: "POST", body: { content: data, encoding: "base64" } });
+      return res.json({ sha: blob.sha });
+    }
+    if ((action === "saveVideo" || action === "resetVideo") && req.method === "POST") {
+      const SHA = /^[a-f0-9]{40}$/;
+      const ref = await gh(repo(`/git/ref/heads/${BRANCH}`));
+      const parent = await gh(repo(`/git/commits/${ref.object.sha}`));
+      const tree = await gh(repo(`/git/trees/${parent.tree.sha}?recursive=1`));
+      const old = (tree.tree || []).filter((t) => t.type === "blob" && t.path.startsWith("content/video/")).map((t) => ({ path: t.path, remove: true }));
+      if (action === "resetVideo") {
+        if (!old.length) return res.json({ ok: true });
+        await commit(old, "Footer video: back to the original");
+        return res.json({ ok: true });
+      }
+      const id = Date.now().toString(36);
+      const manifest = { id, updated: new Date().toISOString(), start: Number(body.start) || 0, length: Number(body.length) || 0 };
+      const entries = [];
+      for (const kind of ["wide", "small", "poster"]) {
+        const shas = Array.isArray(body[kind]) ? body[kind] : [];
+        if (!shas.length || shas.length > 30 || !shas.every((s) => SHA.test(s))) return fail(400, "The video upload is incomplete. Please try again.");
+        manifest[kind] = shas.map((_, i) => `${kind}.${String(i).padStart(3, "0")}`);
+        shas.forEach((sha, i) => entries.push({ path: `content/video/${id}/${manifest[kind][i]}`, sha }));
+      }
+      entries.push({ path: "content/video/footer.json", content: JSON.stringify(manifest, null, 2) + "\n" });
+      await commit([...old.filter((o) => o.path !== "content/video/footer.json"), ...entries], "Footer video: new video");
+      return res.json({ ok: true, id });
+    }
+
     // One-click show/hide for an article or issue (from the console lists)
     if (action === "setVisibility" && req.method === "POST") {
       const slug = String(body.slug || ""), hide = body.hidden === true;
