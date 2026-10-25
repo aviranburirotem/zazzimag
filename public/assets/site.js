@@ -102,18 +102,37 @@
   // ---- animated logo: loops continuously. Hovering (or keyboard focus) pauses it; moving away resumes.
   // "Stop animations" in the accessibility menu and the device's reduce-motion setting keep it still.
   const logos = [...document.querySelectorAll("video.logo-vid")];
-  // Dark theme: switch to the version of the animation with a dark background (videos can't be transparent).
+  // Dark theme (lights off): switch to the version of the animation with a dark background (videos can't be transparent).
   // High-contrast mode forces a white page, so it keeps the light version.
-  const darkMQ = matchMedia("(prefers-color-scheme: dark)");
+  const isDark = () => document.documentElement.dataset.theme === "dark";
   const pickLogo = () => logos.forEach((v) => {
-    const want = darkMQ.matches && !document.documentElement.classList.contains("a11y-contrast") ? v.dataset.dark : v.dataset.light;
+    const want = isDark() && !document.documentElement.classList.contains("a11y-contrast") ? v.dataset.dark : v.dataset.light;
     if (!want || v.currentSrc.endsWith(want) || v.getAttribute("src") === want) return;
     const t = v.currentTime, paused = v.paused;
     v.src = want;
     v.addEventListener("loadedmetadata", () => { try { v.currentTime = t; } catch {} if (!paused && !still()) v.play().catch(() => {}); }, { once: true });
   });
   pickLogo();
-  darkMQ.addEventListener?.("change", pickLogo);
+
+  // ---- the light cord (home page): pull to turn the lights off / on. Remembered on this device. ----
+  const cord = document.getElementById("light-cord");
+  const syncCord = () => {
+    if (!cord) return;
+    const off = isDark();
+    cord.setAttribute("aria-pressed", String(off));
+    cord.setAttribute("aria-label", off ? "Turn on the lights" : "Turn off the lights");
+    cord.title = cord.getAttribute("aria-label");
+  };
+  syncCord();
+  cord?.addEventListener("click", () => {
+    const root = document.documentElement;
+    cord.classList.remove("tug"); void cord.offsetWidth; cord.classList.add("tug");
+    root.classList.add("theme-fade");
+    if (isDark()) delete root.dataset.theme; else root.dataset.theme = "dark";
+    try { localStorage.setItem("zz-theme", isDark() ? "dark" : "light"); } catch {}
+    syncCord(); pickLogo();
+    setTimeout(() => root.classList.remove("theme-fade"), 500);
+  });
   const still = () => document.documentElement.classList.contains("a11y-still") || matchMedia("(prefers-reduced-motion: reduce)").matches;
   const stopLogos = () => logos.forEach((v) => v.pause());
   const playLogos = () => { if (!still()) logos.forEach((v) => v.play().catch(() => {})); };

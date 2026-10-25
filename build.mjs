@@ -77,6 +77,7 @@ function layout({ title, description, active, body, image, type = "website", pat
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,400..900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script>try{if(localStorage.getItem("zz-theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}</script>
 <link rel="stylesheet" href="/assets/site.css?v=${V}">
 </head>
 <body data-handle="${esc(SITE.handle)}" data-follow="${tx("home.followTile")}">
@@ -145,7 +146,9 @@ function home() {
   return layout({
     active: "home", pathname: "/",
     description: `${SITE.name}. ${SITE.tagline}`,
-    body: `<section class="wrap intro"><div>
+    body: `<section class="wrap intro">
+      <button class="pull" type="button" id="light-cord" aria-pressed="false" aria-label="Turn off the lights" title="Turn off the lights"><span class="cord"></span><span class="knob"></span></button>
+      <div>
       <h1>${br("home.headline")}</h1>
       ${md("home.intro")}</div>
       <a class="handle" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}${icon("arrow-up-right")}</a></section>
@@ -337,7 +340,7 @@ function privacy() {
       <ul>
         <li><strong>Hosting.</strong> The site is hosted by Vercel. Like any web host, Vercel processes technical data such as your IP address, browser type and the pages you request, to deliver the site and keep it secure.</li>
         <li><strong>Showing prices in your currency.</strong> To show store prices in your local currency, the site checks which country you're browsing from, based on your IP address. We don't store this; your browser keeps the result only until you close the tab.</li>
-        <li><strong>Settings on your device.</strong> If you use the accessibility menu, your choices (for example larger text) are saved in your browser's local storage so they stay on next time. This never leaves your device.</li>
+        <li><strong>Settings on your device.</strong> If you use the accessibility menu or the light switch, your choices (for example larger text or the dark look) are saved in your browser's local storage so they stay on next time. This never leaves your device.</li>
         <li>We don't use analytics, advertising or tracking cookies.</li>
       </ul>
       <h2>Content from other services</h2>
