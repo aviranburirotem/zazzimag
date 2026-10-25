@@ -51,6 +51,16 @@
   .prod .pctl .b{justify-content:center;padding:7px}
   .three{display:grid;grid-template-columns:1fr 170px 170px;gap:10px;align-items:end}
   @media (max-width:760px){.prod{grid-template-columns:90px minmax(0,1fr)}.prod .pthumb{width:90px}.prod .pctl{grid-column:1/-1;display:flex}.three{grid-template-columns:1fr 1fr}}
+  .ig-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;max-width:1100px}
+  .ig-item{position:relative;display:grid;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;cursor:pointer}
+  .ig-item img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:3px;background:var(--soft);transition:filter .2s,opacity .2s}
+  .ig-item .cap{font-size:12px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em}
+  .ig-item .row2{display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .ig-item .pill{cursor:pointer}
+  .ig-item input{position:absolute;opacity:0;pointer-events:none}
+  .ig-item.is-hidden img{filter:grayscale(1);opacity:.35}
+  .ig-item.is-hidden{border-style:dashed}
+  .ig-item:focus-within{outline:2px solid var(--accent);outline-offset:2px}
   .panel{background:var(--bg);border:1px solid var(--line);border-radius:6px}
   main.c{padding-block:24px 64px}
 
@@ -152,6 +162,7 @@ function topBar(extra = "") {
     <nav class="c-tabs" aria-label="Console sections">
       <button type="button" data-act="tab-articles" ${tab === "articles" ? 'aria-current="page"' : ""}>${icon("newspaper")}<span>Articles</span></button>
       <button type="button" data-act="tab-store" ${tab === "store" ? 'aria-current="page"' : ""}>${icon("shopping-bag")}<span>Store</span></button>
+      <button type="button" data-act="tab-insta" ${tab === "insta" ? 'aria-current="page"' : ""}>${icon("instagram")}<span>Instagram</span></button>
       <button type="button" data-act="tab-texts" ${tab === "texts" ? 'aria-current="page"' : ""}>${icon("pencil")}<span>Site texts</span></button>
     </nav>
     <div class="c-actions">${extra}
@@ -542,6 +553,46 @@ async function saveStore() {
   } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
 }
 
+// ---------- instagram ----------
+let insta = null; // { posts, hidden: Set }
+async function renderInsta(flash = "") {
+  tab = "insta";
+  app.innerHTML = topBar() + `<main class="wrap c"><div class="list-head"><div><span class="label">Instagram</span><h1>Feed posts</h1></div>
+    <p class="hint" style="max-width:48ch;margin:0">Click a post to hide it from the website (it stays on Instagram). Changes show on the site within about 5 minutes.</p></div>
+    <p class="status ok" id="flash">${esc(flash)}</p><div id="ig" class="ig-grid"><div class="panel empty">Loading your posts…</div></div></main>`;
+  try {
+    const { posts, hidden } = await api("igPosts");
+    insta = { posts, hidden: new Set(hidden) };
+    drawInsta();
+  } catch (err) { if (err.message !== "auth") document.getElementById("ig").innerHTML = `<div class="panel empty status err">${esc(err.message)}</div>`; }
+}
+function drawInsta() {
+  const box = document.getElementById("ig");
+  box.innerHTML = insta.posts.map((p) => {
+    const off = insta.hidden.has(p.id);
+    const date = p.date ? new Date(p.date).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "";
+    return `<label class="ig-item${off ? " is-hidden" : ""}" for="ig-${p.id}">
+      <input type="checkbox" id="ig-${p.id}" data-ig="${p.id}" ${off ? "" : "checked"} aria-label="Show this post on the website">
+      <img src="${esc(p.image)}" alt="" loading="lazy">
+      <span class="cap">${esc((p.caption || "").split("\n")[0] || "(no caption)")}</span>
+      <span class="row2"><span class="label">${esc(date)}</span><span class="pill ${off ? "draft" : "live"}">${off ? "Hidden" : "Shown"}</span></span>
+    </label>`;
+  }).join("") || `<div class="panel empty">No posts found.</div>`;
+  box.insertAdjacentHTML("afterend", document.getElementById("ig-bar") ? "" : `<div class="texts-bar" id="ig-bar" style="max-width:1100px"><button class="b primary" type="button" data-act="ig-save">${icon("save")}<span>Save</span></button><span class="status" id="st"></span></div>`);
+  box.onchange = (e) => {
+    const id = e.target.dataset.ig; if (!id) return;
+    if (e.target.checked) insta.hidden.delete(id); else insta.hidden.add(id);
+    drawInsta(); status(`${insta.hidden.size} hidden. Click Save to apply.`);
+  };
+}
+async function saveInsta() {
+  status("Saving…");
+  try {
+    await api("saveIgHidden", { method: "POST", body: { hidden: [...insta.hidden] } });
+    renderInsta(`Saved. ${insta.hidden.size ? insta.hidden.size + " post" + (insta.hidden.size === 1 ? " is" : "s are") + " hidden" : "All posts are shown"} on the website (updates within about 5 minutes).`);
+  } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+}
+
 // ---------- site texts ----------
 async function renderTexts() {
   tab = "texts";
@@ -588,6 +639,8 @@ app.addEventListener("click", async (e) => {
   if (act === "tab-articles") renderList();
   if (act === "tab-texts") renderTexts();
   if (act === "tab-store") renderStore();
+  if (act === "tab-insta") renderInsta();
+  if (act === "ig-save") saveInsta();
   if (act === "add-product") { syncProducts(); store.products.push({ name: "", price: "", status: "soon", description: "", link: "", image: "", imageAlt: "", hidden: false }); drawProducts(); [...document.querySelectorAll(".prod [data-f=name]")].pop()?.focus(); }
   const prow = e.target.closest(".prod"), pi = prow ? +prow.dataset.i : -1;
   if (act === "p-photo") { photoFor = pi; document.getElementById("p-file").click(); }

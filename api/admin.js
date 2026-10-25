@@ -9,6 +9,8 @@
 import crypto from "node:crypto";
 import { frontmatter } from "../lib/markdown.js";
 import { SCHEMA } from "../lib/site-schema.js";
+import { getToken, getHiddenPosts, setHiddenPosts, hasStore } from "../lib/token.js";
+import { fetchPosts } from "./instagram.js";
 
 const REPO = process.env.GITHUB_REPO || "aviranburirotem/zazzimag";
 const BRANCH = process.env.GITHUB_BRANCH || "main";
@@ -139,6 +141,21 @@ export default async function handler(req, res) {
     if (action === "me") return res.json({ loggedIn: isLoggedIn(req), github: Boolean(process.env.GITHUB_TOKEN) });
 
     if (!isLoggedIn(req)) return fail(401, "Please log in again.");
+
+    // Instagram: list recent posts and choose which ones the site hides (stored in Redis, no redeploy needed)
+    if (action === "igPosts") {
+      const token = await getToken();
+      if (!token) return fail(503, "Instagram isn't connected (IG_ACCESS_TOKEN is missing in Vercel).");
+      const [posts, hidden] = await Promise.all([fetchPosts(token, 50), getHiddenPosts()]);
+      return res.json({ posts, hidden });
+    }
+    if (action === "saveIgHidden" && req.method === "POST") {
+      if (!hasStore()) return fail(500, "Storage (Upstash Redis) isn't connected in Vercel, so hidden posts can't be saved.");
+      const ids = (Array.isArray(body.hidden) ? body.hidden : []).map(String).filter((id) => /^[0-9_]{1,40}$/.test(id)).slice(0, 200);
+      await setHiddenPosts(ids);
+      return res.json({ ok: true, hidden: ids });
+    }
+
     if (!process.env.GITHUB_TOKEN) return fail(500, "GITHUB_TOKEN is not set in Vercel, so the console can't save.");
 
     if (action === "list") return res.json({ articles: await listArticles() });
