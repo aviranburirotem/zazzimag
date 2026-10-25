@@ -2,6 +2,7 @@
 // Computers and tablets: two-page spreads that turn like real pages.
 // Phones: one page at a time, turning away to the left.
 // Turn with the buttons, by clicking a page, with the arrow keys, or by swiping.
+// Zoom in with the magnifier button, by pinching, with a trackpad pinch, or with + and −.
 // Used on issue pages, and in a popup when an issue tile is clicked (home and All articles).
 (() => {
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -15,6 +16,37 @@
     const prevBtn = root.querySelector('[data-fb="prev"]');
     const nextBtn = root.querySelector('[data-fb="next"]');
     let mode = "", leaves = [], flipped = 0; // flipped = number of leaves turned
+
+    // ---- zoom: magnifier button, pinch on touch screens, trackpad pinch / ctrl + scroll ----
+    const stage = root.querySelector(".fb-stage");
+    const zw = document.createElement("div");
+    zw.className = "fb-zoomwrap";
+    book.replaceWith(zw); zw.append(book);
+    const zoomBtn = root.querySelector('[data-fb="zoom"]');
+    const MAXZ = 4;
+    let z = 1, tx = 0, ty = 0;
+    function applyZoom(anim) {
+      const W = zw.offsetWidth, H = zw.offsetHeight;
+      tx = Math.min(0, Math.max(W - z * W, tx));
+      ty = Math.min(0, Math.max(H - z * H, ty));
+      if (anim) { zw.classList.add("fb-anim"); setTimeout(() => zw.classList.remove("fb-anim"), 260); }
+      zw.style.transform = z > 1 ? `translate(${tx}px,${ty}px) scale(${z})` : "";
+      root.classList.toggle("fb-zoomed", z > 1);
+      if (zoomBtn) { zoomBtn.setAttribute("aria-pressed", String(z > 1)); zoomBtn.setAttribute("aria-label", z > 1 ? "Zoom out" : "Zoom in"); }
+    }
+    // zoom to nz, keeping the point under (cx, cy) in place
+    function setZoom(nz, cx, cy, anim) {
+      nz = Math.min(MAXZ, Math.max(1, nz));
+      const r = zw.getBoundingClientRect();
+      const bx = r.left - tx, by = r.top - ty; // where the wrapper sits before zooming
+      if (cx === undefined) { const s = stage.getBoundingClientRect(); cx = s.left + s.width / 2; cy = s.top + s.height / 2; }
+      const px = (cx - bx - tx) / z, py = (cy - by - ty) / z;
+      z = nz;
+      if (z === 1) { tx = 0; ty = 0; } else { tx = cx - bx - z * px; ty = cy - by - z * py; }
+      applyZoom(anim);
+    }
+    const unzoom = (anim = true) => { if (z > 1) setZoom(1, undefined, undefined, anim); };
+    zoomBtn?.addEventListener("click", () => (z > 1 ? unzoom() : setZoom(2.2, undefined, undefined, true)));
 
     const isDouble = () => matchMedia("(min-width: 760px)").matches;
     const total = () => leaves.length;
@@ -37,6 +69,7 @@
         flipped = Math.min(page, pages.length - 1);
       }
       leaves = [...book.children];
+      z = 1; tx = 0; ty = 0; applyZoom(false);
       root.classList.add("fb-instant");
       render();
       requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("fb-instant")));
@@ -64,6 +97,7 @@
     function go(delta) {
       const target = Math.max(0, Math.min(max(), flipped + delta));
       if (target === flipped) return;
+      unzoom(false);
       const moving = delta > 0 ? flipped : flipped - 1;
       flipped = target;
       render(moving);
@@ -73,26 +107,59 @@
     prevBtn.addEventListener("click", onPrev);
     nextBtn.addEventListener("click", onNext);
 
-    let x0 = null, moved = false;
+    // clicks and swipes turn pages; when zoomed in, dragging moves around the page instead
+    let x0 = null, moved = false, pan = null, pinch = null;
+    const pts = new Map();
+    const two = () => { const [a, b] = [...pts.values()]; return { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; };
     book.addEventListener("click", (e) => {
-      if (moved) return;
+      if (moved || z > 1) return;
       const r = book.getBoundingClientRect();
       go(e.clientX > r.left + r.width / 2 || (mode === "single" && e.clientX > r.left + r.width * 0.33) ? 1 : -1);
     });
-    book.addEventListener("pointerdown", (e) => { x0 = e.clientX; moved = false; });
-    book.addEventListener("pointermove", (e) => { if (x0 !== null && Math.abs(e.clientX - x0) > 10) moved = true; });
-    book.addEventListener("pointerup", (e) => {
-      if (x0 === null) return;
-      const dx = e.clientX - x0; x0 = null;
-      if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
-      setTimeout(() => (moved = false), 0);
+    book.addEventListener("pointerdown", (e) => {
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 2) { const g = two(); pinch = { d: g.d, z }; x0 = null; pan = null; moved = true; return; }
+      if (pts.size > 2) return;
+      moved = false;
+      if (z > 1) { pan = { x: e.clientX, y: e.clientY, tx, ty }; root.classList.add("fb-panning"); try { book.setPointerCapture(e.pointerId); } catch {} }
+      else x0 = e.clientX;
     });
-    book.addEventListener("pointercancel", () => (x0 = null));
+    book.addEventListener("pointermove", (e) => {
+      if (!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinch && pts.size >= 2) { const g = two(); setZoom(pinch.z * (g.d / pinch.d), g.x, g.y); return; }
+      if (pan) {
+        const dx = e.clientX - pan.x, dy = e.clientY - pan.y;
+        if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+        tx = pan.tx + dx; ty = pan.ty + dy; applyZoom(false);
+        return;
+      }
+      if (x0 !== null && Math.abs(e.clientX - x0) > 10) moved = true;
+    });
+    const endPointer = (e) => {
+      pts.delete(e.pointerId);
+      if (pinch && pts.size < 2) { pinch = null; if (z < 1.08) unzoom(); }
+      if (!pts.size) { pan = null; root.classList.remove("fb-panning"); }
+      if (x0 === null) { setTimeout(() => (moved = false), 0); return; }
+      const dx = e.clientX - x0; x0 = null;
+      if (e.type === "pointerup" && z === 1 && Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+      setTimeout(() => (moved = false), 0);
+    };
+    book.addEventListener("pointerup", endPointer);
+    book.addEventListener("pointercancel", endPointer);
+    // trackpad pinch (and ctrl + scroll) zooms; scrolling while zoomed moves around the page
+    zw.addEventListener("wheel", (e) => {
+      if (e.ctrlKey) { e.preventDefault(); setZoom(z * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY); return; }
+      if (z > 1) { e.preventDefault(); tx -= e.deltaX; ty -= e.deltaY; applyZoom(false); }
+    }, { passive: false });
 
     const onKey = (e) => {
       if (e.target.closest && e.target.closest("input,textarea,select,[contenteditable]")) return;
       if (e.key === "ArrowRight") { go(1); e.preventDefault(); }
       if (e.key === "ArrowLeft") { go(-1); e.preventDefault(); }
+      if (e.key === "Escape" && z > 1 && !root.closest(".fb-modal")) unzoom();
+      if (e.key === "+" || e.key === "=") { setZoom(z * 1.5, undefined, undefined, true); e.preventDefault(); }
+      if (e.key === "-" || e.key === "_") { setZoom(z / 1.5, undefined, undefined, true); e.preventDefault(); }
     };
     document.addEventListener("keydown", onKey);
     let resizeT;
@@ -100,7 +167,7 @@
     addEventListener("resize", onResize);
 
     build();
-    return { destroy() { document.removeEventListener("keydown", onKey); removeEventListener("resize", onResize); } };
+    return { destroy() { document.removeEventListener("keydown", onKey); removeEventListener("resize", onResize); }, zoomed: () => z > 1, unzoom };
   }
 
   // ---- issue page ----
@@ -134,6 +201,7 @@
         <button class="fb-btn" type="button" data-fb="prev" aria-label="Previous page">${ico(".l", "‹")}</button>
         <span class="fb-count label" aria-live="polite"></span>
         <button class="fb-btn" type="button" data-fb="next" aria-label="Next page">${ico(".r", "›")}</button>
+        <button class="fb-btn fb-zoom-btn" type="button" data-fb="zoom" aria-label="Zoom in" aria-pressed="false"><span class="i-in">${ico(".zi", "+")}</span><span class="i-out">${ico(".zo", "−")}</span></button>
       </div>
       <p class="fb-caption"></p>
     </section>
@@ -178,7 +246,7 @@
   overlay.addEventListener("click", (e) => { if (e.target === overlay || e.target.closest(".fb-close")) close(); });
   document.addEventListener("keydown", (e) => {
     if (overlay.hidden) return;
-    if (e.key === "Escape") { close(); return; }
+    if (e.key === "Escape") { if (current?.zoomed()) current.unzoom(); else close(); return; }
     if (e.key === "Tab") { // keep focus inside the popup
       const f = [...overlay.querySelectorAll("button:not(:disabled)")];
       if (!f.length) return;

@@ -145,6 +145,33 @@
     link?.addEventListener("blur", () => { if (!still()) v.play().catch(() => {}); });
   });
 
+  // ---- home video strip: silent, always looping, part of the page ----
+  // Loads only when it scrolls into view, pauses when off screen, and stays still with
+  // "Stop animations", the device's reduce-motion setting or Data Saver. The small button pauses it.
+  const vid = document.querySelector(".vstrip video");
+  const stripBtn = document.querySelector(".vstrip-btn");
+  let stripInView = false, stripChoice = null; // null = automatic, "play" / "pause" = the visitor pressed the button
+  const saveData = () => Boolean(navigator.connection && navigator.connection.saveData);
+  const stripWants = () => stripChoice ? stripChoice === "play" : !still() && !saveData();
+  function syncStrip() {
+    if (!vid) return;
+    if (stripInView && !document.hidden && stripWants()) vid.play().catch(() => {}); else vid.pause();
+    if (stripBtn) {
+      const paused = !stripWants();
+      stripBtn.classList.toggle("is-paused", paused);
+      stripBtn.setAttribute("aria-pressed", String(paused));
+      stripBtn.setAttribute("aria-label", paused ? "Play video" : "Pause video");
+    }
+  }
+  if (vid) {
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver((es) => { stripInView = es.some((e) => e.isIntersecting); syncStrip(); }, { rootMargin: "200px 0px" }).observe(vid);
+    } else stripInView = true;
+    document.addEventListener("visibilitychange", syncStrip);
+    stripBtn?.addEventListener("click", () => { stripChoice = stripWants() ? "pause" : "play"; syncStrip(); });
+    syncStrip();
+  }
+
   // ---- accessibility menu (Israeli Standard 5568) ----
   const KEY = "zz-a11y";
   const OPTS = { "a11y-text": "Larger text", "a11y-contrast": "High contrast", "a11y-links": "Highlight links", "a11y-font": "Readable font", "a11y-still": "Stop animations" };
@@ -153,6 +180,7 @@
   const apply = () => {
     for (const k of Object.keys(OPTS)) document.documentElement.classList.toggle(k, Boolean(prefs[k]));
     if (prefs["a11y-still"]) stopLogos(); else playLogos();
+    stripChoice = null; syncStrip();
     pickLogo();
     document.querySelectorAll("[data-a11y]").forEach((b) => b.setAttribute("aria-pressed", String(Boolean(prefs[b.dataset.a11y]))));
   };

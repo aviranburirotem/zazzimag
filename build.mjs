@@ -25,7 +25,7 @@ const IG_URL = `https://www.instagram.com/${SITE.handle}/`;
 const OUT = "dist";
 import crypto from "node:crypto";
 // Version stamp for CSS/JS so browsers always load the latest files after a deploy
-const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.css")).update(fs.readFileSync("public/assets/site.js")).update(fs.readFileSync("public/assets/flipbook.js")).update(fs.readFileSync("public/assets/logo-animated.mp4")).update(fs.readFileSync("public/assets/logo-animated-dark.mp4")).digest("hex").slice(0, 8);
+const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.css")).update(fs.readFileSync("public/assets/site.js")).update(fs.readFileSync("public/assets/flipbook.js")).update(fs.readFileSync("public/assets/logo-animated.mp4")).update(fs.readFileSync("public/assets/logo-animated-dark.mp4")).update(fs.readFileSync("public/assets/strip-wide.mp4")).update(fs.readFileSync("public/assets/strip-small.mp4")).digest("hex").slice(0, 8);
 
 // Coming-soon mode: the live site (zazzimag.com) shows only the coming-soon page.
 // Preview deployments and local builds still show the full site so you can work on it.
@@ -127,7 +127,7 @@ ${body}
     <a href="/accessibility/">Accessibility statement</a>
   </div>
 </div>
-<template id="fb-icons"><span class="x">${icon("x")}</span><span class="l">${icon("chevron-left")}</span><span class="r">${icon("chevron-right")}</span></template>
+<template id="fb-icons"><span class="x">${icon("x")}</span><span class="l">${icon("chevron-left")}</span><span class="r">${icon("chevron-right")}</span><span class="zi">${icon("zoom-in")}</span><span class="zo">${icon("zoom-out")}</span></template>
 <script src="/assets/site.js?v=${V}" defer></script>
 <script src="/assets/flipbook.js?v=${V}" defer></script>${scripts.join("")}
 </body>
@@ -183,6 +183,13 @@ function home() {
       <h1>${br("home.headline")}</h1>
       ${md("home.intro")}</div>
       ${on("show.igButton") ? `<a class="handle" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}${icon("arrow-up-right")}</a>` : ""}</section>
+    ${on("show.videoStrip") ? `<section class="vstrip" aria-label="${esc(T("home.videoLabel"))}">
+      <video muted loop playsinline preload="none" poster="/assets/strip-poster.jpg?v=${V}" aria-hidden="true" tabindex="-1">
+        <source media="(max-width: 700px)" src="/assets/strip-small.mp4?v=${V}" type="video/mp4">
+        <source src="/assets/strip-wide.mp4?v=${V}" type="video/mp4">
+      </video>
+      <button class="vstrip-btn" type="button" aria-label="Pause video" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button>
+    </section>` : ""}
     <section class="wrap grid" aria-label="Latest posts and stories">${items.join("")}</section>
     ${on("show.band") ? `<section class="band"><div class="wrap"><h2>${tx("home.bandHeading")}</h2><a class="btn alt" href="/articles/">${tx("home.bandButton")} ${icon("arrow-right")}</a></div></section>` : ""}`,
   });
@@ -235,6 +242,7 @@ function issuePage(i) {
         <button class="fb-btn" type="button" data-fb="prev" aria-label="Previous page">${icon("chevron-left")}</button>
         <span class="fb-count label" aria-live="polite"></span>
         <button class="fb-btn" type="button" data-fb="next" aria-label="Next page">${icon("chevron-right")}</button>
+        <button class="fb-btn fb-zoom-btn" type="button" data-fb="zoom" aria-label="Zoom in" aria-pressed="false"><span class="i-in">${icon("zoom-in")}</span><span class="i-out">${icon("zoom-out")}</span></button>
       </div>
       <p class="fb-caption"></p>
       <p class="fb-hint label">${tx("issues.hint")}</p>
