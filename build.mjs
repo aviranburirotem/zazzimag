@@ -17,6 +17,7 @@ const SITE = {
   email: T("brand.email").trim(),
   tagline: T("brand.tagline"),
 };
+const on = (k) => T(k) !== "off";                              // show/hide switches
 const tx = (k) => esc(T(k));                                  // one line of text
 const br = (k) => esc(T(k)).replace(/\n/g, "<br>");           // text with line breaks
 const md = (k) => markdown(T(k));                             // paragraphs with bold/italic/links
@@ -59,7 +60,7 @@ const issues = (fs.existsSync(idir) ? fs.readdirSync(idir) : []).filter((f) => f
   let d = {};
   try { d = JSON.parse(fs.readFileSync(path.join(idir, file), "utf8")); } catch (e) { throw new Error(`Issue "${file}" isn't valid JSON`); }
   const slug = file.replace(/\.json$/, "");
-  const pages = (d.pages || []).filter((p) => p && p.image);
+  const pages = (d.pages || []).filter((p) => p && p.image && p.hidden !== true);
   return {
     ...d, kind: "issue", slug, pages, url: `/issues/${slug}/`,
     cover: pages[0]?.image || "", coverAlt: pages[0]?.alt || d.title,
@@ -101,10 +102,10 @@ function layout({ title, description, active, body, image, type = "website", pat
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="wrap bar">
   <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home">${logoVideo(56)}</a>
-  ${ticker()}
+  ${on("show.ticker") ? ticker() : `<div class="ticker-space"></div>`}
   <nav class="site-nav" aria-label="Main">
     ${nav("/about/", tx("nav.info"), "about")}
-    ${nav("/store/", tx("nav.store"), "store")}
+    ${on("show.storeNav") ? nav("/store/", tx("nav.store"), "store") : ""}
     ${nav("/articles/", `${tx("nav.articles")} ${icon("arrow-right")}`, "articles", "cta")}
   </nav>
 </div></header>
@@ -113,7 +114,7 @@ ${body}
 </main>
 <footer class="site-footer"><div class="wrap">
   <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home"><img src="/assets/logo.png" alt="" width="56" height="56"></a>
-  <nav aria-label="Footer" class="label"><a href="/articles/">Articles</a><a href="/about/">Info &amp; contact</a><a href="/store/">Store</a><a href="/accessibility/">Accessibility</a><a href="/privacy/">Privacy</a></nav>
+  <nav aria-label="Footer" class="label"><a href="/articles/">Articles</a><a href="/about/">Info &amp; contact</a>${on("show.storeNav") ? `<a href="/store/">Store</a>` : ""}<a href="/accessibility/">Accessibility</a><a href="/privacy/">Privacy</a></nav>
   <div class="social"><a class="icon-btn" href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram @${SITE.handle}">${icon("instagram")}</a><a class="icon-btn" href="mailto:${SITE.email}" aria-label="Email ${SITE.email}">${icon("mail")}</a></div>
   <p class="legal">${LEGAL}</p>
 </div></footer>
@@ -161,23 +162,27 @@ function home() {
   const items = [];
   const [first, ...rest] = stories;
   if (first) items.push(artTile(first, true));
-  const IG_COUNT = 12;
-  let a = 0;
-  for (let i = 0; i < IG_COUNT; i++) {
-    items.push(igSlot());
-    if (i % 2 === 1 && a < rest.length && a < 6) items.push(artTile(rest[a++]));
+  if (on("show.feed")) {
+    const IG_COUNT = 12;
+    let a = 0;
+    for (let i = 0; i < IG_COUNT; i++) {
+      items.push(igSlot());
+      if (i % 2 === 1 && a < rest.length && a < 6) items.push(artTile(rest[a++]));
+    }
+  } else {
+    rest.slice(0, 15).forEach((x) => items.push(artTile(x))); // no Instagram posts: stories only
   }
   return layout({
     active: "home", pathname: "/",
     description: `${SITE.name}. ${SITE.tagline}`,
     body: `<section class="wrap intro">
-      <button class="lightswitch" type="button" id="light-switch" aria-pressed="false" aria-label="Turn off the light" data-tip="Turn off the light"><span class="plate"><span class="screw"></span><span class="slot"><span class="lever"></span></span><span class="screw"></span></span></button>
+      ${on("show.lightSwitch") ? `<button class="lightswitch" type="button" id="light-switch" aria-pressed="false" aria-label="Turn off the light" data-tip="Turn off the light"><span class="plate"><span class="screw"></span><span class="slot"><span class="lever"></span></span><span class="screw"></span></span></button>` : ""}
       <div>
       <h1>${br("home.headline")}</h1>
       ${md("home.intro")}</div>
-      <a class="handle" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}${icon("arrow-up-right")}</a></section>
+      ${on("show.igButton") ? `<a class="handle" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}${icon("arrow-up-right")}</a>` : ""}</section>
     <section class="wrap grid" aria-label="Latest posts and stories">${items.join("")}</section>
-    <section class="band"><div class="wrap"><h2>${tx("home.bandHeading")}</h2><a class="btn alt" href="/articles/">${tx("home.bandButton")} ${icon("arrow-right")}</a></div></section>`,
+    ${on("show.band") ? `<section class="band"><div class="wrap"><h2>${tx("home.bandHeading")}</h2><a class="btn alt" href="/articles/">${tx("home.bandButton")} ${icon("arrow-right")}</a></div></section>` : ""}`,
   });
 }
 
@@ -206,9 +211,9 @@ function articlePage(a) {
       <div class="meta label"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${a.readTime} read</span><span>${tx("articles.byline")} ${esc(byline)}</span></div></div></header>
     <figure class="wrap hero"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}"></div>${a.coverCaption ? `<figcaption>${esc(a.coverCaption)}</figcaption>` : ""}</figure>
     <div class="wrap"><div class="body">${a.html}</div>
-      <section data-ig-section><div class="section-h"><h2>${tx("articles.feedHeading")}</h2><a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a></div>
-      <div class="strip" data-ig-strip>${'<div class="tile ig-slot" aria-hidden="true"><div class="ph"></div></div>'.repeat(6)}</div></section>
-      ${more.length ? `<div class="section-h"><h2>${tx("articles.readNext")}</h2><a class="label with-ic" href="/articles/">${tx("articles.allLink")} ${icon("arrow-right")}</a></div><div class="grid">${more.map((x) => artTile(x)).join("")}</div>` : ""}
+      ${on("show.feedStrip") ? `<section data-ig-section><div class="section-h"><h2>${tx("articles.feedHeading")}</h2><a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a></div>
+      <div class="strip" data-ig-strip>${'<div class="tile ig-slot" aria-hidden="true"><div class="ph"></div></div>'.repeat(6)}</div></section>` : ""}
+      ${more.length && on("show.readNext") ? `<div class="section-h"><h2>${tx("articles.readNext")}</h2><a class="label with-ic" href="/articles/">${tx("articles.allLink")} ${icon("arrow-right")}</a></div><div class="grid">${more.map((x) => artTile(x)).join("")}</div>` : ""}
     </div></article>`,
   });
 }

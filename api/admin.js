@@ -289,7 +289,7 @@ export default async function handler(req, res) {
       for (const p of pagesIn) {
         const image = String(p.image || "");
         if (!/^(\/images\/issues\/[a-z0-9-]+\/[a-z0-9._-]+|https:\/\/\S+)$/.test(image)) return fail(400, "One of the pages has an invalid photo.");
-        pages.push({ image, caption: String(p.caption || "").replace(/\s*\n\s*/g, " ").trim().slice(0, 300), alt: String(p.alt || "").replace(/\s*\n\s*/g, " ").trim().slice(0, 200) });
+        pages.push({ image, caption: String(p.caption || "").replace(/\s*\n\s*/g, " ").trim().slice(0, 300), alt: String(p.alt || "").replace(/\s*\n\s*/g, " ").trim().slice(0, 200), ...(p.hidden === true ? { hidden: true } : {}) });
       }
       if (!pages.length && d.draft !== true) return fail(400, "Add at least one page, or untick Published to save a draft.");
       if (body.isNew && (await gh(repo(`/contents/content/issues/${slug}.json?ref=${BRANCH}`)))) return fail(409, "An issue with this address already exists. Change the address.");
@@ -312,6 +312,34 @@ export default async function handler(req, res) {
       const imgs = (tree.tree || []).filter((t) => t.type === "blob" && t.path.startsWith(`public/images/issues/${slug}/`)).map((t) => t.path);
       await commit([{ path: `content/issues/${slug}.json`, remove: true }, ...imgs.map((p) => ({ path: p, remove: true }))], `Delete issue: ${slug}`);
       return res.json({ ok: true });
+    }
+
+    // One-click show/hide for an article or issue (from the console lists)
+    if (action === "setVisibility" && req.method === "POST") {
+      const slug = String(body.slug || ""), hide = body.hidden === true;
+      if (!SLUG.test(slug)) return fail(400, "Invalid address.");
+      if (body.type === "article") {
+        const path = `content/articles/${slug}.md`;
+        const text = await gh(repo(`/contents/${path}?ref=${BRANCH}`), { raw: true });
+        if (text == null) return fail(404, "Article not found.");
+        const m = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+        if (!m) return fail(400, "This article's header couldn't be read.");
+        let fm = m[1].split("\n").filter((l) => !/^draft\s*:/.test(l));
+        if (hide) fm.push("draft: true");
+        await commit([{ path, content: `---\n${fm.join("\n")}\n---\n${m[2]}` }], `${hide ? "Hide" : "Show"} article: ${slug}`);
+        return res.json({ ok: true });
+      }
+      if (body.type === "issue") {
+        const path = `content/issues/${slug}.json`;
+        const text = await gh(repo(`/contents/${path}?ref=${BRANCH}`), { raw: true });
+        if (text == null) return fail(404, "Issue not found.");
+        const d = JSON.parse(text);
+        if (hide) d.draft = true; else delete d.draft;
+        if (!hide && !(d.pages || []).length) return fail(400, "This issue has no pages yet, so it can't be shown.");
+        await commit([{ path, content: JSON.stringify(d, null, 2) + "\n" }], `${hide ? "Hide" : "Show"} issue: ${slug}`);
+        return res.json({ ok: true });
+      }
+      return fail(400, "Unknown item type.");
     }
 
     if (action === "delete" && req.method === "POST") {

@@ -72,6 +72,15 @@
   .add-pages{display:grid;place-items:center;gap:6px;min-height:200px;border:1.5px dashed var(--line);border-radius:6px;background:none;color:var(--muted);font-weight:600}
   .add-pages:hover{border-color:var(--fg);color:var(--fg)}
   .add-pages .ic{width:28px;height:28px}
+  .vis{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:999px;padding:3px 9px 3px 7px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:none}
+  .vis .ic{width:13px;height:13px}
+  .vis.on{background:#e7f6ec;border-color:#bfe5cb;color:#1d6b36}
+  .vis.off{background:#f1f1f3;border-color:#d9d9de;color:#5b5e66}
+  .vis:hover:not(:disabled){border-color:currentColor}
+  .photo-row.is-hidden img,.page-card.is-hidden img{opacity:.35;filter:grayscale(1)}
+  .photo-row.is-hidden,.page-card.is-hidden{border-style:dashed}
+  .showbox{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600}
+  .showbox input{width:16px!important;height:16px;accent-color:var(--accent)}
   .panel{background:var(--bg);border:1px solid var(--line);border-radius:6px}
   main.c{padding-block:24px 64px}
 
@@ -205,6 +214,9 @@ function renderLogin(msg = nextPage ? "Log in to see the full site preview." : "
   };
 }
 
+// ---------- show / hide switch used in the lists ----------
+const visBtn = (type, slug, hidden) => `<button type="button" class="vis ${hidden ? "off" : "on"}" data-act="toggle-vis" data-type="${type}" data-slug="${esc(slug)}" data-hidden="${hidden ? 1 : 0}" aria-pressed="${!hidden}" title="${hidden ? "Hidden from the site. Click to show it" : "Shown on the site. Click to hide it"}">${icon(hidden ? "eye-off" : "eye")}<span>${hidden ? "Hidden" : "Shown"}</span></button>`;
+
 // ---------- list ----------
 let categories = [];
 async function renderList(flash = "") {
@@ -218,7 +230,7 @@ async function renderList(flash = "") {
     if (!articles.length) { rows.innerHTML = `<div class="panel empty">No articles yet. Click <b>New article</b> to write your first one.</div>`; return; }
     rows.innerHTML = articles.map((a) => `<div class="row" data-slug="${esc(a.slug)}">
       ${a.cover ? `<img src="${esc(shown(a.cover))}" alt="" loading="lazy">` : `<div class="noimg"></div>`}
-      <div><h3>${esc(a.title)}</h3><div class="meta-l"><span class="pill ${a.draft ? "draft" : "live"}">${a.draft ? "Draft" : "Published"}</span><span class="label">${esc(a.category)} · ${esc(a.date)}</span></div></div>
+      <div><h3>${esc(a.title)}</h3><div class="meta-l">${visBtn("article", a.slug, a.draft)}<span class="label">${esc(a.category)} · ${esc(a.date)}</span></div></div>
       <div class="row-actions">
         ${a.draft ? "" : `<a class="b" href="/articles/${esc(a.slug)}/" target="_blank" rel="noopener" aria-label="View">${icon("eye")}</a>`}
         <button class="b" type="button" data-act="edit">${icon("pencil")}<span>Edit</span></button>
@@ -371,7 +383,16 @@ function renderEditor() {
   const box = $("photos");
   let t;
   body.addEventListener("input", () => { clearTimeout(t); t = setTimeout(renderPhotos, 400); });
+  box.addEventListener("change", (e) => {
+    if (e.target.dataset.show === undefined) return;
+    const i = +e.target.dataset.show, show = e.target.checked;
+    const m = [...body.value.matchAll(IMG_RE)][i]; if (!m) return;
+    const v = body.value, at = m.index;
+    body.value = show ? (v[at - 1] === "~" ? v.slice(0, at - 1) + v.slice(at) : v) : (v[at - 1] === "~" ? v : v.slice(0, at) + "~" + v.slice(at));
+    renderPhotos(); preview();
+  });
   box.addEventListener("input", (e) => {
+    if (e.target.dataset.show !== undefined) return;
     const row = e.target.closest(".photo-row"); if (!row) return;
     const i = +row.dataset.i, k = e.target.dataset.k;
     const clean = (v) => v.replace(/\s*\n\s*/g, " ").replace(/"([^"]*)"/g, "\u201c$1\u201d").replace(/"/g, "\u201d");
@@ -393,10 +414,12 @@ function renderPhotos() {
   const box = document.getElementById("photos"), body = document.getElementById("body");
   if (!box || !body) return;
   const list = [...body.value.matchAll(IMG_RE)];
+  const isHidden = (m) => body.value[m.index - 1] === "~";
   box.innerHTML = list.length ? `<span class="label">Photos in this article</span>` + list.map((m, i) => `
-    <div class="photo-row" data-i="${i}">
+    <div class="photo-row${isHidden(m) ? " is-hidden" : ""}" data-i="${i}">
       <img src="${esc(imgUrl(m[2]))}" alt="">
       <div class="fields"><span class="num">Photo ${i + 1}</span>
+        <label class="showbox"><input type="checkbox" data-show="${i}" ${isHidden(m) ? "" : "checked"}> Shown on the site</label>
         <label for="pc-${i}">Caption / photo credit<input id="pc-${i}" data-k="cap" value="${esc(m[3] || "")}" placeholder="e.g. Shibuya, October 2026. Photo: Your Name"></label>
         <label for="pa-${i}">Describe the photo <span class="hint">for screen readers</span><input id="pa-${i}" data-k="alt" value="${esc(m[1] || "")}"></label>
       </div>
@@ -618,7 +641,7 @@ async function renderIssues(flash = "") {
     const box = document.getElementById("irows");
     box.innerHTML = issues.length ? issues.map((i) => `<div class="row" data-islug="${esc(i.slug)}">
       ${i.cover ? `<img src="${esc(shown(i.cover))}" alt="" loading="lazy">` : `<div class="noimg"></div>`}
-      <div><h3>${esc(i.title)}</h3><div class="meta-l"><span class="pill ${i.draft ? "draft" : "live"}">${i.draft ? "Draft" : "Published"}</span><span class="label">${i.pages} pages · ${esc(i.date)}</span></div></div>
+      <div><h3>${esc(i.title)}</h3><div class="meta-l">${visBtn("issue", i.slug, i.draft)}<span class="label">${i.pages} pages · ${esc(i.date)}</span></div></div>
       <div class="row-actions">
         ${i.draft ? "" : `<a class="b" href="/issues/${esc(i.slug)}/" target="_blank" rel="noopener" aria-label="View">${icon("eye")}</a>`}
         <button class="b" type="button" data-act="edit-issue">${icon("pencil")}<span>Edit</span></button>
@@ -674,17 +697,19 @@ function drawIssue() {
     }
   };
   document.getElementById("iform").onsubmit = (e) => { e.preventDefault(); saveIssue(); };
+  document.getElementById("pages").addEventListener("change", (e) => { if (e.target.matches("[data-pshow]")) syncIssue(); });
   drawPages();
 }
 
 function drawPages() {
   const ps = iss.data.pages, box = document.getElementById("pages");
-  box.innerHTML = ps.map((p, i) => `<div class="page-card" data-i="${i}">
+  box.innerHTML = ps.map((p, i) => `<div class="page-card${p.hidden ? " is-hidden" : ""}" data-i="${i}">
     <div class="pc-top"><span class="label">${i === 0 ? "Cover" : "Page " + (i + 1)}</span>
       <span class="pc-ctl"><button type="button" class="b" data-act="pg-left" aria-label="Move earlier" ${i === 0 ? "disabled" : ""}>${icon("chevron-left")}</button><button type="button" class="b" data-act="pg-right" aria-label="Move later" ${i === ps.length - 1 ? "disabled" : ""}>${icon("chevron-right")}</button><button type="button" class="b danger" data-act="pg-del" aria-label="Remove page">${icon("trash-2")}</button></span></div>
     <img src="${esc(issueImg(p.image))}" alt="">
     <label>Caption / credit<input data-f="caption" value="${esc(p.caption || "")}"></label>
     <label>Describe the photo<input data-f="alt" value="${esc(p.alt || "")}"></label>
+    <label class="showbox"><input type="checkbox" data-pshow ${p.hidden ? "" : "checked"}> Shown on the site</label>
   </div>`).join("") + `<button type="button" class="add-pages" id="add-pages">${icon("image-plus")}<span>Add pages</span><span class="hint">you can pick several photos at once</span></button>`;
   document.getElementById("add-pages").onclick = () => {
     syncIssue();
@@ -696,7 +721,11 @@ function drawPages() {
 function syncIssue() {
   const d = iss.data, v = (id) => document.getElementById(id)?.value ?? "";
   d.title = v("i-title").trim(); d.dek = v("i-dek").trim(); d.date = v("i-date"); d.draft = !document.getElementById("i-pub")?.checked;
-  document.querySelectorAll(".page-card").forEach((c) => { const p = d.pages[+c.dataset.i]; c.querySelectorAll("[data-f]").forEach((el) => (p[el.dataset.f] = el.value)); });
+  document.querySelectorAll(".page-card").forEach((c) => {
+    const p = d.pages[+c.dataset.i];
+    c.querySelectorAll("[data-f]").forEach((el) => (p[el.dataset.f] = el.value));
+    const sh = c.querySelector("[data-pshow]"); if (sh) { if (sh.checked) delete p.hidden; else p.hidden = true; c.classList.toggle("is-hidden", !sh.checked); }
+  });
   // if the address changed before saving, keep new uploads pointing at the right folder
   d.pages.forEach((p) => { const m = p.image.match(/^\/images\/issues\/[^/]*\/(.+)$/); if (m && iss.pending.has(m[1])) p.image = `/images/issues/${iss.slug}/${m[1]}`; });
 }
@@ -725,6 +754,7 @@ async function renderTexts() {
   const get = (k) => k.split(".").reduce((o, x) => (o && typeof o === "object" ? o[x] : undefined), saved);
   const fieldHtml = (f) => {
     const v = get(f.key) ?? f.default, id = "t-" + f.key.replace(".", "-");
+    if (f.type === "toggle") return `<div class="f"><label class="showbox" for="${id}"><input type="checkbox" id="${id}" data-key="${f.key}" ${v === "off" ? "" : "checked"}> ${esc(f.label)}</label></div>`;
     const control = f.type === "text"
       ? `<input id="${id}" data-key="${f.key}" value="${esc(v)}">`
       : `<textarea id="${id}" data-key="${f.key}" rows="${f.type === "list" ? 4 : 3}">${esc(v)}</textarea>`;
@@ -744,7 +774,7 @@ async function renderTexts() {
   });
   form.onsubmit = async (e) => {
     e.preventDefault();
-    const values = Object.fromEntries([...form.querySelectorAll("[data-key]")].map((el) => [el.dataset.key, el.value]));
+    const values = Object.fromEntries([...form.querySelectorAll("[data-key]")].map((el) => [el.dataset.key, el.type === "checkbox" ? (el.checked ? "on" : "off") : el.value]));
     const btn = document.getElementById("tsave"); btn.disabled = true; status("Saving…");
     try { await api("saveSettings", { method: "POST", body: { values } }); status("Saved. The site will update in about a minute.", "ok"); }
     catch (err) { if (err.message !== "auth") status(err.message, "err"); }
@@ -764,6 +794,15 @@ app.addEventListener("click", async (e) => {
   if (act === "tab-store") renderStore();
   if (act === "tab-insta") renderInsta();
   if (act === "tab-issues") renderIssues();
+  if (act === "toggle-vis") {
+    const b = e.target.closest("[data-act=toggle-vis]"), hide = b.dataset.hidden !== "1";
+    b.disabled = true; b.querySelector("span").textContent = "Saving…";
+    try {
+      await api("setVisibility", { method: "POST", body: { type: b.dataset.type, slug: b.dataset.slug, hidden: hide } });
+      b.outerHTML = visBtn(b.dataset.type, b.dataset.slug, hide);
+      const f = document.getElementById("flash"); if (f) { f.className = "status ok"; f.textContent = `${hide ? "Hidden" : "Shown"}. The site updates in about a minute.`; }
+    } catch (err) { if (err.message !== "auth") { b.disabled = false; b.querySelector("span").textContent = "Try again"; const f = document.getElementById("flash"); if (f) { f.className = "status err"; f.textContent = err.message; } } }
+  }
   if (act === "new-issue") openIssue();
   if (act === "edit-issue") openIssue(e.target.closest("[data-islug]").dataset.islug);
   if (act === "ask-del-issue") e.target.closest(".row-actions").innerHTML = `<span class="confirm">Delete this issue and its pages? <button class="b danger" type="button" data-act="del-issue">${icon("trash-2")}Delete</button><button class="b" type="button" data-act="tab-issues">Cancel</button></span>`;
