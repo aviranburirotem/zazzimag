@@ -280,24 +280,27 @@ html.a11y-still .ng:hover .d,html.a11y-still .product:hover .d{transform:none}
 @media (prefers-reduced-motion:reduce){.ticker-track{animation:none}}
 html.a11y-still .ticker-track{animation:none}
 
-/* the light cord — hangs from the header on the home page; pull it to switch the lights off/on */
-.pull{position:absolute;top:0;right:max(16px,env(safe-area-inset-right,0px));width:28px;height:44px;padding:0;border:0;background:none;cursor:pointer;
-  display:flex;justify-content:center;z-index:2}
-.pull .swing{display:flex;flex-direction:column;align-items:center;transform-origin:50% 0}
-.pull .cord{width:1.5px;height:24px;background:var(--muted);opacity:.7}
-.pull .knob{width:11px;height:11px;border-radius:50%;margin-top:-1px;background:radial-gradient(circle at 35% 35%,#fff 0 18%,var(--muted) 20% 100%);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:background .3s,box-shadow .3s}
-.pull:hover .cord{opacity:1}
-.pull:hover .swing{animation:pull-sway 1.6s ease-in-out infinite}
-.pull.tug .swing{animation:pull-tug .55s cubic-bezier(.3,1.7,.5,1) 1}
-/* tooltip next to the knob: "Turn off the light" / "Turn on the light" */
-.pull::after{content:attr(data-tip);position:absolute;right:calc(100% + 4px);top:22px;white-space:nowrap;
+/* the light switch — a tiny wall switch on the home page; flip it to turn the lights off/on */
+.lightswitch{position:absolute;top:8px;right:max(16px,env(safe-area-inset-right,0px));padding:0;border:0;background:none;cursor:pointer;z-index:2}
+.lightswitch .plate{display:flex;flex-direction:column;align-items:center;justify-content:space-between;width:22px;height:30px;padding:3px 0;border-radius:5px;
+  background:linear-gradient(180deg,var(--bg),var(--soft));border:1px solid var(--line);box-shadow:0 1px 2px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.5)}
+.lightswitch .screw{width:3px;height:3px;border-radius:50%;background:var(--line);box-shadow:inset 0 0 0 .5px var(--muted)}
+.lightswitch .slot{position:relative;width:8px;height:13px;border-radius:2px;background:var(--line);box-shadow:inset 0 1px 2px rgba(0,0,0,.25)}
+.lightswitch .lever{position:absolute;left:1px;right:1px;top:1px;height:6px;border-radius:1.5px;background:var(--fg);transition:top .18s cubic-bezier(.3,1.6,.5,1)}
+html[data-theme="dark"] .lightswitch .lever{top:6px}
+/* the little glow dot that real switches have, so you can find them in the dark */
+.lightswitch .plate::after{content:"";position:absolute;bottom:-5px;left:50%;width:3px;height:3px;margin-left:-1.5px;border-radius:50%;background:transparent;transition:background .3s,box-shadow .3s}
+html[data-theme="dark"] .lightswitch .plate::after{background:#ffc94d;box-shadow:0 0 6px 2px rgba(255,190,60,.55)}
+.lightswitch .plate{position:relative}
+.lightswitch:hover .plate{border-color:var(--muted)}
+.lightswitch.flick .plate{animation:ls-flick .3s ease-out 1}
+@keyframes ls-flick{0%,100%{transform:scale(1)}40%{transform:scale(.92)}}
+.lightswitch:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+/* tooltip: "Turn off the light" / "Turn on the light" */
+.lightswitch::after{content:attr(data-tip);position:absolute;right:calc(100% + 8px);top:50%;white-space:nowrap;
   font-family:var(--mono);font-size:11px;letter-spacing:.04em;line-height:1;padding:6px 9px;border-radius:999px;
-  background:var(--fg);color:var(--bg);opacity:0;transform:translateX(4px);pointer-events:none;transition:opacity .2s,transform .2s}
-.pull:hover::after,.pull:focus-visible::after{opacity:1;transform:translateX(0)}
-.pull:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
-html[data-theme="dark"] .pull .knob{background:radial-gradient(circle at 40% 40%,#fff6cf 0 25%,#ffd15c 45%,#e8a400 100%);box-shadow:0 0 10px 2px rgba(255,200,60,.45)}
-@keyframes pull-sway{0%,100%{transform:rotate(0)}30%{transform:rotate(6deg)}70%{transform:rotate(-6deg)}}
-@keyframes pull-tug{0%{transform:translateY(0)}35%{transform:translateY(9px)}100%{transform:translateY(0)}}
+  background:var(--fg);color:var(--bg);opacity:0;transform:translate(4px,-50%);pointer-events:none;transition:opacity .2s,transform .2s}
+.lightswitch:hover::after,.lightswitch:focus-visible::after{opacity:1;transform:translate(0,-50%)}
 html.theme-fade,html.theme-fade *{transition:background-color .45s ease,color .45s ease,border-color .45s ease!important}
-@media (prefers-reduced-motion:reduce){.pull:hover .swing,.pull.tug .swing{animation:none}html.theme-fade,html.theme-fade *{transition:none!important}}
-html.a11y-still .pull:hover .swing,html.a11y-still .pull.tug .swing{animation:none}
+@media (prefers-reduced-motion:reduce){.lightswitch.flick .plate{animation:none}.lightswitch .lever{transition:none}html.theme-fade,html.theme-fade *{transition:none!important}}
+html.a11y-still .lightswitch.flick .plate{animation:none}

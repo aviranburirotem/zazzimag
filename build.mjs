@@ -147,7 +147,7 @@ function home() {
     active: "home", pathname: "/",
     description: `${SITE.name}. ${SITE.tagline}`,
     body: `<section class="wrap intro">
-      <button class="pull" type="button" id="light-cord" aria-pressed="false" aria-label="Turn off the light" data-tip="Turn off the light"><span class="swing"><span class="cord"></span><span class="knob"></span></span></button>
+      <button class="lightswitch" type="button" id="light-switch" aria-pressed="false" aria-label="Turn off the light" data-tip="Turn off the light"><span class="plate"><span class="screw"></span><span class="slot"><span class="lever"></span></span><span class="screw"></span></span></button>
       <div>
       <h1>${br("home.headline")}</h1>
       ${md("home.intro")}</div>

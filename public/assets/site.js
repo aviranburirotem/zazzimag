@@ -114,8 +114,8 @@
   });
   pickLogo();
 
-  // ---- the light cord (home page): pull to turn the lights off / on. Remembered on this device. ----
-  const cord = document.getElementById("light-cord");
+  // ---- the light switch (home page): flip to turn the lights off / on. Remembered on this device. ----
+  const cord = document.getElementById("light-switch");
   const syncCord = () => {
     if (!cord) return;
     const off = isDark();
@@ -127,7 +127,7 @@
   syncCord();
   cord?.addEventListener("click", () => {
     const root = document.documentElement;
-    cord.classList.remove("tug"); void cord.offsetWidth; cord.classList.add("tug");
+    cord.classList.remove("flick"); void cord.offsetWidth; cord.classList.add("flick");
     root.classList.add("theme-fade");
     if (isDark()) delete root.dataset.theme; else root.dataset.theme = "dark";
     try { localStorage.setItem("zz-theme", isDark() ? "dark" : "light"); } catch {}
