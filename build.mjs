@@ -24,7 +24,7 @@ const IG_URL = `https://www.instagram.com/${SITE.handle}/`;
 const OUT = "dist";
 import crypto from "node:crypto";
 // Version stamp for CSS/JS so browsers always load the latest files after a deploy
-const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.css")).update(fs.readFileSync("public/assets/site.js")).update(fs.readFileSync("public/assets/logo-animated.mp4")).update(fs.readFileSync("public/assets/logo-animated-dark.mp4")).digest("hex").slice(0, 8);
+const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.css")).update(fs.readFileSync("public/assets/site.js")).update(fs.readFileSync("public/assets/flipbook.js")).update(fs.readFileSync("public/assets/logo-animated.mp4")).update(fs.readFileSync("public/assets/logo-animated-dark.mp4")).digest("hex").slice(0, 8);
 
 // Coming-soon mode: the live site (zazzimag.com) shows only the coming-soon page.
 // Preview deployments and local builds still show the full site so you can work on it.
@@ -53,8 +53,25 @@ for (const a of articles) {
 // Copyright notice shown in every footer
 const LEGAL = esc(T("footer.copyright").replace(/\{year\}/g, new Date().getFullYear())).replace(/\n/g, "<br>");
 
+// ---------- load issues (flip-through magazines, managed in the console) ----------
+const idir = "content/issues";
+const issues = (fs.existsSync(idir) ? fs.readdirSync(idir) : []).filter((f) => f.endsWith(".json")).map((file) => {
+  let d = {};
+  try { d = JSON.parse(fs.readFileSync(path.join(idir, file), "utf8")); } catch (e) { throw new Error(`Issue "${file}" isn't valid JSON`); }
+  const slug = file.replace(/\.json$/, "");
+  const pages = (d.pages || []).filter((p) => p && p.image);
+  return {
+    ...d, kind: "issue", slug, pages, url: `/issues/${slug}/`,
+    cover: pages[0]?.image || "", coverAlt: pages[0]?.alt || d.title,
+    category: T("issues.category"), readTime: T("issues.pages").replace(/\{n\}/g, pages.length),
+  };
+}).filter((i) => i.draft !== true && i.title && i.date && i.pages.length).sort((a, b) => (a.date < b.date ? 1 : -1));
+
+// Articles and issues together, newest first (home grid and the All articles page)
+const stories = [...articles, ...issues].sort((a, b) => (a.date < b.date ? 1 : -1));
+
 // ---------- templates ----------
-function layout({ title, description, active, body, image, type = "website", pathname = "/" }) {
+function layout({ title, description, active, body, image, type = "website", pathname = "/", scripts = [] }) {
   const full = title ? `${title} · ${SITE.name}` : SITE.name;
   const nav = (href, label, key, cls = "") => `<a href="${href}"${cls ? ` class="${cls}"` : ""}${active === key ? ' aria-current="page"' : ""}>${label}</a>`;
   return `<!doctype html>
@@ -109,13 +126,13 @@ ${body}
     <a href="/accessibility/">Accessibility statement</a>
   </div>
 </div>
-<script src="/assets/site.js?v=${V}" defer></script>
+<script src="/assets/site.js?v=${V}" defer></script>${scripts.join("")}
 </body>
 </html>`;
 }
 
 const artTile = (a, feat = false) => `<a class="tile art${feat ? " feat" : ""}" href="${a.url}" data-cat="${esc(a.category)}">
-  <div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"></div>
+  <div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy">${a.kind === "issue" ? `<span class="flip-badge" aria-hidden="true">${icon("book-open")}</span>` : ""}</div>
   <span class="label">${fmtDate(a.date)} · ${a.readTime}</span><h3>${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap">${esc(a.dek)}</p>` : ""}</a>`;
 const igSlot = () => `<div class="tile ig ig-slot" aria-hidden="true"><div class="ph"></div></div>`;
 
@@ -135,7 +152,7 @@ function ticker() {
 function home() {
   // Newest article large, then two Instagram posts per article.
   const items = [];
-  const [first, ...rest] = articles;
+  const [first, ...rest] = stories;
   if (first) items.push(artTile(first, true));
   const IG_COUNT = 12;
   let a = 0;
@@ -159,14 +176,14 @@ function home() {
 
 function articlesIndex() {
   const ALL = T("articles.allFilter");
-  const cats = [ALL, ...new Set(articles.map((a) => a.category))];
+  const cats = [ALL, ...new Set(stories.map((a) => a.category))];
   return layout({
     title: T("articles.heading"), active: "articles", pathname: "/articles/",
     description: "All Zazzi stories: street style, trends, guides and interviews.",
-    body: `<section class="wrap intro"><div><span class="label">${esc(T("articles.count").replace(/\{n\}/g, articles.length))}</span><h1>${tx("articles.heading")}</h1></div></section>
+    body: `<section class="wrap intro"><div><span class="label">${esc(T("articles.count").replace(/\{n\}/g, stories.length))}</span><h1>${tx("articles.heading")}</h1></div></section>
     <p id="filter-status" class="visually-hidden" aria-live="polite"></p>
     <div class="wrap filters" role="group" aria-label="Filter by category">${cats.map((c) => `<button class="chip" type="button" data-filter="${esc(c)}" aria-pressed="${c === ALL}">${esc(c)}</button>`).join("")}</div>
-    <section class="wrap grid">${articles.map((a) => artTile(a)).join("")}</section>`,
+    <section class="wrap grid">${stories.map((a) => artTile(a)).join("")}</section>`,
   });
 }
 
@@ -186,6 +203,32 @@ function articlePage(a) {
       <div class="strip" data-ig-strip>${'<div class="tile ig-slot" aria-hidden="true"><div class="ph"></div></div>'.repeat(6)}</div></section>
       ${more.length ? `<div class="section-h"><h2>${tx("articles.readNext")}</h2><a class="label with-ic" href="/articles/">${tx("articles.allLink")} ${icon("arrow-right")}</a></div><div class="grid">${more.map((x) => artTile(x)).join("")}</div>` : ""}
     </div></article>`,
+  });
+}
+
+function issuePage(i) {
+  const data = JSON.stringify(i.pages.map((p) => ({ image: p.image, caption: p.caption || "", alt: p.alt || "" }))).replace(/</g, "\\u003c");
+  return layout({
+    title: i.title, description: i.dek || `${i.title}: ${T("issues.pages").replace(/\{n\}/g, i.pages.length)}`, active: "articles", pathname: i.url, image: i.cover, type: "article",
+    scripts: [`<script src="/assets/flipbook.js?v=${V}" defer></script>`],
+    body: `<article class="issue">
+    <header class="wrap"><div class="article-head issue-head">
+      <div class="crumbs label"><a href="/articles/">${tx("articles.heading")}</a><span>/</span><span>${tx("issues.category")}</span></div>
+      <h1>${esc(i.title)}</h1>${i.dek ? `<p class="dek">${esc(i.dek)}</p>` : ""}
+      <div class="meta label"><time datetime="${i.date}">${fmtDate(i.date)}</time><span>${esc(i.readTime)}</span></div></div></header>
+    <section class="wrap flipbook" data-flipbook aria-roledescription="flip-through magazine" aria-label="${esc(i.title)}">
+      <div class="fb-stage"><div class="fb-book"></div></div>
+      <div class="fb-controls">
+        <button class="fb-btn" type="button" data-fb="prev" aria-label="Previous page">${icon("chevron-left")}</button>
+        <span class="fb-count label" aria-live="polite"></span>
+        <button class="fb-btn" type="button" data-fb="next" aria-label="Next page">${icon("chevron-right")}</button>
+      </div>
+      <p class="fb-caption"></p>
+      <p class="fb-hint label">${tx("issues.hint")}</p>
+      <noscript><div class="fb-fallback">${i.pages.map((p) => `<figure><img src="${esc(p.image)}" alt="${esc(p.alt || "")}" loading="lazy">${p.caption ? `<figcaption>${esc(p.caption)}</figcaption>` : ""}</figure>`).join("")}</div></noscript>
+      <script type="application/json" class="fb-data">${data}</script>
+    </section>
+    </article>`,
   });
 }
 
@@ -456,6 +499,7 @@ write("preview/index.html", home()); // private preview, always password-protect
 if (!COMING_SOON) write("index.html", home());
 write("articles/index.html", articlesIndex());
 for (const a of articles) write(`articles/${a.slug}/index.html`, articlePage(a));
+for (const i of issues) write(`issues/${i.slug}/index.html`, issuePage(i));
 write("about/index.html", about());
 write("store/index.html", store());
 for (const p of PRODUCTS) write(`store/${p.slug}/index.html`, productPage(p));
@@ -471,11 +515,11 @@ if (COMING_SOON) {
   const page = comingSoon();
   write("index.html", page);
   write("404.html", page);
-  write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /preview/\nDisallow: /articles/\nDisallow: /about/\nDisallow: /store/\nDisallow: /admin/\n`);
+  write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /preview/\nDisallow: /articles/\nDisallow: /about/\nDisallow: /store/\nDisallow: /issues/\nDisallow: /admin/\n`);
 } else {
   write("404.html", notFound());
-  write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${["/", "/articles/", "/about/", "/store/", "/accessibility/", "/privacy/", ...articles.map((a) => a.url), ...PRODUCTS.map((p) => p.url)].map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
+  write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${["/", "/articles/", "/about/", "/store/", "/accessibility/", "/privacy/", ...articles.map((a) => a.url), ...issues.map((i) => i.url), ...PRODUCTS.map((p) => p.url)].map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
   write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /preview/\nSitemap: ${SITE.url}/sitemap.xml\n`);
 }
 
-console.log(COMING_SOON ? `Built coming-soon page into /${OUT}` : `Built ${articles.length} articles into /${OUT}`);
+console.log(`Built ${articles.length} articles and ${issues.length} issues into /${OUT}${COMING_SOON ? " (coming-soon mode)" : ""}`);

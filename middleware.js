@@ -1,6 +1,6 @@
 // Password protection, using the console login (/admin/).
 // - /preview/ is always private, before and after launch.
-// - Articles, Info and Store are private only while the site is in coming-soon mode.
+// - Articles, issues, Info and Store are private only while the site is in coming-soon mode.
 import { LAUNCHED } from "./lib/site-config.js";
 
 export const config = {
@@ -9,6 +9,7 @@ export const config = {
     "/articles", "/articles/:path*", "/articles.json",
     "/about", "/about/:path*",
     "/store", "/store/:path*",
+    "/issues", "/issues/:path*",
   ],
 };
 

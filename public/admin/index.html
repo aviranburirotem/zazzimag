@@ -61,6 +61,17 @@
   .ig-item.is-hidden img{filter:grayscale(1);opacity:.35}
   .ig-item.is-hidden{border-style:dashed}
   .ig-item:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+  .pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-top:8px}
+  .page-card{display:grid;gap:6px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+  .page-card img{width:100%;aspect-ratio:3/4;object-fit:contain;background:#fbfaf7;border-radius:3px}
+  .page-card .pc-top{display:flex;justify-content:space-between;align-items:center}
+  .page-card .pc-ctl{display:flex;gap:4px}
+  .page-card .pc-ctl .b{padding:5px}
+  .page-card input{width:100%;font-size:13px;padding:8px}
+  .page-card label{font-size:12px}
+  .add-pages{display:grid;place-items:center;gap:6px;min-height:200px;border:1.5px dashed var(--line);border-radius:6px;background:none;color:var(--muted);font-weight:600}
+  .add-pages:hover{border-color:var(--fg);color:var(--fg)}
+  .add-pages .ic{width:28px;height:28px}
   .panel{background:var(--bg);border:1px solid var(--line);border-radius:6px}
   main.c{padding-block:24px 64px}
 
@@ -161,6 +172,7 @@ function topBar(extra = "") {
     <span class="c-title">Console</span>
     <nav class="c-tabs" aria-label="Console sections">
       <button type="button" data-act="tab-articles" ${tab === "articles" ? 'aria-current="page"' : ""}>${icon("newspaper")}<span>Articles</span></button>
+      <button type="button" data-act="tab-issues" ${tab === "issues" ? 'aria-current="page"' : ""}>${icon("book-open")}<span>Issues</span></button>
       <button type="button" data-act="tab-store" ${tab === "store" ? 'aria-current="page"' : ""}>${icon("shopping-bag")}<span>Store</span></button>
       <button type="button" data-act="tab-insta" ${tab === "insta" ? 'aria-current="page"' : ""}>${icon("instagram")}<span>Instagram</span></button>
       <button type="button" data-act="tab-texts" ${tab === "texts" ? 'aria-current="page"' : ""}>${icon("pencil")}<span>Site texts</span></button>
@@ -593,6 +605,117 @@ async function saveInsta() {
   } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
 }
 
+// ---------- issues (flip-through magazines) ----------
+let iss = null; // { slug, isNew, data:{title,dek,date,draft,pages:[{image,caption,alt}]}, pending: Map(name -> {sha, preview}) }
+async function renderIssues(flash = "") {
+  tab = "issues";
+  app.innerHTML = topBar(`<button class="b primary" type="button" data-act="new-issue">${icon("plus")}<span>New issue</span></button>`) +
+    `<main class="wrap c"><div class="list-head"><div><span class="label">Issues</span><h1>Flip-through issues</h1></div>
+    <p class="hint" style="max-width:48ch;margin:0">An issue is a set of photos that readers flip through like a magazine. The first page is the cover.</p></div>
+    <p class="status ok" id="flash">${esc(flash)}</p><div class="rows" id="irows"><div class="panel empty">Loading…</div></div></main>`;
+  try {
+    const { issues } = await api("issues");
+    const box = document.getElementById("irows");
+    box.innerHTML = issues.length ? issues.map((i) => `<div class="row" data-islug="${esc(i.slug)}">
+      ${i.cover ? `<img src="${esc(shown(i.cover))}" alt="" loading="lazy">` : `<div class="noimg"></div>`}
+      <div><h3>${esc(i.title)}</h3><div class="meta-l"><span class="pill ${i.draft ? "draft" : "live"}">${i.draft ? "Draft" : "Published"}</span><span class="label">${i.pages} pages · ${esc(i.date)}</span></div></div>
+      <div class="row-actions">
+        ${i.draft ? "" : `<a class="b" href="/issues/${esc(i.slug)}/" target="_blank" rel="noopener" aria-label="View">${icon("eye")}</a>`}
+        <button class="b" type="button" data-act="edit-issue">${icon("pencil")}<span>Edit</span></button>
+        <button class="b danger" type="button" data-act="ask-del-issue" aria-label="Delete">${icon("trash-2")}</button>
+      </div></div>`).join("") : `<div class="panel empty">No issues yet. Click <b>New issue</b> to make your first one.</div>`;
+  } catch (err) { if (err.message !== "auth") document.getElementById("irows").innerHTML = `<div class="panel empty status err">${esc(err.message)}</div>`; }
+}
+
+async function openIssue(slug) {
+  tab = "issues";
+  if (!slug) { iss = { slug: "", isNew: true, data: { title: "", dek: "", date: today(), draft: true, pages: [] }, pending: new Map() }; return drawIssue(); }
+  app.innerHTML = topBar() + `<main class="wrap c"><div class="panel empty">Loading…</div></main>`;
+  try { const { issue } = await api("issue", { query: `&slug=${encodeURIComponent(slug)}` }); iss = { slug, isNew: false, data: { pages: [], ...issue }, pending: new Map() }; drawIssue(); }
+  catch (err) { if (err.message !== "auth") renderIssues(); }
+}
+
+const issueImg = (u) => { const m = u && u.match(/^\/images\/issues\/[^/]+\/(.+)$/); const p = m && iss?.pending.get(m[1]); return p ? p.preview : shown(u); };
+
+function drawIssue() {
+  const d = iss.data;
+  app.innerHTML = topBar(`<button class="b" type="button" data-act="tab-issues">${icon("book-open")}<span>All issues</span></button>`) + `
+  <main class="wrap c"><form class="panel form" id="iform" autocomplete="off" style="max-width:1000px">
+    <span class="label">${iss.isNew ? "New issue" : "Edit issue"}</span>
+    <label for="i-title">Title<input id="i-title" value="${esc(d.title || "")}" required></label>
+    <label for="i-slug">Web address <span class="hint">${iss.isNew ? "set automatically from the title" : "can't be changed after publishing"}</span>
+      <div class="slug-row"><span>zazzimag.com/issues/</span><input id="i-slug" value="${esc(iss.slug)}" ${iss.isNew ? "" : "disabled"}></div></label>
+    <label for="i-dek">Summary <span class="hint">optional, shown under the title</span><textarea id="i-dek" style="min-height:64px">${esc(d.dek || "")}</textarea></label>
+    <label for="i-date" style="max-width:220px">Date<input id="i-date" type="date" value="${esc(d.date || today())}" required></label>
+    <div><span class="label">Pages</span> <span class="hint">· the first page is the cover · change the order with the arrows</span><div class="pages" id="pages"></div>
+      <input type="file" id="pg-file" accept="image/*" multiple hidden><div class="uploading" id="uploading"></div></div>
+    <label class="switch"><input type="checkbox" id="i-pub" ${d.draft === true ? "" : "checked"}> Published <span class="hint">untick to keep it as a hidden draft</span></label>
+    <div class="save-bar"><button class="b primary" type="submit" id="isave">${icon("save")}<span>Save issue</span></button>
+      ${iss.isNew ? "" : `<a class="b" href="/issues/${esc(iss.slug)}/" target="_blank" rel="noopener">${icon("eye")}<span>Open live page</span></a>`}<span class="status" id="st"></span></div>
+  </form></main>`;
+  const t = document.getElementById("i-title"), sl = document.getElementById("i-slug");
+  let touched = !iss.isNew;
+  t.oninput = () => { if (iss.isNew && !touched) { iss.slug = slugify(t.value); sl.value = iss.slug; } };
+  sl.oninput = () => { touched = true; iss.slug = slugify(sl.value); };
+  document.getElementById("pg-file").onchange = async (e) => {
+    const files = [...e.target.files]; e.target.value = "";
+    syncIssue();
+    for (const f of files) {
+      const box = document.getElementById("uploading");
+      const chip = document.createElement("span"); chip.className = "pill"; chip.textContent = `Uploading ${f.name}…`; box.append(chip);
+      try {
+        const data = await resize(f, 1800);
+        const { sha } = await api("upload", { method: "POST", body: { data } });
+        let name = `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}.jpg`;
+        iss.pending.set(name, { sha, preview: data });
+        iss.data.pages.push({ image: `/images/issues/${iss.slug}/${name}`, caption: "", alt: "" });
+        chip.remove(); drawPages();
+      } catch (err) { chip.textContent = `Couldn't upload ${f.name}: ${err.message}`; chip.style.color = "var(--accent)"; }
+    }
+  };
+  document.getElementById("iform").onsubmit = (e) => { e.preventDefault(); saveIssue(); };
+  drawPages();
+}
+
+function drawPages() {
+  const ps = iss.data.pages, box = document.getElementById("pages");
+  box.innerHTML = ps.map((p, i) => `<div class="page-card" data-i="${i}">
+    <div class="pc-top"><span class="label">${i === 0 ? "Cover" : "Page " + (i + 1)}</span>
+      <span class="pc-ctl"><button type="button" class="b" data-act="pg-left" aria-label="Move earlier" ${i === 0 ? "disabled" : ""}>${icon("chevron-left")}</button><button type="button" class="b" data-act="pg-right" aria-label="Move later" ${i === ps.length - 1 ? "disabled" : ""}>${icon("chevron-right")}</button><button type="button" class="b danger" data-act="pg-del" aria-label="Remove page">${icon("trash-2")}</button></span></div>
+    <img src="${esc(issueImg(p.image))}" alt="">
+    <label>Caption / credit<input data-f="caption" value="${esc(p.caption || "")}"></label>
+    <label>Describe the photo<input data-f="alt" value="${esc(p.alt || "")}"></label>
+  </div>`).join("") + `<button type="button" class="add-pages" id="add-pages">${icon("image-plus")}<span>Add pages</span><span class="hint">you can pick several photos at once</span></button>`;
+  document.getElementById("add-pages").onclick = () => {
+    syncIssue();
+    if (!iss.slug) { status("Add a title first, so the pages have a folder.", "err"); document.getElementById("i-title").focus(); return; }
+    document.getElementById("pg-file").click();
+  };
+}
+
+function syncIssue() {
+  const d = iss.data, v = (id) => document.getElementById(id)?.value ?? "";
+  d.title = v("i-title").trim(); d.dek = v("i-dek").trim(); d.date = v("i-date"); d.draft = !document.getElementById("i-pub")?.checked;
+  document.querySelectorAll(".page-card").forEach((c) => { const p = d.pages[+c.dataset.i]; c.querySelectorAll("[data-f]").forEach((el) => (p[el.dataset.f] = el.value)); });
+  // if the address changed before saving, keep new uploads pointing at the right folder
+  d.pages.forEach((p) => { const m = p.image.match(/^\/images\/issues\/[^/]*\/(.+)$/); if (m && iss.pending.has(m[1])) p.image = `/images/issues/${iss.slug}/${m[1]}`; });
+}
+
+async function saveIssue() {
+  syncIssue();
+  const d = iss.data;
+  if (!d.title) return status("Add a title.", "err");
+  if (!iss.slug) return status("Add a web address.", "err");
+  if (!d.pages.length && !d.draft) return status("Add at least one page, or untick Published to save a draft.", "err");
+  const used = [...iss.pending.entries()].filter(([n]) => d.pages.some((p) => p.image.endsWith("/" + n))).map(([name, v]) => ({ name, sha: v.sha }));
+  const btn = document.getElementById("isave"); btn.disabled = true; status("Saving…");
+  try {
+    await api("saveIssue", { method: "POST", body: { slug: iss.slug, isNew: iss.isNew, issue: d, images: used } });
+    for (const { name } of used) recent.set(`/images/issues/${iss.slug}/${name}`, iss.pending.get(name).preview);
+    renderIssues(d.draft ? `Saved "${d.title}" as a draft.` : `Saved "${d.title}". It will be live on the site in about a minute.`);
+  } catch (err) { if (err.message !== "auth") { status(err.message, "err"); btn.disabled = false; } }
+}
+
 // ---------- site texts ----------
 async function renderTexts() {
   tab = "texts";
@@ -640,6 +763,18 @@ app.addEventListener("click", async (e) => {
   if (act === "tab-texts") renderTexts();
   if (act === "tab-store") renderStore();
   if (act === "tab-insta") renderInsta();
+  if (act === "tab-issues") renderIssues();
+  if (act === "new-issue") openIssue();
+  if (act === "edit-issue") openIssue(e.target.closest("[data-islug]").dataset.islug);
+  if (act === "ask-del-issue") e.target.closest(".row-actions").innerHTML = `<span class="confirm">Delete this issue and its pages? <button class="b danger" type="button" data-act="del-issue">${icon("trash-2")}Delete</button><button class="b" type="button" data-act="tab-issues">Cancel</button></span>`;
+  if (act === "del-issue") {
+    const row = e.target.closest("[data-islug]"); row.querySelector(".row-actions").innerHTML = `<span class="status">Deleting…</span>`;
+    try { await api("deleteIssue", { method: "POST", body: { slug: row.dataset.islug } }); renderIssues("Deleted. The site updates in about a minute."); }
+    catch (err) { if (err.message !== "auth") row.querySelector(".row-actions").innerHTML = `<span class="status err">${esc(err.message)}</span>`; }
+  }
+  const pg = e.target.closest(".page-card"), pgi = pg ? +pg.dataset.i : -1;
+  if (act === "pg-left" || act === "pg-right") { syncIssue(); const j = act === "pg-left" ? pgi - 1 : pgi + 1; [iss.data.pages[pgi], iss.data.pages[j]] = [iss.data.pages[j], iss.data.pages[pgi]]; drawPages(); }
+  if (act === "pg-del") { syncIssue(); iss.data.pages.splice(pgi, 1); drawPages(); status("Page removed. Save to apply."); }
   if (act === "ig-save") saveInsta();
   if (act === "add-product") { syncProducts(); store.products.push({ name: "", price: "", status: "soon", description: "", link: "", image: "", imageAlt: "", hidden: false }); drawProducts(); [...document.querySelectorAll(".prod [data-f=name]")].pop()?.focus(); }
   const prow = e.target.closest(".prod"), pi = prow ? +prow.dataset.i : -1;

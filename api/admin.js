@@ -260,6 +260,60 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
+    // Issues: flip-through magazines (content/issues/<slug>.json + public/images/issues/<slug>/)
+    if (action === "issues") {
+      const files = (await gh(repo(`/contents/content/issues?ref=${BRANCH}`))) || [];
+      const list = await Promise.all(files.filter((f) => f.type === "file" && f.name.endsWith(".json")).map(async (f) => {
+        let d = {};
+        try { d = JSON.parse(await gh(repo(`/contents/${f.path}?ref=${BRANCH}`), { raw: true })); } catch {}
+        return { slug: f.name.replace(/\.json$/, ""), title: d.title || f.name, date: d.date || "", cover: d.pages?.[0]?.image || "", pages: (d.pages || []).length, draft: d.draft === true };
+      }));
+      return res.json({ issues: list.sort((a, b) => (a.date < b.date ? 1 : -1)) });
+    }
+    if (action === "issue") {
+      const slug = String(req.query.slug || "");
+      if (!SLUG.test(slug)) return fail(400, "Invalid issue address.");
+      const text = await gh(repo(`/contents/content/issues/${slug}.json?ref=${BRANCH}`), { raw: true });
+      if (text == null) return fail(404, "Issue not found.");
+      return res.json({ slug, issue: JSON.parse(text) });
+    }
+    if (action === "saveIssue" && req.method === "POST") {
+      const slug = String(body.slug || "");
+      const d = body.issue || {};
+      if (!SLUG.test(slug)) return fail(400, "The web address can only use lowercase letters, numbers and dashes.");
+      const title = String(d.title || "").trim().slice(0, 160);
+      if (!title) return fail(400, "The issue needs a title.");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date || ""))) return fail(400, "Choose a date.");
+      const pagesIn = Array.isArray(d.pages) ? d.pages.slice(0, 200) : [];
+      const pages = [];
+      for (const p of pagesIn) {
+        const image = String(p.image || "");
+        if (!/^(\/images\/issues\/[a-z0-9-]+\/[a-z0-9._-]+|https:\/\/\S+)$/.test(image)) return fail(400, "One of the pages has an invalid photo.");
+        pages.push({ image, caption: String(p.caption || "").replace(/\s*\n\s*/g, " ").trim().slice(0, 300), alt: String(p.alt || "").replace(/\s*\n\s*/g, " ").trim().slice(0, 200) });
+      }
+      if (!pages.length && d.draft !== true) return fail(400, "Add at least one page, or untick Published to save a draft.");
+      if (body.isNew && (await gh(repo(`/contents/content/issues/${slug}.json?ref=${BRANCH}`)))) return fail(409, "An issue with this address already exists. Change the address.");
+      const issue = { title, dek: String(d.dek || "").replace(/\s*\n\s*/g, " ").trim().slice(0, 400), date: d.date, ...(d.draft === true ? { draft: true } : {}), pages };
+      const entries = [{ path: `content/issues/${slug}.json`, content: JSON.stringify(issue, null, 2) + "\n" }];
+      for (const img of body.images || []) {
+        const name = String(img.name || "");
+        if (!IMG_NAME.test(name) || !/^[a-f0-9]{40}$/.test(img.sha)) return fail(400, `Invalid photo: ${name}`);
+        if (pages.some((p) => p.image === `/images/issues/${slug}/${name}`)) entries.push({ path: `public/images/issues/${slug}/${name}`, sha: img.sha });
+      }
+      await commit(entries, `${body.isNew ? "Add" : "Update"} issue: ${title.slice(0, 70)}`);
+      return res.json({ ok: true });
+    }
+    if (action === "deleteIssue" && req.method === "POST") {
+      const slug = String(body.slug || "");
+      if (!SLUG.test(slug)) return fail(400, "Invalid issue address.");
+      const ref = await gh(repo(`/git/ref/heads/${BRANCH}`));
+      const parent = await gh(repo(`/git/commits/${ref.object.sha}`));
+      const tree = await gh(repo(`/git/trees/${parent.tree.sha}?recursive=1`));
+      const imgs = (tree.tree || []).filter((t) => t.type === "blob" && t.path.startsWith(`public/images/issues/${slug}/`)).map((t) => t.path);
+      await commit([{ path: `content/issues/${slug}.json`, remove: true }, ...imgs.map((p) => ({ path: p, remove: true }))], `Delete issue: ${slug}`);
+      return res.json({ ok: true });
+    }
+
     if (action === "delete" && req.method === "POST") {
       const slug = String(body.slug || "");
       if (!SLUG.test(slug)) return fail(400, "Invalid article address.");
