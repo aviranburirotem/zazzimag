@@ -558,7 +558,7 @@ let insta = null; // { posts, hidden: Set }
 async function renderInsta(flash = "") {
   tab = "insta";
   app.innerHTML = topBar() + `<main class="wrap c"><div class="list-head"><div><span class="label">Instagram</span><h1>Feed posts</h1></div>
-    <p class="hint" style="max-width:48ch;margin:0">Click a post to hide it from the website (it stays on Instagram). Changes show on the site within about 5 minutes.</p></div>
+    <p class="hint" style="max-width:48ch;margin:0">Click a post to hide it from the website (it stays on Instagram). Changes show on the site within about 2 minutes.</p></div>
     <p class="status ok" id="flash">${esc(flash)}</p><div id="ig" class="ig-grid"><div class="panel empty">Loading your posts…</div></div></main>`;
   try {
     const { posts, hidden } = await api("igPosts");
@@ -589,7 +589,7 @@ async function saveInsta() {
   status("Saving…");
   try {
     await api("saveIgHidden", { method: "POST", body: { hidden: [...insta.hidden] } });
-    renderInsta(`Saved. ${insta.hidden.size ? insta.hidden.size + " post" + (insta.hidden.size === 1 ? " is" : "s are") + " hidden" : "All posts are shown"} on the website (updates within about 5 minutes).`);
+    renderInsta(`Saved. ${insta.hidden.size ? insta.hidden.size + " post" + (insta.hidden.size === 1 ? " is" : "s are") + " hidden" : "All posts are shown"} on the website (updates within about 2 minutes).`);
   } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
 }
 
