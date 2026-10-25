@@ -342,3 +342,41 @@ html.a11y-still .lightswitch.flick .plate{animation:none}
 @media (prefers-reduced-motion:reduce){.leaf,.fb-book{transition:none!important}}
 html.a11y-still .leaf,html.a11y-still .fb-book{transition:none!important}
 .fb-single .leaf.flipped{pointer-events:none}
+
+/* issue tiles: a printed magazine sitting on a small stack of pages */
+.tile.issue .ph{display:grid;place-items:center;background:var(--soft);overflow:visible}
+.tile.issue .mag{position:relative;width:74%;aspect-ratio:3/4;transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
+.tile.issue .mag img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;border-radius:1px 3px 3px 1px;
+  box-shadow:inset 3px 0 6px rgba(0,0,0,.15),0 12px 24px rgba(0,0,0,.22)}
+.tile.issue .mag::before,.tile.issue .mag::after{content:"";position:absolute;inset:0;border-radius:1px 3px 3px 1px;background:#f6f4ee;border:1px solid #dcd8cf}
+.tile.issue .mag::before{transform:translate(5px,5px)}
+.tile.issue .mag::after{transform:translate(10px,10px);background:#efece4}
+.tile.issue:hover .mag{transform:translateY(-6px) rotate(-2.5deg)}
+.tile.issue:hover .ph img{filter:none}
+.tile.issue.feat .mag{width:64%}
+.issue-label{display:inline-flex;align-items:center;gap:6px;color:var(--accent)}
+.issue-label .ic{width:14px;height:14px}
+@media (prefers-reduced-motion:reduce){.tile.issue .mag{transition:none}.tile.issue:hover .mag{transform:none}}
+
+/* issue popup */
+html.fb-lock,html.fb-lock body{overflow:hidden}
+.fb-modal{position:fixed;inset:0;z-index:40;background:rgba(12,12,14,.97);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:grid;place-items:center;
+  padding:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));
+  animation:fb-in .25s ease-out}
+@keyframes fb-in{from{opacity:0}to{opacity:1}}
+.fb-modal-inner{width:min(1200px,100%);max-height:100%;display:grid;gap:6px;color:#f2f2f2}
+.fb-modal-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 4px}
+.fb-modal-top h2{margin:2px 0 0;font-style:italic;font-weight:900;font-stretch:70%;font-size:clamp(22px,3vw,34px);line-height:1;text-transform:uppercase}
+.fb-modal .label{color:#a8abb3}
+.fb-modal-kind{color:#ff6b6b!important}
+.fb-close{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;display:grid;place-items:center}
+.fb-close:hover{background:rgba(255,255,255,.1)}
+.fb-close .ic{width:22px;height:22px}
+.flipbook.in-modal{padding:4px 0 0;gap:10px}
+.in-modal.fb-double .fb-book{width:min(100%,calc(70vh * 1.5),1100px)}
+.in-modal.fb-single .fb-book{width:min(100%,calc(66vh * .75),520px)}
+.in-modal .fb-btn{background:transparent;border-color:rgba(255,255,255,.3);color:#fff}
+.in-modal .fb-btn:hover:not(:disabled){border-color:#fff}
+.in-modal .fb-caption{color:#c9cbd1}
+.in-modal .face{box-shadow:0 14px 40px rgba(0,0,0,.5)}
+@media (prefers-reduced-motion:reduce){.fb-modal{animation:none}}

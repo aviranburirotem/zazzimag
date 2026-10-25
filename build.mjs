@@ -97,7 +97,7 @@ function layout({ title, description, active, body, image, type = "website", pat
 <script>try{if(localStorage.getItem("zz-theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}</script>
 <link rel="stylesheet" href="/assets/site.css?v=${V}">
 </head>
-<body data-handle="${esc(SITE.handle)}" data-follow="${tx("home.followTile")}">
+<body data-handle="${esc(SITE.handle)}" data-follow="${tx("home.followTile")}" data-issue-label="${tx("issues.category")}">
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="wrap bar">
   <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home">${logoVideo(56)}</a>
@@ -126,14 +126,21 @@ ${body}
     <a href="/accessibility/">Accessibility statement</a>
   </div>
 </div>
-<script src="/assets/site.js?v=${V}" defer></script>${scripts.join("")}
+<template id="fb-icons"><span class="x">${icon("x")}</span><span class="l">${icon("chevron-left")}</span><span class="r">${icon("chevron-right")}</span></template>
+<script src="/assets/site.js?v=${V}" defer></script>
+<script src="/assets/flipbook.js?v=${V}" defer></script>${scripts.join("")}
 </body>
 </html>`;
 }
 
-const artTile = (a, feat = false) => `<a class="tile art${feat ? " feat" : ""}" href="${a.url}" data-cat="${esc(a.category)}">
-  <div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy">${a.kind === "issue" ? `<span class="flip-badge" aria-hidden="true">${icon("book-open")}</span>` : ""}</div>
+const artTile = (a, feat = false) => a.kind === "issue" ? issueTile(a, feat) : `<a class="tile art${feat ? " feat" : ""}" href="${a.url}" data-cat="${esc(a.category)}">
+  <div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"></div>
   <span class="label">${fmtDate(a.date)} · ${a.readTime}</span><h3>${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap">${esc(a.dek)}</p>` : ""}</a>`;
+// Issues look like a printed magazine: the cover sits on a little stack of pages.
+// Clicking opens the flip-through popup (flipbook.js); the link still works on its own.
+const issueTile = (a, feat = false) => `<a class="tile art issue${feat ? " feat" : ""}" href="${a.url}" data-issue="${esc(a.slug)}" data-cat="${esc(a.category)}">
+  <div class="ph"><div class="mag"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"></div></div>
+  <span class="label issue-label">${icon("book-open")}${tx("issues.category")} · ${esc(a.readTime)}</span><h3>${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap">${esc(a.dek)}</p>` : ""}</a>`;
 const igSlot = () => `<div class="tile ig ig-slot" aria-hidden="true"><div class="ph"></div></div>`;
 
 // Animated heart logo (looping video, falls back to the still logo)
@@ -210,7 +217,6 @@ function issuePage(i) {
   const data = JSON.stringify(i.pages.map((p) => ({ image: p.image, caption: p.caption || "", alt: p.alt || "" }))).replace(/</g, "\\u003c");
   return layout({
     title: i.title, description: i.dek || `${i.title}: ${T("issues.pages").replace(/\{n\}/g, i.pages.length)}`, active: "articles", pathname: i.url, image: i.cover, type: "article",
-    scripts: [`<script src="/assets/flipbook.js?v=${V}" defer></script>`],
     body: `<article class="issue">
     <header class="wrap"><div class="article-head issue-head">
       <div class="crumbs label"><a href="/articles/">${tx("articles.heading")}</a><span>/</span><span>${tx("issues.category")}</span></div>
@@ -500,6 +506,7 @@ if (!COMING_SOON) write("index.html", home());
 write("articles/index.html", articlesIndex());
 for (const a of articles) write(`articles/${a.slug}/index.html`, articlePage(a));
 for (const i of issues) write(`issues/${i.slug}/index.html`, issuePage(i));
+write("issues/data.json", JSON.stringify(Object.fromEntries(issues.map((i) => [i.slug, { title: i.title, dek: i.dek || "", pagesLabel: i.readTime, pages: i.pages.map((p) => ({ image: p.image, caption: p.caption || "", alt: p.alt || "" })) }]))));
 write("about/index.html", about());
 write("store/index.html", store());
 for (const p of PRODUCTS) write(`store/${p.slug}/index.html`, productPage(p));
