@@ -403,3 +403,7 @@ html.fb-lock,html.fb-lock body{overflow:hidden}
 .fb-zoomed .fb-zoom-btn{border-color:var(--fg)}
 .in-modal.fb-zoomed .fb-zoom-btn{border-color:#fff}
 html.a11y-still .fb-zoomwrap.fb-anim{transition:none}
+
+/* space between the end of an article (Read next / From the feed) and the footer */
+article{padding-bottom:72px}
+@media (max-width:700px){article{padding-bottom:56px}}
