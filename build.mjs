@@ -34,6 +34,11 @@ const VIDEO = VIDEO_MANIFEST
   ? { wide: `/assets/footer-video/${VIDEO_MANIFEST.id}-wide.mp4`, small: `/assets/footer-video/${VIDEO_MANIFEST.id}-small.mp4`, poster: `/assets/footer-video/${VIDEO_MANIFEST.id}-poster.jpg` }
   : { wide: `/assets/strip-wide.mp4?v=${V}`, small: `/assets/strip-small.mp4?v=${V}`, poster: `/assets/strip-poster.jpg?v=${V}` };
 
+// Meta Pixel (console → Site texts → Ads and tracking). Runs only after the visitor accepts.
+const PIXEL = (T("meta.pixelId") || "").replace(/\D/g, "");
+const PIXEL_ON = PIXEL.length >= 8;
+const consentTag = PIXEL_ON ? `\n<script src="/assets/consent.js?v=${V}" data-pixel="${PIXEL}" defer></script>` : "";
+
 // Coming-soon mode: the live site (zazzimag.com) shows only the coming-soon page.
 // Preview deployments and local builds still show the full site so you can work on it.
 // When ready to launch, set LAUNCHED to true in lib/site-config.js.
@@ -127,7 +132,7 @@ ${body}
   <button class="vstrip-btn" type="button" aria-label="Pause video" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button>
 </div>` : ""}<div class="wrap">
   <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home"><img src="/assets/logo.png" alt="" width="56" height="56"></a>
-  <nav aria-label="Footer" class="label"><a href="/articles/">Articles</a><a href="/about/">Info &amp; contact</a>${on("show.storeNav") ? `<a href="/store/">Store</a>` : ""}<a href="/accessibility/">Accessibility</a><a href="/privacy/">Privacy</a></nav>
+  <nav aria-label="Footer" class="label"><a href="/articles/">Articles</a><a href="/about/">Info &amp; contact</a>${on("show.storeNav") ? `<a href="/store/">Store</a>` : ""}<a href="/accessibility/">Accessibility</a><a href="/privacy/">Privacy</a>${PIXEL_ON ? `<a href="/privacy/#cookies" data-consent-open>Cookie settings</a>` : ""}</nav>
   <div class="social"><a class="icon-btn" href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram @${SITE.handle}">${icon("instagram")}</a><a class="icon-btn" href="mailto:${SITE.email}" aria-label="Email ${SITE.email}">${icon("mail")}</a></div>
   <p class="legal">${LEGAL}</p>
 </div></footer>
@@ -142,7 +147,7 @@ ${body}
 </div>
 <template id="fb-icons"><span class="x">${icon("x")}</span><span class="l">${icon("chevron-left")}</span><span class="r">${icon("chevron-right")}</span><span class="zi">${icon("zoom-in")}</span><span class="zo">${icon("zoom-out")}</span></template>
 <script src="/assets/site.js?v=${V}" defer></script>
-<script src="/assets/flipbook.js?v=${V}" defer></script>${scripts.join("")}
+<script src="/assets/flipbook.js?v=${V}" defer></script>${consentTag}${scripts.join("")}
 </body>
 </html>`;
 }
@@ -391,7 +396,7 @@ function accessibility() {
 }
 
 function privacy() {
-  const updated = "October 24, 2026";
+  const updated = PIXEL_ON ? "October 27, 2026" : "October 24, 2026";
   const mail = `<a href="mailto:${SITE.email}">${SITE.email}</a>`;
   return layout({
     title: "Privacy policy", pathname: "/privacy/",
@@ -399,7 +404,7 @@ function privacy() {
     body: `<section class="wrap page statement">
     <h1>Privacy</h1>
     <div id="en" lang="en">
-      <p>This policy explains what information is collected when you use zazzimag.com, run by ${esc(SITE.name)} ("we"). We keep it short because we collect very little: there are no visitor accounts, no advertising and no tracking cookies, and we never sell your information.</p>
+      <p>This policy explains what information is collected when you use zazzimag.com, run by ${esc(SITE.name)} ("we"). We keep it short because we collect very little: there are no visitor accounts${PIXEL_ON ? ", the only tracking is Meta's pixel, which runs only if you agree," : ", no advertising and no tracking cookies,"} and we never sell your information.</p>
       <h2>Information you send us</h2>
       <ul>
         <li><strong>Contact form and store sign-up.</strong> These open your own email app with a message to ${mail}. We receive only what you choose to send, such as your name, email address and message, and use it to reply to you or to tell you about new store items you asked to hear about.</li>
@@ -411,8 +416,15 @@ function privacy() {
         <li><strong>Hosting.</strong> The site is hosted by Vercel. Like any web host, Vercel processes technical data such as your IP address, browser type and the pages you request, to deliver the site and keep it secure.</li>
         <li><strong>Showing prices in your currency.</strong> To show store prices in your local currency, the site checks which country you're browsing from, based on your IP address. We don't store this; your browser keeps the result only until you close the tab.</li>
         <li><strong>Settings on your device.</strong> If you use the accessibility menu or the light switch, your choices (for example larger text or the dark look) are saved in your browser's local storage so they stay on next time. This never leaves your device.</li>
-        <li>We don't use analytics, advertising or tracking cookies.</li>
-      </ul>
+        ${PIXEL_ON ? "" : "<li>We don't use analytics, advertising or tracking cookies.</li>"}
+      </ul>${PIXEL_ON ? `
+      <h2 id="cookies">Meta Pixel (only if you agree)</h2>
+      <p>We advertise on Instagram. With your permission, the site loads Meta's pixel, which sets cookies and tells Meta (Meta Platforms Ireland Ltd. / Meta Platforms, Inc.) which pages you visit, along with your IP address and browser details. We use it to measure our ads and to show Zazzi to people who might like it, including people similar to our visitors. Meta handles this data under <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener">its own privacy policy</a>, and it may be processed outside Israel and the EU.</p>
+      <ul>
+        <li>The pixel is off until you choose Accept. If you choose Decline, it never loads.</li>
+        <li>Your choice is saved in your browser. You can change it at any time: <a href="#cookies" data-consent-open>Cookie settings</a>.</li>
+        <li>You can also control the ads you see in your Meta account under Accounts Center → Ad preferences.</li>
+      </ul>` : ""}
       <h2>Content from other services</h2>
       <p>Some parts of the site load content directly from other companies, which means your browser connects to them and they receive your IP address:</p>
       <ul>
@@ -501,7 +513,7 @@ function comingSoon() {
   <a class="btn" href="mailto:${SITE.email}" aria-label="Email ${SITE.email}">${icon("mail")}<span class="t">${SITE.email}</span></a>
   <a class="btn dark" href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram @${SITE.handle}">${icon("instagram")}<span class="t">@${SITE.handle}</span></a>
   <a class="a11y-link" href="/accessibility/">${icon("accessibility")}Accessibility statement</a>
-  <a class="a11y-link" href="/privacy/">Privacy policy</a>
+  <a class="a11y-link" href="/privacy/">Privacy policy</a>${PIXEL_ON ? `\n  <a class="a11y-link" href="/privacy/#cookies" data-consent-open>Cookie settings</a>` : ""}
   <p class="legal">${esc(T("footer.copyright").replace(/\{year\}/g, new Date().getFullYear()).split(/(?<=reserved\.)/)[0])}</p>
 </footer>
 <script>
@@ -511,7 +523,7 @@ function comingSoon() {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) set(true);
   b.addEventListener("click", () => set(!v.paused));
 })();
-</script>
+</script>${consentTag}
 </body>
 </html>`;
 }
