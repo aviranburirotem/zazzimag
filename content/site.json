@@ -1,9 +1,23 @@
 {
+  "show": {
+    "ticker": "on",
+    "storeNav": "on",
+    "lightSwitch": "on",
+    "igButton": "on",
+    "videoStrip": "on",
+    "feed": "on",
+    "band": "on",
+    "feedStrip": "on",
+    "readNext": "on"
+  },
   "brand": {
     "name": "Zazzi Magazine",
     "tagline": "Streetwear, trends, self-expression and city vibes.",
     "email": "hello@zazzimag.com",
     "instagram": "zazzimag"
+  },
+  "header": {
+    "ticker": "Streetwear\nTrends\nSelf-expression\nCity vibes\n#ZazziSpotting\nTokyo\nStreet snaps\nZazzi Magazine"
   },
   "nav": {
     "info": "Info",
@@ -13,6 +27,7 @@
   "home": {
     "headline": "Street style,\nstraight from the feed",
     "intro": "Streetwear, trends, self-expression and city vibes. Fresh looks from our Instagram, mixed with longer stories from the street.",
+    "videoLabel": "Street scenes from Harajuku, Tokyo",
     "followTile": "Follow",
     "bandHeading": "Every story, in one place",
     "bandButton": "See all articles"
@@ -25,6 +40,11 @@
     "feedHeading": "From the feed",
     "readNext": "Read next",
     "allLink": "All articles"
+  },
+  "issues": {
+    "category": "Issue",
+    "pages": "{n} pages",
+    "hint": "Click the pages, use the arrows or swipe to turn. Pinch or use the magnifier to zoom in"
   },
   "about": {
     "heading": "Who we are",
@@ -40,6 +60,12 @@
     "text": "Our first drop is on the way: printed zines of our best street photos and a small run of Zazzi merch. Leave your email and you'll hear first.",
     "items": "Tote bag\nLogo tee\nPhoto zine Vol. 1\nCap",
     "itemBadge": "Soon",
+    "buyButton": "Buy now",
+    "askButton": "Ask about it",
+    "soonBadge": "Coming soon",
+    "soldOutBadge": "Sold out",
+    "backLink": "Back to the store",
+    "notifyHeading": "Hear about new drops first",
     "button": "Notify me",
     "sentMessage": "Your email app should open. Send it and you're on the list."
   },
@@ -47,6 +73,9 @@
     "heading": "Coming soon",
     "text": "Streetwear, trends, self-expression and city vibes. The full magazine is on its way.",
     "contactLabel": "Get in touch"
+  },
+  "meta": {
+    "pixelId": "2364373637435141"
   },
   "footer": {
     "copyright": "© {year} Zazzi Magazine (zazzimag.com). All rights reserved. The text, photographs, graphics, logo and design on this site are protected by copyright and other intellectual property laws. You may not copy, reproduce, republish, distribute or use any of this content for commercial purposes without our prior written permission, except as permitted by law. Third-party content, including photos used under license, remains the property of its respective owners."
