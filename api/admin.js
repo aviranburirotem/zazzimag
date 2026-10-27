@@ -174,7 +174,7 @@ export default async function handler(req, res) {
     // ---- Instagram posting queue (Scheduled posts tab) ----
     if (action === "igQueue") {
       const [queue, schedule, history, logos] = await Promise.all([getJSON(IGK.queue, []), getJSON(IGK.schedule, {}), getJSON(IGK.history, []), getJSON(IGK.logos, [])]);
-      return res.json({ queue, schedule: { ...DEFAULT_SCHEDULE, ...schedule, logo: { ...DEFAULT_SCHEDULE.logo, ...(schedule.logo || {}) } }, history, logos, store: hasStore() });
+      return res.json({ queue, schedule: { ...DEFAULT_SCHEDULE, ...schedule, logo: { ...DEFAULT_SCHEDULE.logo, ...(schedule.logo || {}) }, frame: { ...DEFAULT_SCHEDULE.frame, ...(schedule.frame || {}) } }, history, logos, store: hasStore() });
     }
     if (action === "saveIgQueue" && req.method === "POST") {
       if (!hasStore()) return fail(500, "The store (Redis) isn't connected, so the queue can't be saved.");
@@ -190,7 +190,7 @@ export default async function handler(req, res) {
         if (!/^[a-z0-9]{6,24}$/.test(id) || posted.has(id)) continue; // never bring back something already posted
         const images = (Array.isArray(it.images) ? it.images : []).slice(0, 10)
           .filter((p) => FILE.test(p.file) && (!p.orig || FILE.test(p.orig)))
-          .map((p) => ({ file: p.file, orig: p.orig || p.file, ...(FILE.test(p.first || "") ? { first: p.first } : {}), logo: p.logo !== false }));
+          .map((p) => ({ file: p.file, orig: p.orig || p.file, ...(FILE.test(p.first || "") ? { first: p.first } : {}), logo: p.logo !== false, frame: p.frame === true }));
         if (!images.length) continue;
         const caption = String(it.caption || "").slice(0, 2200);
         const custom = it.custom === true && AT.test(it.at || "");
@@ -203,6 +203,7 @@ export default async function handler(req, res) {
       const schedule = {
         on: s.on === true, every: Math.min(30, Math.max(1, Math.round(Number(s.every) || 1))),
         time: /^\d{1,2}:\d{2}$/.test(s.time || "") ? s.time : "18:00", lastAuto: prev.lastAuto || null,
+        frame: { on: s.frame?.on !== false, size: Math.min(12, Math.max(0, Math.round(Number(s.frame?.size ?? 5)))) },
         logo: { src: logoOk(s.logo?.src) ? s.logo.src : "default", on: s.logo?.on !== false, corner: ["tl", "tc", "tr", "bl", "bc", "br", "c"].includes(s.logo?.corner) ? s.logo.corner : "br",
           size: Math.min(40, Math.max(6, Number(s.logo?.size) || 16)), opacity: Math.min(100, Math.max(20, Number(s.logo?.opacity) || 90)) },
       };
