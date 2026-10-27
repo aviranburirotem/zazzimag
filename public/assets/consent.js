@@ -19,14 +19,25 @@
     window.fbq("track", "PageView");
   }
 
-  const css = `.zz-consent{position:fixed;z-index:40;right:16px;bottom:16px;max-width:440px;background:var(--bg,#fff);color:var(--fg,#111);border:1px solid var(--line,#ddd);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:16px;font:14px/1.5 Archivo,system-ui,sans-serif}
-.zz-consent p{margin:0 0 12px}
-.zz-consent a{color:inherit;text-decoration:underline}
-.zz-consent .zz-row{display:flex;gap:10px;flex-wrap:wrap}
-.zz-consent button{flex:1;min-width:120px;min-height:44px;border-radius:6px;font:600 14px/1 Archivo,system-ui,sans-serif;cursor:pointer;border:1px solid var(--fg,#111);background:transparent;color:inherit}
-.zz-consent button[data-c="yes"]{background:var(--fg,#111);color:var(--bg,#fff)}
+  const css = `.zz-consent{position:fixed;z-index:25;left:0;right:0;bottom:0;background:#e8e7e3;color:#1c1c1c;border-top:1px solid #d3d1cb;box-shadow:0 -6px 24px rgba(0,0,0,.08);font:14px/1.5 Archivo,system-ui,sans-serif;transform:translateY(100%);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+.zz-consent.in{transform:none}
+.zz-consent .zz-in{max-width:1248px;margin:0 auto;padding:14px 16px 14px 80px;display:flex;align-items:center;gap:20px;padding-bottom:max(14px,env(safe-area-inset-bottom,0px))}
+.zz-consent p{margin:0;flex:1;color:#3d3d3a}
+.zz-consent a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.zz-consent .zz-row{display:flex;gap:10px;flex:none}
+.zz-consent button{min-width:112px;min-height:42px;padding:0 18px;border-radius:999px;font:600 13px/1 Archivo,system-ui,sans-serif;letter-spacing:.02em;cursor:pointer;border:1px solid #1c1c1c;background:transparent;color:#1c1c1c;transition:background .15s,color .15s}
+.zz-consent button:hover{background:rgba(0,0,0,.06)}
+.zz-consent button[data-c="yes"]{background:#1c1c1c;color:#fff}
+.zz-consent button[data-c="yes"]:hover{background:#000}
 .zz-consent button:focus-visible{outline:3px solid #2b6cff;outline-offset:2px}
-@media (max-width:600px){.zz-consent{left:76px;right:12px;bottom:12px;max-width:none}}`;
+html[data-theme="dark"] .zz-consent{background:#2a2a28;color:#f1f0ec;border-top-color:#3a3a37}
+html[data-theme="dark"] .zz-consent p{color:#d6d4ce}
+html[data-theme="dark"] .zz-consent button{border-color:#f1f0ec;color:#f1f0ec}
+html[data-theme="dark"] .zz-consent button:hover{background:rgba(255,255,255,.08)}
+html[data-theme="dark"] .zz-consent button[data-c="yes"]{background:#f1f0ec;color:#1c1c1c}
+@media (max-width:700px){.zz-consent .zz-in{flex-direction:column;align-items:stretch;gap:12px;padding-left:16px}.zz-consent .zz-row{margin-left:60px}.zz-consent button{flex:1;min-width:0}}
+@media (prefers-reduced-motion:reduce){.zz-consent{transition:opacity .2s;transform:none;opacity:0}.zz-consent.in{opacity:1}}
+html.a11y-still .zz-consent{transition:none}`;
 
   let box = null;
   function ask(focus) {
@@ -37,17 +48,22 @@
     box = document.createElement("section");
     box.className = "zz-consent";
     box.setAttribute("aria-label", "Cookie choice");
-    box.innerHTML = `<p>We'd like to use Meta's pixel to measure our Instagram ads and show Zazzi to people who might like it. It's off unless you agree. <a href="/privacy/">Privacy policy</a></p>
-      <div class="zz-row"><button type="button" data-c="no">Decline</button><button type="button" data-c="yes">Accept</button></div>`;
+    box.innerHTML = `<div class="zz-in"><p>We'd like to use Meta's pixel to measure our Instagram ads and show Zazzi to people who might like it. It's off unless you agree. <a href="/privacy/#cookies">Privacy policy</a></p>
+      <div class="zz-row"><button type="button" data-c="no">Decline</button><button type="button" data-c="yes">Accept</button></div></div>`;
     box.addEventListener("click", (e) => {
       const c = e.target.closest("[data-c]")?.dataset.c; if (!c) return;
       const was = get();
       set(c);
-      box.remove(); box = null;
+      const el = box; box = null;
+      el.classList.remove("in"); // slide down, then remove
+      const gone = () => el.remove();
+      el.addEventListener("transitionend", gone, { once: true });
+      setTimeout(gone, 600);
       if (c === "yes") loadPixel();
       else if (was === "yes" && loaded) location.reload(); // turning it off: reload so the pixel is gone
     });
     document.body.append(box);
+    requestAnimationFrame(() => requestAnimationFrame(() => box && box.classList.add("in"))); // slide up
     if (focus) box.querySelector("button").focus();
   }
 

@@ -146,6 +146,16 @@
   .photo-row .num{font-family:var(--mono);font-size:11px;color:var(--muted)}
   .confirm{display:flex;gap:6px;align-items:center;font-size:13px}
   .empty{padding:40px;text-align:center;color:var(--muted)}
+/* cover position */
+.pos-box{display:grid;gap:10px;margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:8px}
+.pos-box[hidden]{display:none}
+.pos-previews{display:grid;grid-template-columns:2fr 2.4fr 3.6fr;gap:12px;align-items:end}
+.pos-previews figure{margin:0;display:grid;gap:4px}
+.pos-frame{overflow:hidden;border-radius:4px;background:var(--soft);cursor:grab;touch-action:none;user-select:none}
+.pos-frame.dragging{cursor:grabbing}
+.pos-frame img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.pos-ctl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pos-ctl .b{min-width:40px;justify-content:center}
 /* Video tab */
 .vid-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px}
 .vid-box{display:flex;flex-direction:column;gap:12px;padding:18px}
@@ -170,7 +180,7 @@ const app = document.getElementById("app");
 const esc = (s = "") => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const slugify = (s) => s.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 70);
 const today = () => new Date().toISOString().slice(0, 10);
-const KNOWN = ["title", "dek", "date", "category", "cover", "coverAlt", "coverCaption", "author", "draft"];
+const KNOWN = ["title", "dek", "date", "category", "cover", "coverPosition", "coverAlt", "coverCaption", "author", "draft"];
 
 async function api(action, { method = "GET", body, query = "" } = {}) {
   const r = await fetch(`/api/admin?action=${action}${query}`, {
@@ -303,6 +313,22 @@ function renderEditor() {
           </div>
         </div>
         <input type="file" id="cover-file" accept="image/*" hidden>
+        <div class="pos-box" id="pos-box" ${d.cover ? "" : "hidden"}>
+          <div><span class="label">Position on the home page</span> <span class="hint">· drag the photo or use the arrows, so faces and outfits aren't cut off</span></div>
+          <div class="pos-previews">
+            <figure><div class="pos-frame" style="aspect-ratio:2/3"><img alt="" draggable="false"></div><figcaption class="hint">Grid tile</figcaption></figure>
+            <figure><div class="pos-frame" style="aspect-ratio:4/5"><img alt="" draggable="false"></div><figcaption class="hint">Big tile</figcaption></figure>
+            <figure><div class="pos-frame" style="aspect-ratio:4/3"><img alt="" draggable="false"></div><figcaption class="hint">Top of the article</figcaption></figure>
+          </div>
+          <div class="pos-ctl" role="group" aria-label="Move the photo">
+            <button type="button" class="b" data-pos="up" aria-label="Move the photo up">${icon("chevron-up")}</button>
+            <button type="button" class="b" data-pos="down" aria-label="Move the photo down">${icon("chevron-down")}</button>
+            <button type="button" class="b" data-pos="left" aria-label="Move the photo left">${icon("chevron-left")}</button>
+            <button type="button" class="b" data-pos="right" aria-label="Move the photo right">${icon("chevron-right")}</button>
+            <button type="button" class="b" data-pos="center">Center</button>
+            <span class="hint" id="pos-val"></span>
+          </div>
+        </div>
       </div>
       <div>
         <label for="body">Article text</label>
@@ -381,8 +407,51 @@ function renderEditor() {
     const f = e.target.files[0]; e.target.value = "";
     if (!f) return;
     const p = await addPhoto(f, "cover");
-    if (p) { ed.data.cover = p.url; $("cover-pick").style.backgroundImage = `url('${imgUrl(p.url)}')`; $("cover-pick").innerHTML = ""; if (!$("f-coverAlt").value) $("f-coverAlt").value = p.alt; preview(); }
+    if (p) { ed.data.cover = p.url; ed.data.coverPosition = ""; $("cover-pick").style.backgroundImage = `url('${imgUrl(p.url)}')`; $("cover-pick").innerHTML = ""; if (!$("f-coverAlt").value) $("f-coverAlt").value = p.alt; drawPos(); preview(); }
   };
+
+  // ---- cover position: where the photo is centred when the site crops it ----
+  const posOf = () => { const m = String(ed.data.coverPosition || "").match(/^([\d.]+)% ([\d.]+)%$/); return m ? [+m[1], +m[2]] : [50, 50]; };
+  const setPos = (x, y) => {
+    x = Math.round(Math.min(100, Math.max(0, x))); y = Math.round(Math.min(100, Math.max(0, y)));
+    ed.data.coverPosition = x === 50 && y === 50 ? "" : `${x}% ${y}%`;
+    drawPos(); preview();
+  };
+  function drawPos() {
+    const box = $("pos-box"); if (!box) return;
+    box.hidden = !ed.data.cover;
+    if (!ed.data.cover) return;
+    const [x, y] = posOf(), src = imgUrl(ed.data.cover);
+    box.querySelectorAll(".pos-frame img").forEach((im) => { if (im.getAttribute("src") !== src) im.src = src; im.style.objectPosition = `${x}% ${y}%`; });
+    $("pos-val").textContent = ed.data.coverPosition ? `${x}% across, ${y}% down` : "Centred";
+  }
+  $("pos-box").addEventListener("click", (e) => {
+    const dir = e.target.closest("[data-pos]")?.dataset.pos; if (!dir) return;
+    const [x, y] = posOf(), S = 5;
+    // "Move the photo up" slides the picture up in the frame, showing more of its lower part
+    if (dir === "up") setPos(x, y + S); if (dir === "down") setPos(x, y - S);
+    if (dir === "left") setPos(x + S, y); if (dir === "right") setPos(x - S, y);
+    if (dir === "center") setPos(50, 50);
+  });
+  $("pos-box").querySelectorAll(".pos-frame").forEach((fr) => {
+    let drag = null;
+    fr.addEventListener("pointerdown", (e) => {
+      const im = fr.querySelector("img"); if (!im.naturalWidth) return;
+      const fw = fr.clientWidth, fh = fr.clientHeight, s = Math.max(fw / im.naturalWidth, fh / im.naturalHeight);
+      drag = { x0: e.clientX, y0: e.clientY, p: posOf(), ox: im.naturalWidth * s - fw, oy: im.naturalHeight * s - fh };
+      fr.setPointerCapture(e.pointerId); fr.classList.add("dragging");
+    });
+    fr.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      // dragging the photo right shows more of its left side (a lower % across)
+      const nx = drag.ox > 0 ? drag.p[0] - ((e.clientX - drag.x0) / drag.ox) * 100 : drag.p[0];
+      const ny = drag.oy > 0 ? drag.p[1] - ((e.clientY - drag.y0) / drag.oy) * 100 : drag.p[1];
+      setPos(nx, ny);
+    });
+    const end = () => { drag = null; fr.classList.remove("dragging"); };
+    fr.addEventListener("pointerup", end); fr.addEventListener("pointercancel", end);
+  });
+  drawPos();
 
   function needSlug() {
     if (ed.slug) return true;
@@ -479,7 +548,7 @@ function collect() {
   const v = (id) => document.getElementById(id).value.trim().replace(/\s*\n\s*/g, " ");
   return {
     title: v("f-title"), dek: v("f-dek"), date: v("f-date"), category: v("f-cat"),
-    cover: ed.data.cover || "", coverAlt: v("f-coverAlt"), coverCaption: v("f-coverCaption"),
+    cover: ed.data.cover || "", coverPosition: ed.data.coverPosition || "", coverAlt: v("f-coverAlt"), coverCaption: v("f-coverCaption"),
     author: v("f-author"), draft: !document.getElementById("f-draft").checked,
   };
 }
@@ -498,8 +567,8 @@ function preview() {
   const html = markdown(body || "*Start writing…*").replace(/src="(\/images\/articles\/[^"]+)"/g, (m, u) => `src="${imgUrl(u)}"`);
   pv.innerHTML = `<div class="article-head"><div class="crumbs label"><span>Articles</span><span>/</span><span>${esc(d.category || "Category")}</span></div>
     <h1>${esc(d.title || "Your headline")}</h1>${d.dek ? `<p class="dek">${esc(d.dek)}</p>` : ""}
-    <div class="meta label"><span>${esc(d.date)}</span><span>Words: ${esc(d.author || "Zazzi")}</span></div></div>
-    ${d.cover ? `<figure class="hero"><div class="ph"><img src="${esc(imgUrl(d.cover))}" alt=""></div>${d.coverCaption ? `<figcaption>${esc(d.coverCaption)}</figcaption>` : ""}</figure>` : ""}
+    <div class="meta label"><span>${esc(d.date)}</span><span>Written by ${esc(d.author || "Zazzi")}</span></div></div>
+    ${d.cover ? `<figure class="hero"><div class="ph"><img src="${esc(imgUrl(d.cover))}" alt=""${d.coverPosition ? ` style="object-position:${esc(d.coverPosition)}"` : ""}></div>${d.coverCaption ? `<figcaption>${esc(d.coverCaption)}</figcaption>` : ""}</figure>` : ""}
     <div class="body">${html}</div>`;
 }
 
