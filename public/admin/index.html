@@ -211,6 +211,14 @@
 .q-logo-f{display:grid;gap:8px;flex:1}
 .q-logo-f label{display:grid;gap:4px;font-size:13px}
 .q-logo-f label.showbox{display:flex}
+.q-gal{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.q-gal-i{position:relative}
+.q-gal-i>button[role=radio],.q-gal-add{width:58px;height:58px;border-radius:8px;border:1px solid var(--line);background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/12px 12px;display:grid;place-items:center;padding:6px;cursor:pointer}
+.q-gal-i>button img{max-width:100%;max-height:100%;object-fit:contain}
+.q-gal-i.on>button[role=radio]{border:2px solid var(--accent);box-shadow:0 0 0 2px rgba(227,6,19,.15)}
+.q-gal-x{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:var(--bg);display:grid;place-items:center;padding:0;cursor:pointer}
+.q-gal-x .ic{width:12px;height:12px}
+.q-gal-add{background:var(--bg);color:var(--muted);border-style:dashed}
 #q-list{display:grid;gap:16px;max-width:1100px}
 .q-post{display:grid;gap:12px;padding:16px}
 .q-post-h{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center}
@@ -1102,8 +1110,11 @@ const CORNERS = [["br", "Bottom right"], ["bl", "Bottom left"], ["tr", "Top righ
 const igSrc = (file) => igData.get(file) || `/ig-queue/${file}`;
 const rid = (n = 10) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => "abcdefghijklmnopqrstuvwxyz0123456789"[b % 36]).join("");
 const loadImg = (src) => new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => bad(new Error("The photo couldn't be loaded. If you just saved, wait a minute and try again.")); i.src = src; });
-let logoImg = null;
-const getLogo = async () => (logoImg ||= await loadImg("/assets/logo.png"));
+// logo gallery: "default" (the Zazzi heart) or a PNG you uploaded (/ig-logos/<file>)
+const logoImgs = new Map();
+const logoSrc = (id) => (!id || id === "default" ? "/assets/logo.png" : igData.get(id) || `/ig-logos/${id}`);
+const getLogo = async (id) => { const s = logoSrc(id); if (!logoImgs.has(s)) logoImgs.set(s, await loadImg(s)); return logoImgs.get(s); };
+const logoName = (id) => (!id || id === "default" ? "Zazzi heart" : (igq.logos.find((l) => l.file === id)?.name || "Logo"));
 
 // fit to a shape Instagram accepts (between 4:5 and 1.91:1), at most 1440 wide
 async function igFit(src) {
@@ -1118,12 +1129,12 @@ async function igFit(src) {
   return c.toDataURL("image/jpeg", 0.9);
 }
 // the photo as it will be posted: the original, with the logo stamped on (or not)
-async function igRender(origSrc, withLogo, corner) {
+async function igRender(origSrc, withLogo, corner, logoId) {
   const img = await loadImg(origSrc), L = igq.schedule.logo;
   const c = Object.assign(document.createElement("canvas"), { width: img.naturalWidth, height: img.naturalHeight });
   const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
   if (withLogo) {
-    const logo = await getLogo(), w = c.width * (L.size / 100), h = w * (logo.naturalHeight / logo.naturalWidth), m = c.width * 0.035;
+    const logo = await getLogo(logoId || L.src), w = c.width * (L.size / 100), h = w * (logo.naturalHeight / logo.naturalWidth), m = c.width * 0.035;
     const k = corner || L.corner, x = k.includes("l") ? m : c.width - w - m, y = k.includes("t") ? m : c.height - h - m;
     ctx.globalAlpha = L.opacity / 100; ctx.drawImage(logo, x, y, w, h); ctx.globalAlpha = 1;
   }
@@ -1136,7 +1147,7 @@ async function igUpload(data, name) {
 }
 // (re)make the posted version of one photo
 async function igRefresh(post, p) {
-  const data = await igRender(igSrc(p.orig), p.logo, post.corner);
+  const data = await igRender(igSrc(p.orig), p.logo, post.corner, post.logoSrc);
   p.file = await igUpload(data, `${post.id}-${rid(6)}.jpg`);
 }
 
@@ -1145,7 +1156,7 @@ async function renderQueue(flash = "") {
   app.innerHTML = topBar() + `<main class="wrap c"><div class="panel empty">Loading the queue…</div></main>`;
   try {
     const d = await api("igQueue");
-    igq = { queue: d.queue, schedule: d.schedule, history: d.history, files: new Map(), dirty: false };
+    igq = { queue: d.queue, schedule: d.schedule, history: d.history, logos: d.logos || [], files: new Map(), dirty: false };
   } catch (err) { if (err.message !== "auth") app.querySelector("main").innerHTML = `<div class="panel empty status err">${esc(err.message)}</div>`; return; }
   app.querySelector("main").innerHTML = `<div class="list-head"><div><span class="label">Instagram</span><h1>Scheduled posts</h1></div>
       <p class="hint" style="max-width:52ch;margin:0">Add photos, write the captions, and the site posts them to @zazzimag on schedule. Single photos or carousels (up to 10 photos).</p></div>
@@ -1187,18 +1198,48 @@ function drawQueue() {
   document.getElementById("q-logo").innerHTML = `<span class="label">Logo on photos</span>
     <div class="q-logo-row"><canvas id="q-logo-pv" width="180" height="225" aria-label="Logo preview"></canvas>
     <div class="q-logo-f">
+      <div><span class="hint">Choose a logo</span><div class="q-gal" id="q-gal" role="radiogroup" aria-label="Logo"></div>
+        <input type="file" id="q-logo-file" accept="image/png,image/webp,image/svg+xml,image/jpeg" hidden>
+        <span class="hint">PNG with a see-through background works best.</span></div>
       <label class="showbox"><input type="checkbox" id="q-l-on" ${L.on ? "checked" : ""}> Add the logo to new photos</label>
       <label>Corner <select id="q-l-corner">${CORNERS.map(([k, n]) => `<option value="${k}" ${L.corner === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       <label>Size <input type="range" id="q-l-size" min="6" max="40" value="${L.size}"></label>
       <label>Transparency <input type="range" id="q-l-op" min="20" max="100" value="${L.opacity}"></label>
       <button type="button" class="b sm" data-act="q-logo-all">Apply to all photos in the queue</button>
     </div></div>`;
-  drawLogoPreview(); drawSchedMeta(); drawPosts(); drawHistory();
+  drawLogoPreview(); drawGallery(); drawSchedMeta(); drawPosts(); drawHistory();
+  document.getElementById("q-logo-file").onchange = (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) addLogo(f); };
   const onS = () => { s.on = document.getElementById("q-on").checked; s.every = +document.getElementById("q-every").value; s.time = document.getElementById("q-time").value || "18:00"; qDirty(); drawPosts(); };
   ["q-on", "q-every", "q-time"].forEach((id) => (document.getElementById(id).onchange = onS));
   const onL = () => { L.on = document.getElementById("q-l-on").checked; L.corner = document.getElementById("q-l-corner").value; L.size = +document.getElementById("q-l-size").value; L.opacity = +document.getElementById("q-l-op").value; drawLogoPreview(); qDirty("Logo settings changed. They apply to new photos, or press “Apply to all photos in the queue”."); };
   ["q-l-on", "q-l-corner", "q-l-size", "q-l-op"].forEach((id) => (document.getElementById(id).oninput = onL));
   document.getElementById("q-file").onchange = (e) => { const files = [...e.target.files]; e.target.value = ""; if (files.length) qAdd(files); };
+}
+
+function drawGallery() {
+  const g = document.getElementById("q-gal"); if (!g) return;
+  const L = igq.schedule.logo, all = [{ file: "default", name: "Zazzi heart" }, ...igq.logos];
+  g.innerHTML = all.map((l) => `<span class="q-gal-i${(L.src || "default") === l.file ? " on" : ""}">
+      <button type="button" role="radio" aria-checked="${(L.src || "default") === l.file}" data-act="q-logo-pick" data-logo="${esc(l.file)}" title="${esc(l.name)}"><img src="${esc(logoSrc(l.file))}" alt="${esc(l.name)}"></button>
+      ${l.file !== "default" ? `<button type="button" class="q-gal-x" data-act="q-logo-del" data-logo="${esc(l.file)}" aria-label="Remove ${esc(l.name)} from the gallery">${icon("x")}</button>` : ""}</span>`).join("")
+    + `<button type="button" class="q-gal-add" data-act="q-logo-add" aria-label="Upload a logo">${icon("plus")}</button>`;
+}
+// keep transparency: logos stay PNG (scaled down if huge)
+async function addLogo(file) {
+  try {
+    status("Adding the logo…");
+    const src = URL.createObjectURL(file), img = await loadImg(src);
+    const s = Math.min(1, 1200 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = Object.assign(document.createElement("canvas"), { width: Math.max(1, Math.round(img.naturalWidth * s)), height: Math.max(1, Math.round(img.naturalHeight * s)) });
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(src);
+    const data = c.toDataURL("image/png");
+    const base = (slugify(file.name.replace(/\.[^.]+$/, "")) || "logo").slice(0, 40), name = `${base}-${rid(5)}.png`;
+    await igUpload(data, name);
+    igq.logos.push({ file: name, name: file.name.replace(/\.[^.]+$/, "").slice(0, 40) || "Logo" });
+    igq.schedule.logo.src = name;
+    drawGallery(); drawLogoPreview(); drawPosts();
+    qDirty("Logo added and chosen. It applies to new photos, or press “Apply to all photos in the queue”. Save to keep it.");
+  } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
 }
 
 async function drawLogoPreview() {
@@ -1207,7 +1248,7 @@ async function drawLogoPreview() {
   ctx.fillStyle = "#ddd"; ctx.fillRect(0, 0, c.width, c.height);
   try {
     if (first) { const im = await loadImg(igSrc(first.orig)); const s = Math.max(c.width / im.naturalWidth, c.height / im.naturalHeight); ctx.drawImage(im, (c.width - im.naturalWidth * s) / 2, (c.height - im.naturalHeight * s) / 2, im.naturalWidth * s, im.naturalHeight * s); }
-    if (L.on) { const logo = await getLogo(), w = c.width * L.size / 100, h = w * logo.naturalHeight / logo.naturalWidth, m = c.width * 0.035; ctx.globalAlpha = L.opacity / 100; ctx.drawImage(logo, L.corner.includes("l") ? m : c.width - w - m, L.corner.includes("t") ? m : c.height - h - m, w, h); ctx.globalAlpha = 1; }
+    if (L.on) { const logo = await getLogo(L.src), w = c.width * L.size / 100, h = w * logo.naturalHeight / logo.naturalWidth, m = c.width * 0.035; ctx.globalAlpha = L.opacity / 100; ctx.drawImage(logo, L.corner.includes("l") ? m : c.width - w - m, L.corner.includes("t") ? m : c.height - h - m, w, h); ctx.globalAlpha = 1; }
   } catch {}
 }
 
@@ -1231,11 +1272,12 @@ function drawPosts() {
       </div>
       <div class="q-photos">${it.images.map((ph, k) => `<figure class="q-ph" data-k="${k}"><img src="${esc(igSrc(ph.file))}" alt="Photo ${k + 1}">
         <figcaption><label class="showbox"><input type="checkbox" data-q="logo" ${ph.logo ? "checked" : ""}> Logo</label>
-        <span class="q-ph-b"><button type="button" class="b sm" data-act="q-crop" aria-label="Crop photo ${k + 1}">${icon("crop")}</button>
+        <span class="q-ph-b"><button type="button" class="b sm" data-act="q-crop" aria-label="Crop photo ${k + 1}">${icon("crop")}</button>${ph.first ? `<button type="button" class="b sm" data-act="q-uncrop" aria-label="Photo ${k + 1}: back to original" title="Back to original">${icon("rotate-ccw")}<span>Original</span></button>` : ""}
         ${it.images.length > 1 ? `<button type="button" class="b sm" data-act="q-left" aria-label="Move photo ${k + 1} earlier" ${k === 0 ? "disabled" : ""}>${icon("chevron-left")}</button><button type="button" class="b sm" data-act="q-right" aria-label="Move photo ${k + 1} later" ${k === it.images.length - 1 ? "disabled" : ""}>${icon("chevron-right")}</button><button type="button" class="b sm danger" data-act="q-del-photo" aria-label="Remove photo ${k + 1}">${icon("x")}</button>` : ""}</span></figcaption></figure>`).join("")}</div>
       ${it.images.length > 1 ? `<p class="hint" style="margin:0">Instagram shows every photo in a carousel in the first photo's shape.</p>` : ""}
       <label>Caption <span class="hint">${it.caption.length}/2200 · ${tags} hashtag${tags === 1 ? "" : "s"}${tags > 5 ? " (Instagram allows 5)" : ""}</span><textarea data-q="caption" rows="4">${esc(it.caption)}</textarea></label>
       <div class="q-row">
+        <label>Logo <select data-q="logoSrc"><option value="">Default (${esc(logoName(igq.schedule.logo.src))})</option>${[{ file: "default", name: "Zazzi heart" }, ...igq.logos].map((l) => `<option value="${esc(l.file)}" ${it.logoSrc === l.file ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></label>
         <label>Logo corner <select data-q="corner"><option value="">Default</option>${CORNERS.map(([k, n]) => `<option value="${k}" ${it.corner === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       </div>
       <div class="q-row q-actions">
@@ -1258,8 +1300,9 @@ function drawPosts() {
     const it = igq.queue[+card.dataset.i], k = e.target.dataset.q;
     if (k === "custom") { it.custom = e.target.checked; if (it.custom && !it.at) it.at = card.querySelector("[data-q=at]").value; qDirty(); drawPosts(); drawSchedMeta(); }
     if (k === "at") drawPosts();
-    if (k === "corner" || k === "logo") {
+    if (k === "corner" || k === "logo" || k === "logoSrc") {
       if (k === "corner") it.corner = e.target.value;
+      if (k === "logoSrc") it.logoSrc = e.target.value;
       if (k === "logo") it.images[+e.target.closest(".q-ph").dataset.k].logo = e.target.checked;
       status("Updating the photo…");
       try { for (const ph of (k === "logo" ? [it.images[+e.target.closest(".q-ph").dataset.k]] : it.images)) await igRefresh(it, ph); qDirty(); drawPosts(); }
@@ -1302,9 +1345,11 @@ async function qAdd(files) {
 async function qSave() {
   status("Saving…");
   try {
-    const keep = new Set(igq.queue.flatMap((it) => it.images.flatMap((p) => [p.file, p.orig])));
+    const keep = new Set(igq.queue.flatMap((it) => it.images.flatMap((p) => [p.file, p.orig, p.first].filter(Boolean))));
     const files = [...igq.files].filter(([f]) => keep.has(f)).map(([file, sha]) => ({ file, sha }));
-    const r = await api("saveIgQueue", { method: "POST", body: { queue: igq.queue, schedule: igq.schedule, files } });
+    for (const l of igq.logos) if (igq.files.has(l.file)) files.push({ file: l.file, sha: igq.files.get(l.file) });
+    const r = await api("saveIgQueue", { method: "POST", body: { queue: igq.queue, schedule: igq.schedule, files, logos: igq.logos } });
+    if (r.logos) igq.logos = r.logos;
     igq.queue = r.queue; igq.schedule = { ...igq.schedule, ...r.schedule }; igq.files = new Map(); igq.dirty = false;
     drawPosts(); drawSchedMeta();
     status(r.photosAdded ? "Saved. New photos take about a minute to reach the site before they can be posted." : "Saved.", "ok");
@@ -1326,8 +1371,23 @@ async function qClick(act, e) {
     const data = await cropPhoto(igSrc(ph.orig), null, { shapes: IG_SHAPES, title: "Crop for Instagram", onData: async (d) => d });
     if (!data) return;
     status("Updating the photo…");
-    try { ph.orig = await igUpload(data, `${it.id}-${rid(6)}-o.jpg`); await igRefresh(it, ph); qDirty(); drawPosts(); drawLogoPreview(); }
+    try { if (!ph.first) ph.first = ph.orig; ph.orig = await igUpload(data, `${it.id}-${rid(6)}-o.jpg`); await igRefresh(it, ph); qDirty(); drawPosts(); drawLogoPreview(); }
     catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+  }
+  if (act === "q-uncrop") { // back to the photo as it was added, before any crop
+    const ph = it.images[k]; if (!ph.first) return;
+    status("Updating the photo…");
+    try { ph.orig = ph.first; delete ph.first; await igRefresh(it, ph); qDirty("Back to the original photo. Save the queue to apply."); drawPosts(); drawLogoPreview(); }
+    catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+  }
+  if (act === "q-logo-add") document.getElementById("q-logo-file").click();
+  if (act === "q-logo-pick") { igq.schedule.logo.src = e.target.closest("[data-logo]").dataset.logo; drawGallery(); drawLogoPreview(); drawPosts(); qDirty("Logo chosen. It applies to new photos, or press “Apply to all photos in the queue”."); }
+  if (act === "q-logo-del") {
+    const id = e.target.closest("[data-logo]").dataset.logo;
+    igq.logos = igq.logos.filter((l) => l.file !== id);
+    if (igq.schedule.logo.src === id) igq.schedule.logo.src = "default";
+    igq.queue.forEach((p) => { if (p.logoSrc === id) p.logoSrc = ""; });
+    drawGallery(); drawLogoPreview(); drawPosts(); qDirty("Logo removed from the gallery. Photos already made with it keep it until you update them.");
   }
   if (act === "q-logo-all") {
     status("Updating every photo in the queue…");
