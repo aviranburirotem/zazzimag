@@ -558,6 +558,11 @@ write("articles.json", JSON.stringify(articles.map(({ html, ...a }) => a), null,
 fs.copyFileSync("lib/markdown.js", path.join(OUT, "admin/markdown.js"));
 fs.copyFileSync("lib/icons.js", path.join(OUT, "admin/icons.js"));
 fs.copyFileSync("lib/site-schema.js", path.join(OUT, "admin/site-schema.js"));
+{ // the console always loads the newest helper files (no stale browser copies after a deploy)
+  const av = crypto.createHash("md5").update(fs.readFileSync("lib/markdown.js")).update(fs.readFileSync("lib/icons.js")).update(fs.readFileSync("lib/site-schema.js")).digest("hex").slice(0, 8);
+  const f = path.join(OUT, "admin/index.html");
+  fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(/from "\.\/(markdown|icons|site-schema)\.js"/g, `from "./$1.js?v=${av}"`));
+}
 
 if (COMING_SOON) {
   const page = comingSoon();
