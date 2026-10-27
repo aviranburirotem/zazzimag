@@ -1175,12 +1175,25 @@ async function renderQueue(flash = "") {
       <span class="hint" id="q-up"></span>
     </section>
     <div id="q-list"></div>
-    <div class="texts-bar" style="max-width:1100px"><button class="b primary" type="button" data-act="q-save">${icon("save")}<span>Save queue</span></button><span class="status" id="st"></span></div>
+    <div class="texts-bar" style="max-width:1100px"><span class="status" id="st">Changes are saved automatically.</span></div>
     <section class="q-history" id="q-hist"></section>`;
   drawQueue();
 }
 
-function qDirty(msg = "Unsaved changes. Save the queue to apply.") { igq.dirty = true; status(msg); drawSchedMeta(); }
+// Every change is saved automatically a moment later (photos, captions, times, settings), so nothing is lost
+// if you leave the tab. Saves run one at a time; a change made during a save is saved right after it.
+let qTimer = null, qSaving = false, qAgain = false;
+function qDirty(msg = "") {
+  igq.dirty = true; drawSchedMeta();
+  status(msg ? `${msg} Saving…` : "Saving…");
+  clearTimeout(qTimer); qTimer = setTimeout(qSave, 1200);
+}
+const qPayload = () => {
+  const keep = new Set(igq.queue.flatMap((it) => it.images.flatMap((p) => [p.file, p.orig, p.first].filter(Boolean))));
+  return { queue: igq.queue, schedule: igq.schedule, files: [...igq.files].filter(([f]) => keep.has(f)).map(([file, sha]) => ({ file, sha })) };
+};
+// leaving the page with a save still waiting: send it anyway
+addEventListener("pagehide", () => { if (igq?.dirty) { clearTimeout(qTimer); navigator.sendBeacon?.("/api/admin?action=saveIgQueue", new Blob([JSON.stringify(qPayload())], { type: "application/json" })); } });
 
 function drawSchedMeta() {
   const oh = document.getElementById("q-own-hint");
@@ -1214,7 +1227,7 @@ function drawQueue() {
   document.getElementById("q-logo-file").onchange = (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) addLogo(f); };
   const onS = () => { s.on = document.getElementById("q-on").checked; s.every = +document.getElementById("q-every").value; s.time = document.getElementById("q-time").value || "18:00"; qDirty(); drawPosts(); };
   ["q-on", "q-every", "q-time"].forEach((id) => (document.getElementById(id).onchange = onS));
-  const onL = () => { L.on = document.getElementById("q-l-on").checked; L.corner = document.getElementById("q-l-corner").value; L.size = +document.getElementById("q-l-size").value; L.opacity = +document.getElementById("q-l-op").value; drawLogoPreview(); qDirty("Logo settings changed. They apply to new photos, or press “Apply to all photos in the queue”."); };
+  const onL = () => { L.on = document.getElementById("q-l-on").checked; L.corner = document.getElementById("q-l-corner").value; L.size = +document.getElementById("q-l-size").value; L.opacity = +document.getElementById("q-l-op").value; drawLogoPreview(); qDirty("Logo settings apply to new photos. To change photos already in the queue, press “Apply to all photos in the queue”."); };
   ["q-l-on", "q-l-corner", "q-l-size", "q-l-op"].forEach((id) => (document.getElementById(id).oninput = onL));
   document.getElementById("q-file").onchange = (e) => { const files = [...e.target.files]; e.target.value = ""; if (files.length) qAdd(files); };
 }
@@ -1242,7 +1255,7 @@ async function addLogo(file) {
     igq.logos = r.logos;
     igq.schedule.logo.src = name;
     drawGallery(); drawLogoPreview(); drawPosts();
-    qDirty("Logo saved to the gallery and chosen. Save the queue to make it the default for new photos, or press “Apply to all photos in the queue”.");
+    qDirty("Logo added to the gallery and chosen for new photos. To change photos already in the queue, press “Apply to all photos in the queue”.");
   } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
 }
 
@@ -1338,37 +1351,38 @@ async function qAdd(files) {
         await igRefresh(post, ph);
         post.images.push(ph);
       }
-      igq.queue.push(post);
+      igq.queue.push(post); drawPosts(); qDirty(); // each post is kept as soon as its photos are ready
     }
     up.textContent = "";
-    qDirty(`${posts.length} post${posts.length === 1 ? "" : "s"} added. Write the captions, then save the queue.`);
+    status(`${posts.length} post${posts.length === 1 ? "" : "s"} added. Saving…`);
     drawPosts(); drawLogoPreview();
   } catch (err) { up.textContent = ""; if (err.message !== "auth") status(err.message, "err"); }
 }
 
 async function qSave() {
-  status("Saving…");
+  clearTimeout(qTimer);
+  if (qSaving) { qAgain = true; return; }
+  qSaving = true; igq.dirty = false;
+  const body = qPayload();
   try {
-    const keep = new Set(igq.queue.flatMap((it) => it.images.flatMap((p) => [p.file, p.orig, p.first].filter(Boolean))));
-    const files = [...igq.files].filter(([f]) => keep.has(f)).map(([file, sha]) => ({ file, sha }));
-    const r = await api("saveIgQueue", { method: "POST", body: { queue: igq.queue, schedule: igq.schedule, files } });
+    const r = await api("saveIgQueue", { method: "POST", body });
+    for (const f of body.files) igq.files.delete(f.file); // those are on the site now
     if (r.logos) igq.logos = r.logos;
-    igq.queue = r.queue; igq.schedule = { ...igq.schedule, ...r.schedule }; igq.files = new Map(); igq.dirty = false;
-    drawPosts(); drawSchedMeta();
-    status(r.photosAdded ? "Saved. New photos take about a minute to reach the site before they can be posted." : "Saved.", "ok");
-  } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+    if (!igq.dirty) status(r.photosAdded ? "All changes saved. New photos reach the site in about a minute, then they can be posted." : "All changes saved.", "ok");
+  } catch (err) { igq.dirty = true; if (err.message !== "auth") status(`Couldn't save: ${err.message}`, "err"); }
+  qSaving = false;
+  if (qAgain || igq.dirty) { qAgain = false; if (igq.dirty) qTimer = setTimeout(qSave, 800); }
 }
 
 async function qClick(act, e) {
   const card = e.target.closest(".q-post"), i = card ? +card.dataset.i : -1, it = igq?.queue[i];
   const k = e.target.closest(".q-ph") ? +e.target.closest(".q-ph").dataset.k : -1;
   if (act === "q-add-single" || act === "q-add-carousel") { qMode = act === "q-add-carousel" ? "carousel" : "single"; document.getElementById("q-file").click(); }
-  if (act === "q-save") qSave();
   if (act === "q-up" || act === "q-down") { const j = act === "q-up" ? i - 1 : i + 1; [igq.queue[i], igq.queue[j]] = [igq.queue[j], igq.queue[i]]; qDirty(); drawPosts(); }
   if (act === "q-left" || act === "q-right") { const j = act === "q-left" ? k - 1 : k + 1; [it.images[k], it.images[j]] = [it.images[j], it.images[k]]; qDirty(); drawPosts(); }
   if (act === "q-del-photo") { it.images.splice(k, 1); qDirty(); drawPosts(); }
-  if (act === "q-del") { igq.queue.splice(i, 1); qDirty("Post removed. Save the queue to apply."); drawPosts(); drawLogoPreview(); }
-  if (act === "q-retry") { it.status = "queued"; it.error = ""; qDirty("Save the queue to try this post again."); drawPosts(); }
+  if (act === "q-del") { igq.queue.splice(i, 1); qDirty("Post removed."); drawPosts(); drawLogoPreview(); }
+  if (act === "q-retry") { it.status = "queued"; it.error = ""; qDirty("It will be tried again."); drawPosts(); }
   if (act === "q-crop") {
     const ph = it.images[k];
     const data = await cropPhoto(igSrc(ph.orig), null, { shapes: IG_SHAPES, title: "Crop for Instagram", onData: async (d) => d });
@@ -1380,11 +1394,11 @@ async function qClick(act, e) {
   if (act === "q-uncrop") { // back to the photo as it was added, before any crop
     const ph = it.images[k]; if (!ph.first) return;
     status("Updating the photo…");
-    try { ph.orig = ph.first; delete ph.first; await igRefresh(it, ph); qDirty("Back to the original photo. Save the queue to apply."); drawPosts(); drawLogoPreview(); }
+    try { ph.orig = ph.first; delete ph.first; await igRefresh(it, ph); qDirty("Back to the original photo."); drawPosts(); drawLogoPreview(); }
     catch (err) { if (err.message !== "auth") status(err.message, "err"); }
   }
   if (act === "q-logo-add") document.getElementById("q-logo-file").click();
-  if (act === "q-logo-pick") { igq.schedule.logo.src = e.target.closest("[data-logo]").dataset.logo; drawGallery(); drawLogoPreview(); drawPosts(); qDirty("Logo chosen. It applies to new photos, or press “Apply to all photos in the queue”."); }
+  if (act === "q-logo-pick") { igq.schedule.logo.src = e.target.closest("[data-logo]").dataset.logo; drawGallery(); drawLogoPreview(); drawPosts(); qDirty("Logo chosen for new photos. To change photos already in the queue, press “Apply to all photos in the queue”."); }
   if (act === "q-logo-del") {
     const id = e.target.closest("[data-logo]").dataset.logo, name = logoName(id);
     const slot = e.target.closest(".q-gal-i");
@@ -1400,11 +1414,11 @@ async function qClick(act, e) {
   }
   if (act === "q-logo-all") {
     status("Updating every photo in the queue…");
-    try { for (const post of igq.queue) for (const ph of post.images) await igRefresh(post, ph); qDirty("All photos updated. Save the queue to apply."); drawPosts(); }
+    try { for (const post of igq.queue) for (const ph of post.images) await igRefresh(post, ph); qDirty("All photos updated."); drawPosts(); }
     catch (err) { if (err.message !== "auth") status(err.message, "err"); }
   }
   if (act === "q-now") {
-    if (igq.dirty) return status("Save the queue first, then post.", "err");
+    if (igq.dirty || qSaving) { await qSave(); if (igq.dirty) return status("Couldn't save the latest changes, so it wasn't posted. Try again.", "err"); }
     card.querySelector(".q-now-w").innerHTML = `<span class="confirm">Post this to Instagram now? <button type="button" class="b sm primary" data-act="q-now-yes">Post</button><button type="button" class="b sm" data-act="q-now-no">Cancel</button></span>`;
   }
   if (act === "q-now-no") drawPosts();
