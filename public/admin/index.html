@@ -495,9 +495,19 @@ function renderEditor() {
     renderPhotos(); preview();
   });
   box.addEventListener("click", async (e) => {
+    const u = e.target.closest("[data-uncrop]");
+    if (u) {
+      const i = +u.dataset.uncrop, m = [...body.value.matchAll(IMG_RE)][i]; if (!m) return;
+      const orig = cropMap()[fileOf(m[2])]; if (!orig) return;
+      let n = 0;
+      body.value = body.value.replace(IMG_RE, (full, alt, src, cap) => (n++ === i ? `![${alt}](${orig}${cap !== undefined ? ` "${cap}"` : ""})` : full));
+      renderPhotos(); preview(); status("Back to the original photo. Save to apply.", "ok");
+      return;
+    }
     const b = e.target.closest("[data-crop]"); if (!b) return;
     const i = +b.dataset.crop, m = [...body.value.matchAll(IMG_RE)][i]; if (!m) return;
     const res = await cropPhoto(imgUrl(m[2]), m[2]); if (!res) return;
+    const map = cropMap(); map[fileOf(res.url)] = map[fileOf(m[2])] || m[2]; setCropMap(map); // remember the uncropped photo
     // swap this photo's address in the text for the cropped copy (caption and description stay)
     let n = 0;
     body.value = body.value.replace(IMG_RE, (full, alt, src, cap) => (n++ === i ? `![${alt}](${res.url}${cap !== undefined ? ` "${cap}"` : ""})` : full));
@@ -532,7 +542,8 @@ function renderPhotos() {
       <img src="${esc(imgUrl(m[2]))}" alt="">
       <div class="fields"><span class="num">Photo ${i + 1}</span>
         <div class="row-btns"><label class="showbox"><input type="checkbox" data-show="${i}" ${isHidden(m) ? "" : "checked"}> Shown on the site</label>
-        <button type="button" class="b sm" data-crop="${i}">${icon("crop")}<span>Crop</span></button></div>
+        <button type="button" class="b sm" data-crop="${i}">${icon("crop")}<span>Crop</span></button>
+        ${cropMap()[fileOf(m[2])] ? `<button type="button" class="b sm" data-uncrop="${i}">${icon("rotate-ccw")}<span>Back to original</span></button>` : ""}</div>
         <label for="pc-${i}">Caption / photo credit<input id="pc-${i}" data-k="cap" value="${esc(m[3] || "")}" placeholder="e.g. Shibuya, October 2026. Photo: Your Name"></label>
         <label for="pa-${i}">Describe the photo <span class="hint">for screen readers</span><input id="pa-${i}" data-k="alt" value="${esc(m[1] || "")}"></label>
       </div>
@@ -559,6 +570,10 @@ async function resize(file, max = 2000) {
 }
 
 // ---------- crop a photo in the article ----------
+// Which original each cropped copy came from, kept with the article (cropOriginals), so a crop can be undone after saving.
+const fileOf = (url) => String(url || "").split("?")[0].split("/").pop();
+const cropMap = () => { try { return JSON.parse(ed?.extras?.cropOriginals || "{}") || {}; } catch { return {}; } };
+const setCropMap = (map) => { if (Object.keys(map).length) ed.extras.cropOriginals = JSON.stringify(map); else delete ed.extras.cropOriginals; };
 // Opens the photo with a crop frame (drag inside to move, drag the corners to resize, or pick a shape),
 // then uploads the cropped copy like a new photo. The original file is left as it is.
 const CROP_SHAPES = [["Free", 0], ["Original", -1], ["1:1", 1], ["4:5", 4 / 5], ["3:4", 3 / 4], ["3:2", 3 / 2], ["16:9", 16 / 9]];
@@ -734,6 +749,7 @@ async function save() {
   const used = [...ed.pending.entries()].filter(([name]) => (body + d.cover).includes(`/images/articles/${ed.slug}/${name}`)).map(([name, p]) => ({ name, sha: p.sha }));
   const btn = document.getElementById("save"); btn.disabled = true; status("Saving…");
   try {
+    { const map = cropMap(); for (const k of Object.keys(map)) if (!body.includes("/" + k)) delete map[k]; setCropMap(map); } // forget crops no longer in the text
     await api("save", { method: "POST", body: { slug: ed.slug, isNew: ed.isNew, content: compose(d, body), images: used } });
     for (const { name } of used) recent.set(`/images/articles/${ed.slug}/${name}`, ed.pending.get(name).preview);
     renderList(d.draft ? `Saved "${d.title}" as a draft.` : `Saved "${d.title}". It will be live on the site in about a minute.`);
