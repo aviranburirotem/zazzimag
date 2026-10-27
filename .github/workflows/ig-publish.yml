@@ -1,0 +1,14 @@
+# Every 15 minutes, ask the site to post the next Instagram post if one is due.
+# The site decides what is due (console → Scheduled posts); this only knocks on the door.
+name: Instagram queue
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Post if due
+        run: curl -sS --max-time 90 -X POST https://www.zazzimag.com/api/ig-publish

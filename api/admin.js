@@ -9,7 +9,8 @@
 import crypto from "node:crypto";
 import { frontmatter } from "../lib/markdown.js";
 import { SCHEMA } from "../lib/site-schema.js";
-import { getToken, saveToken, getHiddenPosts, setHiddenPosts, hasStore } from "../lib/token.js";
+import { getToken, saveToken, getHiddenPosts, setHiddenPosts, hasStore, getJSON, setJSON } from "../lib/token.js";
+import { run as runIgQueue, KEYS as IGK, DEFAULT_SCHEDULE } from "../lib/ig-publish.js";
 import { fetchPosts } from "./instagram.js";
 
 const REPO = process.env.GITHUB_REPO || "aviranburirotem/zazzimag";
@@ -168,6 +169,56 @@ export default async function handler(req, res) {
       if (!hasStore()) return fail(500, "The token store (Redis) isn't connected, so the token can't be saved here.");
       await saveToken(token); // the weekly job keeps renewing it from here
       return res.json(s);
+    }
+
+    // ---- Instagram posting queue (Scheduled posts tab) ----
+    if (action === "igQueue") {
+      const [queue, schedule, history] = await Promise.all([getJSON(IGK.queue, []), getJSON(IGK.schedule, {}), getJSON(IGK.history, [])]);
+      return res.json({ queue, schedule: { ...DEFAULT_SCHEDULE, ...schedule, logo: { ...DEFAULT_SCHEDULE.logo, ...(schedule.logo || {}) } }, history, store: hasStore() });
+    }
+    if (action === "saveIgQueue" && req.method === "POST") {
+      if (!hasStore()) return fail(500, "The store (Redis) isn't connected, so the queue can't be saved.");
+      const FILE = /^[a-z0-9][a-z0-9-]{0,80}\.jpg$/, SHA = /^[a-f0-9]{40}$/, AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+      const posted = new Set((await getJSON(IGK.history, [])).map((h) => h.id));
+      const old = new Map((await getJSON(IGK.queue, [])).map((it) => [it.id, it]));
+      const queue = [];
+      for (const it of Array.isArray(body.queue) ? body.queue.slice(0, 100) : []) {
+        const id = String(it.id || "");
+        if (!/^[a-z0-9]{6,24}$/.test(id) || posted.has(id)) continue; // never bring back something already posted
+        const images = (Array.isArray(it.images) ? it.images : []).slice(0, 10)
+          .filter((p) => FILE.test(p.file) && (!p.orig || FILE.test(p.orig)))
+          .map((p) => ({ file: p.file, orig: p.orig || p.file, logo: p.logo !== false }));
+        if (!images.length) continue;
+        const caption = String(it.caption || "").slice(0, 2200);
+        const custom = it.custom === true && AT.test(it.at || "");
+        const was = old.get(id);
+        let status = it.status === "queued" ? "queued" : (was?.status || "queued"); // "Try again" sends queued
+        if (was?.status === "posting") status = "posting";
+        queue.push({ id, images, caption, custom, at: custom ? it.at : "", corner: ["tl", "tr", "bl", "br"].includes(it.corner) ? it.corner : "", status, error: status === "error" ? was?.error || "" : "", created: it.created || new Date().toISOString() });
+      }
+      const s = body.schedule || {}, prev = await getJSON(IGK.schedule, {});
+      const schedule = {
+        on: s.on === true, every: Math.min(30, Math.max(1, Math.round(Number(s.every) || 1))),
+        time: /^\d{1,2}:\d{2}$/.test(s.time || "") ? s.time : "18:00", lastAuto: prev.lastAuto || null,
+        logo: { on: s.logo?.on !== false, corner: ["tl", "tr", "bl", "br"].includes(s.logo?.corner) ? s.logo.corner : "br",
+          size: Math.min(40, Math.max(6, Number(s.logo?.size) || 16)), opacity: Math.min(100, Math.max(20, Number(s.logo?.opacity) || 90)) },
+      };
+      // photos: add the new ones, remove the ones no post uses any more (one commit)
+      const keep = new Set(queue.flatMap((it) => it.images.flatMap((p) => [p.file, p.orig])));
+      const adds = (Array.isArray(body.files) ? body.files : []).filter((f) => FILE.test(f.file) && SHA.test(f.sha) && keep.has(f.file));
+      const ref = await gh(repo(`/git/ref/heads/${BRANCH}`));
+      const parent = await gh(repo(`/git/commits/${ref.object.sha}`));
+      const tree = await gh(repo(`/git/trees/${parent.tree.sha}?recursive=1`));
+      const removes = (tree.tree || []).filter((t) => t.type === "blob" && t.path.startsWith("public/ig-queue/") && !keep.has(t.path.slice("public/ig-queue/".length))).map((t) => ({ path: t.path, remove: true }));
+      if (adds.length || removes.length) await commit([...adds.map((f) => ({ path: `public/ig-queue/${f.file}`, sha: f.sha })), ...removes], `Instagram queue: ${adds.length} photo${adds.length === 1 ? "" : "s"} added`);
+      await setJSON(IGK.queue, queue);
+      await setJSON(IGK.schedule, schedule);
+      return res.json({ ok: true, queue, schedule, photosAdded: adds.length });
+    }
+    if (action === "igPostNow" && req.method === "POST") {
+      const out = await runIgQueue({ onlyId: String(body.id || "") });
+      if (!out.ok) return fail(400, out.error || "Couldn't post.");
+      return res.json(out);
     }
 
     if (action === "igPosts") {

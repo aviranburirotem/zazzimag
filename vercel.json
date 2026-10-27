@@ -4,16 +4,37 @@
   "outputDirectory": "dist",
   "trailingSlash": true,
   "crons": [
-    { "path": "/api/refresh-token", "schedule": "0 3 * * 1" }
+    {
+      "path": "/api/refresh-token",
+      "schedule": "0 3 * * 1"
+    }
   ],
   "headers": [
     {
       "source": "/admin/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
     },
     {
       "source": "/assets/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
     }
-  ]
+  ],
+  "functions": {
+    "api/ig-publish.js": {
+      "maxDuration": 60
+    },
+    "api/admin.js": {
+      "maxDuration": 60
+    }
+  }
 }

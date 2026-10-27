@@ -561,21 +561,22 @@ write("articles.json", JSON.stringify(articles.map(({ html, ...a }) => a), null,
 fs.copyFileSync("lib/markdown.js", path.join(OUT, "admin/markdown.js"));
 fs.copyFileSync("lib/icons.js", path.join(OUT, "admin/icons.js"));
 fs.copyFileSync("lib/site-schema.js", path.join(OUT, "admin/site-schema.js"));
+fs.copyFileSync("lib/ig-schedule.js", path.join(OUT, "admin/ig-schedule.js"));
 { // the console always loads the newest helper files (no stale browser copies after a deploy)
-  const av = crypto.createHash("md5").update(fs.readFileSync("lib/markdown.js")).update(fs.readFileSync("lib/icons.js")).update(fs.readFileSync("lib/site-schema.js")).digest("hex").slice(0, 8);
+  const av = crypto.createHash("md5").update(fs.readFileSync("lib/markdown.js")).update(fs.readFileSync("lib/icons.js")).update(fs.readFileSync("lib/site-schema.js")).update(fs.readFileSync("lib/ig-schedule.js")).digest("hex").slice(0, 8);
   const f = path.join(OUT, "admin/index.html");
-  fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(/from "\.\/(markdown|icons|site-schema)\.js"/g, `from "./$1.js?v=${av}"`));
+  fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(/from "\.\/(markdown|icons|site-schema|ig-schedule)\.js"/g, `from "./$1.js?v=${av}"`));
 }
 
 if (COMING_SOON) {
   const page = comingSoon();
   write("index.html", page);
   write("404.html", page);
-  write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /preview/\nDisallow: /articles/\nDisallow: /about/\nDisallow: /store/\nDisallow: /issues/\nDisallow: /admin/\n`);
+  write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /preview/\nDisallow: /articles/\nDisallow: /about/\nDisallow: /store/\nDisallow: /issues/\nDisallow: /admin/\nDisallow: /ig-queue/\n`);
 } else {
   write("404.html", notFound());
   write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${["/", "/articles/", "/about/", "/store/", "/accessibility/", "/privacy/", ...articles.map((a) => a.url), ...issues.map((i) => i.url), ...PRODUCTS.map((p) => p.url)].map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
-  write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /preview/\nSitemap: ${SITE.url}/sitemap.xml\n`);
+  write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /preview/\nDisallow: /ig-queue/\nSitemap: ${SITE.url}/sitemap.xml\n`);
 }
 
 console.log(`Built ${articles.length} articles and ${issues.length} issues into /${OUT}${COMING_SOON ? " (coming-soon mode)" : ""}`);
