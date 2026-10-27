@@ -161,6 +161,20 @@
 .pos-ui .ic{width:16px;height:16px}
 .pos-target[style*="2/3"] .pos-hint{display:none}
 .pos-hint{position:absolute;left:10px;top:10px;background:rgba(0,0,0,.55);color:#fff;font:600 11px/1 Archivo,system-ui,sans-serif;padding:7px 10px;border-radius:999px;pointer-events:none}
+/* small home page preview */
+.mini-home{margin:18px 20px 0;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.mh-head{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;margin-bottom:12px}
+.mh-grid{display:grid;grid-template-columns:2fr 1fr;gap:10px;align-items:start}
+.mh-col{display:grid;gap:10px}
+.mh-tile{display:grid;gap:4px;min-width:0}
+.mh-ph{aspect-ratio:2/3;overflow:hidden;background:var(--soft)}
+.mh-tile.big .mh-ph{aspect-ratio:4/5}
+.mh-ph img{width:100%;height:100%;object-fit:cover;display:block}
+.mh-label{font:10px/1.3 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.mh-title{font:700 12px/1.25 Archivo,system-ui,sans-serif}
+.mh-tile.big .mh-title{font-size:17px;font-style:italic;font-stretch:75%;font-weight:800;text-transform:uppercase;line-height:1.05}
+.mh-dek{font:12px/1.4 Archivo,system-ui,sans-serif;color:var(--muted)}
+.mh-follow{aspect-ratio:1;background:#e30613;color:#fff;display:grid;place-items:center;text-align:center;font:italic 800 11px/1.1 Archivo,system-ui,sans-serif}
 /* Video tab */
 .vid-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px}
 .vid-box{display:flex;flex-direction:column;gap:12px;padding:18px}
@@ -433,6 +447,7 @@ function renderEditor() {
     const ny = drag.oy > 0 ? drag.p[1] - ((e.clientY - drag.y0) / drag.oy) * 100 : drag.p[1];
     setPos(nx, ny, false); // move only the picture while dragging; the panel redraws when you let go
     const [x, y] = posOf(); drag.im.style.objectPosition = `${x}% ${y}%`;
+    if (posKey() === "coverPosition") pv.querySelectorAll(".mh-cov").forEach((im) => (im.style.objectPosition = `${x}% ${y}%`));
   });
   const endDrag = () => { if (!drag) return; drag.fr.classList.remove("dragging"); drag = null; preview(); };
   pv.addEventListener("pointerup", endDrag); pv.addEventListener("pointercancel", endDrag);
@@ -558,6 +573,17 @@ function drawPos() { // the small cover thumbnail follows the chosen position
   const [x, y] = posOf("coverPosition"); t.style.backgroundPosition = `${x}% ${y}%`; // the thumbnail is tile-shaped
 }
 
+// A small copy of how the article looks on the home page, in both tile sizes (uses the Home tile position)
+function miniHome(d, body) {
+  const words = body.replace(/[#>*_`\[\]()!-]/g, " ").split(/\s+/).filter(Boolean).length;
+  const label = `${d.date ? new Date(d.date + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : "Date"} · ${Math.max(1, Math.round(words / 220))} min read`;
+  const pos = posOf("coverPosition").map((n) => n + "%").join(" "), src = esc(imgUrl(d.cover));
+  const tile = (big) => `<div class="mh-tile${big ? " big" : ""}"><div class="mh-ph"><img class="mh-cov" src="${src}" alt="" style="object-position:${pos}"></div>
+    <span class="mh-label">${esc(label)}</span><span class="mh-title">${esc(d.title || "Your headline")}</span>${big && d.dek ? `<span class="mh-dek">${esc(d.dek)}</span>` : ""}</div>`;
+  return `<section class="mini-home" aria-label="How it looks on the home page"><div class="mh-head"><span class="label">On the home page</span><span class="hint">big tile when it's the newest article, regular tile after that</span></div>
+    <div class="mh-grid">${tile(true)}<div class="mh-col"><div class="mh-follow">FOLLOW<br>@ZAZZIMAG</div>${tile(false)}</div></div></section>`;
+}
+
 function preview() {
   const pv = document.getElementById("pv"); if (!pv) return;
   const d = collect(), body = document.getElementById("body").value;
@@ -569,6 +595,7 @@ function preview() {
       <div class="pos-ui" role="group" aria-label="Cover position"><button type="button" data-pos="up" aria-label="Move the photo up">${icon("chevron-up")}</button><button type="button" data-pos="down" aria-label="Move the photo down">${icon("chevron-down")}</button><button type="button" data-pos="left" aria-label="Move the photo left">${icon("chevron-left")}</button><button type="button" data-pos="right" aria-label="Move the photo right">${icon("chevron-right")}</button><button type="button" data-pos="center" class="txt">Center</button></div>
       <div class="pos-shape" role="group" aria-label="Preview crop"><button type="button" data-shape="4/3" aria-pressed="${posShape === "4/3"}">Article</button><button type="button" data-shape="2/3" aria-pressed="${posShape === "2/3"}">Home tile</button></div>
       <span class="pos-hint">Drag to reposition</span></div>${d.coverCaption ? `<figcaption>${esc(d.coverCaption)}</figcaption>` : ""}</figure>` : ""}
+    ${d.cover && posShape === "2/3" ? miniHome(d, body) : ""}
     <div class="body">${html}</div>`;
 }
 
