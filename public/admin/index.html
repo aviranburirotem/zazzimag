@@ -219,6 +219,7 @@
 .q-gal-x{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:var(--bg);display:grid;place-items:center;padding:0;cursor:pointer}
 .q-gal-x .ic{width:12px;height:12px}
 .q-gal-add{background:var(--bg);color:var(--muted);border-style:dashed}
+.q-gal-i.confirm-del .q-gal-x{background:var(--accent);color:#fff;border-color:var(--accent)}
 #q-list{display:grid;gap:16px;max-width:1100px}
 .q-post{display:grid;gap:12px;padding:16px}
 .q-post-h{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center}
@@ -1106,7 +1107,9 @@ async function saveVideo() {
 let igq = null; // { queue, schedule, history, files: Map(file -> sha), dirty }
 const igData = new Map(); // file -> data URL, for photos made in this session (shown before the site has them)
 const IG_SHAPES = [["4:5", 4 / 5], ["1:1", 1], ["1.91:1", 1.91]];
-const CORNERS = [["br", "Bottom right"], ["bl", "Bottom left"], ["tr", "Top right"], ["tl", "Top left"]];
+const CORNERS = [["br", "Bottom right"], ["bc", "Bottom center"], ["bl", "Bottom left"], ["tr", "Top right"], ["tc", "Top center"], ["tl", "Top left"], ["c", "Center of the photo"]];
+// where the logo goes: left / center / right and top / middle / bottom, with a small margin
+const logoXY = (k, W, H, w, h, m) => [k.includes("l") ? m : k.includes("r") ? W - w - m : (W - w) / 2, k.includes("t") ? m : k.includes("b") ? H - h - m : (H - h) / 2];
 const igSrc = (file) => igData.get(file) || `/ig-queue/${file}`;
 const rid = (n = 10) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => "abcdefghijklmnopqrstuvwxyz0123456789"[b % 36]).join("");
 const loadImg = (src) => new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => bad(new Error("The photo couldn't be loaded. If you just saved, wait a minute and try again.")); i.src = src; });
@@ -1135,7 +1138,7 @@ async function igRender(origSrc, withLogo, corner, logoId) {
   const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
   if (withLogo) {
     const logo = await getLogo(logoId || L.src), w = c.width * (L.size / 100), h = w * (logo.naturalHeight / logo.naturalWidth), m = c.width * 0.035;
-    const k = corner || L.corner, x = k.includes("l") ? m : c.width - w - m, y = k.includes("t") ? m : c.height - h - m;
+    const [x, y] = logoXY(corner || L.corner, c.width, c.height, w, h, m);
     ctx.globalAlpha = L.opacity / 100; ctx.drawImage(logo, x, y, w, h); ctx.globalAlpha = 1;
   }
   return c.toDataURL("image/jpeg", 0.9);
@@ -1202,7 +1205,7 @@ function drawQueue() {
         <input type="file" id="q-logo-file" accept="image/png,image/webp,image/svg+xml,image/jpeg" hidden>
         <span class="hint">PNG with a see-through background works best.</span></div>
       <label class="showbox"><input type="checkbox" id="q-l-on" ${L.on ? "checked" : ""}> Add the logo to new photos</label>
-      <label>Corner <select id="q-l-corner">${CORNERS.map(([k, n]) => `<option value="${k}" ${L.corner === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+      <label>Position <select id="q-l-corner">${CORNERS.map(([k, n]) => `<option value="${k}" ${L.corner === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       <label>Size <input type="range" id="q-l-size" min="6" max="40" value="${L.size}"></label>
       <label>Transparency <input type="range" id="q-l-op" min="20" max="100" value="${L.opacity}"></label>
       <button type="button" class="b sm" data-act="q-logo-all">Apply to all photos in the queue</button>
@@ -1234,11 +1237,12 @@ async function addLogo(file) {
     c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(src);
     const data = c.toDataURL("image/png");
     const base = (slugify(file.name.replace(/\.[^.]+$/, "")) || "logo").slice(0, 40), name = `${base}-${rid(5)}.png`;
-    await igUpload(data, name);
-    igq.logos.push({ file: name, name: file.name.replace(/\.[^.]+$/, "").slice(0, 40) || "Logo" });
+    const r = await api("igLogoAdd", { method: "POST", body: { file: name, name: file.name.replace(/\.[^.]+$/, "").slice(0, 40) || "Logo", data } });
+    igData.set(name, data); // show it right away (the site has it about a minute later)
+    igq.logos = r.logos;
     igq.schedule.logo.src = name;
     drawGallery(); drawLogoPreview(); drawPosts();
-    qDirty("Logo added and chosen. It applies to new photos, or press “Apply to all photos in the queue”. Save to keep it.");
+    qDirty("Logo saved to the gallery and chosen. Save the queue to make it the default for new photos, or press “Apply to all photos in the queue”.");
   } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
 }
 
@@ -1248,7 +1252,7 @@ async function drawLogoPreview() {
   ctx.fillStyle = "#ddd"; ctx.fillRect(0, 0, c.width, c.height);
   try {
     if (first) { const im = await loadImg(igSrc(first.orig)); const s = Math.max(c.width / im.naturalWidth, c.height / im.naturalHeight); ctx.drawImage(im, (c.width - im.naturalWidth * s) / 2, (c.height - im.naturalHeight * s) / 2, im.naturalWidth * s, im.naturalHeight * s); }
-    if (L.on) { const logo = await getLogo(L.src), w = c.width * L.size / 100, h = w * logo.naturalHeight / logo.naturalWidth, m = c.width * 0.035; ctx.globalAlpha = L.opacity / 100; ctx.drawImage(logo, L.corner.includes("l") ? m : c.width - w - m, L.corner.includes("t") ? m : c.height - h - m, w, h); ctx.globalAlpha = 1; }
+    if (L.on) { const logo = await getLogo(L.src), w = c.width * L.size / 100, h = w * logo.naturalHeight / logo.naturalWidth, m = c.width * 0.035; ctx.globalAlpha = L.opacity / 100; ctx.drawImage(logo, ...logoXY(L.corner, c.width, c.height, w, h, m), w, h); ctx.globalAlpha = 1; }
   } catch {}
 }
 
@@ -1278,7 +1282,7 @@ function drawPosts() {
       <label>Caption <span class="hint">${it.caption.length}/2200 · ${tags} hashtag${tags === 1 ? "" : "s"}${tags > 5 ? " (Instagram allows 5)" : ""}</span><textarea data-q="caption" rows="4">${esc(it.caption)}</textarea></label>
       <div class="q-row">
         <label>Logo <select data-q="logoSrc"><option value="">Default (${esc(logoName(igq.schedule.logo.src))})</option>${[{ file: "default", name: "Zazzi heart" }, ...igq.logos].map((l) => `<option value="${esc(l.file)}" ${it.logoSrc === l.file ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></label>
-        <label>Logo corner <select data-q="corner"><option value="">Default</option>${CORNERS.map(([k, n]) => `<option value="${k}" ${it.corner === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+        <label>Logo position <select data-q="corner"><option value="">Default</option>${CORNERS.map(([k, n]) => `<option value="${k}" ${it.corner === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       </div>
       <div class="q-row q-actions">
         <button type="button" class="b sm" data-act="q-up" aria-label="Move post up" ${i === 0 ? "disabled" : ""}>${icon("chevron-up")}</button>
@@ -1347,8 +1351,7 @@ async function qSave() {
   try {
     const keep = new Set(igq.queue.flatMap((it) => it.images.flatMap((p) => [p.file, p.orig, p.first].filter(Boolean))));
     const files = [...igq.files].filter(([f]) => keep.has(f)).map(([file, sha]) => ({ file, sha }));
-    for (const l of igq.logos) if (igq.files.has(l.file)) files.push({ file: l.file, sha: igq.files.get(l.file) });
-    const r = await api("saveIgQueue", { method: "POST", body: { queue: igq.queue, schedule: igq.schedule, files, logos: igq.logos } });
+    const r = await api("saveIgQueue", { method: "POST", body: { queue: igq.queue, schedule: igq.schedule, files } });
     if (r.logos) igq.logos = r.logos;
     igq.queue = r.queue; igq.schedule = { ...igq.schedule, ...r.schedule }; igq.files = new Map(); igq.dirty = false;
     drawPosts(); drawSchedMeta();
@@ -1383,11 +1386,17 @@ async function qClick(act, e) {
   if (act === "q-logo-add") document.getElementById("q-logo-file").click();
   if (act === "q-logo-pick") { igq.schedule.logo.src = e.target.closest("[data-logo]").dataset.logo; drawGallery(); drawLogoPreview(); drawPosts(); qDirty("Logo chosen. It applies to new photos, or press “Apply to all photos in the queue”."); }
   if (act === "q-logo-del") {
-    const id = e.target.closest("[data-logo]").dataset.logo;
-    igq.logos = igq.logos.filter((l) => l.file !== id);
+    const id = e.target.closest("[data-logo]").dataset.logo, name = logoName(id);
+    const slot = e.target.closest(".q-gal-i");
+    if (!slot.classList.contains("confirm-del")) { // ask once: click × again to remove
+      slot.classList.add("confirm-del"); status(`Click × again to remove “${name}” from the gallery.`);
+      setTimeout(() => slot.classList.remove("confirm-del"), 4000); return;
+    }
+    try { igq.logos = (await api("igLogoRemove", { method: "POST", body: { file: id } })).logos; }
+    catch (err) { if (err.message !== "auth") status(err.message, "err"); return; }
     if (igq.schedule.logo.src === id) igq.schedule.logo.src = "default";
     igq.queue.forEach((p) => { if (p.logoSrc === id) p.logoSrc = ""; });
-    drawGallery(); drawLogoPreview(); drawPosts(); qDirty("Logo removed from the gallery. Photos already made with it keep it until you update them.");
+    drawGallery(); drawLogoPreview(); drawPosts(); status(`“${name}” removed from the gallery. Photos already made with it keep it until you update them.`, "ok");
   }
   if (act === "q-logo-all") {
     status("Updating every photo in the queue…");

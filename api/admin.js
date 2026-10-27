@@ -179,7 +179,7 @@ export default async function handler(req, res) {
     if (action === "saveIgQueue" && req.method === "POST") {
       if (!hasStore()) return fail(500, "The store (Redis) isn't connected, so the queue can't be saved.");
       const LOGO = /^[a-z0-9][a-z0-9-]{0,60}\.png$/;
-      const logos = (Array.isArray(body.logos) ? body.logos.slice(0, 30) : []).filter((l) => LOGO.test(l.file)).map((l) => ({ file: l.file, name: String(l.name || "Logo").slice(0, 40) }));
+      const logos = await getJSON(IGK.logos, []); // the gallery is saved on its own (igLogoAdd / igLogoRemove)
       const logoOk = (id) => id === "default" || logos.some((l) => l.file === id);
       const FILE = /^[a-z0-9][a-z0-9-]{0,80}\.jpg$/, SHA = /^[a-f0-9]{40}$/, AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
       const posted = new Set((await getJSON(IGK.history, [])).map((h) => h.id));
@@ -197,33 +197,54 @@ export default async function handler(req, res) {
         const was = old.get(id);
         let status = it.status === "queued" ? "queued" : (was?.status || "queued"); // "Try again" sends queued
         if (was?.status === "posting") status = "posting";
-        queue.push({ id, images, caption, custom, at: custom ? it.at : "", corner: ["tl", "tr", "bl", "br"].includes(it.corner) ? it.corner : "", logoSrc: logoOk(it.logoSrc) ? it.logoSrc : "", status, error: status === "error" ? was?.error || "" : "", created: it.created || new Date().toISOString() });
+        queue.push({ id, images, caption, custom, at: custom ? it.at : "", corner: ["tl", "tc", "tr", "bl", "bc", "br", "c"].includes(it.corner) ? it.corner : "", logoSrc: logoOk(it.logoSrc) ? it.logoSrc : "", status, error: status === "error" ? was?.error || "" : "", created: it.created || new Date().toISOString() });
       }
       const s = body.schedule || {}, prev = await getJSON(IGK.schedule, {});
       const schedule = {
         on: s.on === true, every: Math.min(30, Math.max(1, Math.round(Number(s.every) || 1))),
         time: /^\d{1,2}:\d{2}$/.test(s.time || "") ? s.time : "18:00", lastAuto: prev.lastAuto || null,
-        logo: { src: logoOk(s.logo?.src) ? s.logo.src : "default", on: s.logo?.on !== false, corner: ["tl", "tr", "bl", "br"].includes(s.logo?.corner) ? s.logo.corner : "br",
+        logo: { src: logoOk(s.logo?.src) ? s.logo.src : "default", on: s.logo?.on !== false, corner: ["tl", "tc", "tr", "bl", "bc", "br", "c"].includes(s.logo?.corner) ? s.logo.corner : "br",
           size: Math.min(40, Math.max(6, Number(s.logo?.size) || 16)), opacity: Math.min(100, Math.max(20, Number(s.logo?.opacity) || 90)) },
       };
       // photos: add the new ones, remove the ones no post uses any more (one commit)
       const keep = new Set(queue.flatMap((it) => it.images.flatMap((p) => [p.file, p.orig, p.first].filter(Boolean))));
       const adds = (Array.isArray(body.files) ? body.files : []).filter((f) => FILE.test(f.file) && SHA.test(f.sha) && keep.has(f.file))
         .map((f) => ({ path: `public/ig-queue/${f.file}`, sha: f.sha }));
-      const keepLogos = new Set(logos.map((l) => l.file));
-      for (const f of Array.isArray(body.files) ? body.files : []) if (LOGO.test(f.file) && SHA.test(f.sha) && keepLogos.has(f.file)) adds.push({ path: `public/ig-logos/${f.file}`, sha: f.sha });
+      // (logo files are added by igLogoAdd and never removed here)
       const ref = await gh(repo(`/git/ref/heads/${BRANCH}`));
       const parent = await gh(repo(`/git/commits/${ref.object.sha}`));
       const tree = await gh(repo(`/git/trees/${parent.tree.sha}?recursive=1`));
       const removes = (tree.tree || []).filter((t) => t.type === "blob" && (
-        (t.path.startsWith("public/ig-queue/") && !keep.has(t.path.slice("public/ig-queue/".length))) ||
-        (t.path.startsWith("public/ig-logos/") && !keepLogos.has(t.path.slice("public/ig-logos/".length))))).map((t) => ({ path: t.path, remove: true }));
+        t.path.startsWith("public/ig-queue/") && !keep.has(t.path.slice("public/ig-queue/".length)))).map((t) => ({ path: t.path, remove: true }));
       if (adds.length || removes.length) await commit([...adds, ...removes], `Instagram queue: ${adds.length} file${adds.length === 1 ? "" : "s"} added`);
-      await setJSON(IGK.logos, logos);
       await setJSON(IGK.queue, queue);
       await setJSON(IGK.schedule, schedule);
       return res.json({ ok: true, queue, schedule, logos, photosAdded: adds.filter((a) => a.path.startsWith("public/ig-queue/")).length });
     }
+    // ---- logo gallery: saved straight away, stays until you remove it ----
+    if (action === "igLogoAdd" && req.method === "POST") {
+      if (!hasStore()) return fail(500, "The store (Redis) isn't connected.");
+      const file = String(body.file || ""), name = String(body.name || "Logo").slice(0, 40);
+      const data = String(body.data || "").replace(/^data:image\/png;base64,/, "");
+      if (!/^[a-z0-9][a-z0-9-]{0,60}\.png$/.test(file) || !data) return fail(400, "That logo couldn't be read.");
+      if (data.length > 4_000_000) return fail(413, "That logo is too large. Try a smaller PNG.");
+      const blob = await gh(repo("/git/blobs"), { method: "POST", body: { content: data, encoding: "base64" } });
+      await commit([{ path: `public/ig-logos/${file}`, sha: blob.sha }], `Logo gallery: add ${name}`);
+      const logos = (await getJSON(IGK.logos, [])).filter((l) => l.file !== file);
+      logos.push({ file, name });
+      await setJSON(IGK.logos, logos);
+      return res.json({ ok: true, logos });
+    }
+    if (action === "igLogoRemove" && req.method === "POST") {
+      const file = String(body.file || "");
+      const logos = (await getJSON(IGK.logos, [])).filter((l) => l.file !== file);
+      await setJSON(IGK.logos, logos);
+      const sch = await getJSON(IGK.schedule, {});
+      if (sch.logo?.src === file) await setJSON(IGK.schedule, { ...sch, logo: { ...sch.logo, src: "default" } });
+      // the file itself stays on the site, so photos already made with it are unaffected
+      return res.json({ ok: true, logos });
+    }
+
     if (action === "igPostNow" && req.method === "POST") {
       const out = await runIgQueue({ onlyId: String(body.id || "") });
       if (!out.ok) return fail(400, out.error || "Couldn't post.");
