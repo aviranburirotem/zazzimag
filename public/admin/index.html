@@ -271,7 +271,7 @@ const shown = (u) => recent.get(u) || u;
 
 async function openEditor(slug) {
   if (!slug) {
-    ed = { slug: "", isNew: true, data: { date: today(), author: "Zazzi", draft: true }, extras: {}, body: "", pending: new Map() };
+    ed = { slug: "", isNew: true, data: { date: today(), author: "", draft: true }, extras: {}, body: "", pending: new Map() };
     return renderEditor();
   }
   app.innerHTML = topBar() + `<main class="wrap c"><div class="panel empty">Loading…</div></main>`;
@@ -302,7 +302,7 @@ function renderEditor() {
         <label for="f-cat">Category<input id="f-cat" list="cats" value="${esc(d.category || "")}" required><datalist id="cats">${[...new Set([...categories, "Street Style", "Trends", "Guide", "History", "Streetwear", "Interview"])].map((c) => `<option value="${esc(c)}">`).join("")}</datalist></label>
         ${field("f-date", "Date", d.date, 'type="date" required')}
       </div>
-      ${field("f-author", "Author", d.author || "Zazzi")}
+      ${field("f-author", "Written by", d.author || "", 'placeholder="Writer\'s name"', "the name shown as “Written by …”")}
       <div><span class="label">Cover photo</span>
         <div class="cover-box" style="margin-top:6px">
           <button type="button" class="thumb" id="cover-pick" aria-label="Choose cover photo" style="${d.cover ? `background-image:url('${esc(imgUrl(d.cover))}')` : ""}">${d.cover ? "" : icon("image-plus")}</button>
@@ -567,7 +567,7 @@ function preview() {
   const html = markdown(body || "*Start writing…*").replace(/src="(\/images\/articles\/[^"]+)"/g, (m, u) => `src="${imgUrl(u)}"`);
   pv.innerHTML = `<div class="article-head"><div class="crumbs label"><span>Articles</span><span>/</span><span>${esc(d.category || "Category")}</span></div>
     <h1>${esc(d.title || "Your headline")}</h1>${d.dek ? `<p class="dek">${esc(d.dek)}</p>` : ""}
-    <div class="meta label"><span>${esc(d.date)}</span><span>Written by ${esc(d.author || "Zazzi")}</span></div></div>
+    <div class="meta label"><span>${esc(d.date)}</span>${d.author ? `<span>Written by ${esc(d.author)}</span>` : ""}</div></div>
     ${d.cover ? `<figure class="hero"><div class="ph"><img src="${esc(imgUrl(d.cover))}" alt=""${d.coverPosition ? ` style="object-position:${esc(d.coverPosition)}"` : ""}></div>${d.coverCaption ? `<figcaption>${esc(d.coverCaption)}</figcaption>` : ""}</figure>` : ""}
     <div class="body">${html}</div>`;
 }
@@ -577,6 +577,7 @@ async function save() {
   if (!d.title) return status("Add a title.", "err");
   if (!ed.slug) return status("Add a web address.", "err");
   if (!d.category) return status("Choose a category.", "err");
+  if (!d.author && !d.draft) { document.getElementById("f-author").focus(); return status("Published articles need a writer's name in “Written by”. Add it, or untick Published to save a draft.", "err"); }
   if (!d.cover && !d.draft) return status("Published articles need a cover photo. Upload one, or untick Published to save a draft.", "err");
   const used = [...ed.pending.entries()].filter(([name]) => (body + d.cover).includes(`/images/articles/${ed.slug}/${name}`)).map(([name, p]) => ({ name, sha: p.sha }));
   const btn = document.getElementById("save"); btn.disabled = true; status("Saving…");

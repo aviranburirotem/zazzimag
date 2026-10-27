@@ -223,14 +223,14 @@ function articlesIndex() {
 
 function articlePage(a) {
   const more = articles.filter((x) => x.slug !== a.slug).slice(0, 4);
-  const byline = a.author || "Zazzi";
+  const byline = (a.author || "").trim();
   return layout({
     title: a.title, description: a.dek, active: "articles", pathname: a.url, image: a.cover, type: "article",
     body: `<article>
     <header class="wrap"><div class="article-head">
       <div class="crumbs label"><a href="/articles/">Articles</a><span>/</span><span>${esc(a.category)}</span></div>
       <h1>${esc(a.title)}</h1>${a.dek ? `<p class="dek">${esc(a.dek)}</p>` : ""}
-      <div class="meta label"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${a.readTime} read</span><span>${tx("articles.byline")} ${esc(byline)}</span></div></div></header>
+      <div class="meta label"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${a.readTime} read</span>${byline ? `<span>${tx("articles.byline")} ${esc(byline)}</span>` : ""}</div></div></header>
     <figure class="wrap hero"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}"${coverPos(a)}></div>${a.coverCaption ? `<figcaption>${esc(a.coverCaption)}</figcaption>` : ""}</figure>
     <div class="wrap"><div class="body">${a.html}</div>
       ${on("show.feedStrip") ? `<section data-ig-section><div class="section-h"><h2>${tx("articles.feedHeading")}</h2><a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a></div>
