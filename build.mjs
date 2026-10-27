@@ -124,7 +124,7 @@ function layout({ title, description, active, body, image, type = "website", pat
 <main id="main">
 ${body}
 </main>
-<footer class="site-footer">${on("show.videoStrip") ? `<div class="vstrip" role="img" aria-label="${esc(T("home.videoLabel"))}">
+<footer class="site-footer">${on("show.videoStrip") && active === "home" ? `<div class="vstrip" role="img" aria-label="${esc(T("home.videoLabel"))}">
   <video muted loop playsinline preload="none" poster="${VIDEO.poster}" aria-hidden="true" tabindex="-1">
     <source media="(max-width: 700px)" src="${VIDEO.small}" type="video/mp4">
     <source src="${VIDEO.wide}" type="video/mp4">

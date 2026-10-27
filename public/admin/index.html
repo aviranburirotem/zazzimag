@@ -719,12 +719,12 @@ async function renderVideo(flash = "") {
   tab = "video";
   vid = null;
   app.innerHTML = topBar() + `<main class="wrap c"><div class="list-head"><div><span class="label">Video</span><h1>Footer video</h1></div>
-    <p class="hint" style="max-width:52ch;margin:0">The silent, looping video at the top of the footer on every page. Choose any video: it's cropped to a wide strip, the sound is removed, and it's shrunk so the site stays fast.</p></div>
+    <p class="hint" style="max-width:52ch;margin:0">The silent, looping video above the footer on the home page. Choose any video: it's cropped to a wide strip, the sound is removed, and it's shrunk so the site stays fast.</p></div>
     <p class="status ok" id="flash">${esc(flash)}</p>
     <div class="vid-grid">
       <section class="panel vid-box"><span class="label">On the site now</span><div id="vid-now" class="vid-frame"><span class="hint">Loading…</span></div><div id="vid-now-meta" class="hint"></div>
         <label class="showbox" for="vid-show"><input type="checkbox" id="vid-show" disabled> Show the video on the site</label>
-        <p class="hint" id="vid-show-st" style="margin:0">Untick to hide it everywhere. Your video stays saved, so you can show it again any time.</p></section>
+        <p class="hint" id="vid-show-st" style="margin:0">Untick to hide it from the home page. Your video stays saved, so you can show it again any time.</p></section>
       <section class="panel vid-box"><span class="label">New video</span>
         <div id="vid-new">
           <input type="file" id="vid-file" accept="video/*" hidden>
