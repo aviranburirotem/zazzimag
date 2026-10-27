@@ -220,6 +220,8 @@
 .q-ph figcaption{display:grid;gap:6px}
 .q-ph-b{display:flex;gap:4px;flex-wrap:wrap}
 .q-post textarea{width:100%}
+.q-own{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 12px;background:var(--soft);border-radius:6px}
+.q-own input[type=datetime-local]{width:auto}
 .q-actions .confirm{display:inline-flex;gap:6px;align-items:center;font-size:13px}
 .q-history{max-width:1100px;margin-top:28px;display:grid;gap:8px}
 .q-h-row{display:flex;gap:14px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
@@ -1167,6 +1169,8 @@ async function renderQueue(flash = "") {
 function qDirty(msg = "Unsaved changes. Save the queue to apply.") { igq.dirty = true; status(msg); drawSchedMeta(); }
 
 function drawSchedMeta() {
+  const oh = document.getElementById("q-own-hint");
+  if (oh) oh.textContent = igq.queue.length ? "To post one at a different date and time, tick “Own time” at the top of that post." : "After you add photos, each post has an “Own time” tick, to give it its own date and time instead.";
   const el = document.getElementById("q-next"); if (!el) return;
   const s = igq.schedule, p = plan(igq.queue, s), first = igq.queue.find((it) => !it.custom && p[it.id]);
   el.textContent = !s.on ? "Automatic posting is off: only posts with their own time go out." : first ? `Next automatic post: ${nice(p[first.id])}` : "Nothing waiting for an automatic slot.";
@@ -1179,7 +1183,7 @@ function drawQueue() {
     <div class="q-row"><label>Every <select id="q-every">${[1, 2, 3, 4, 5, 6, 7, 10, 14].map((n) => `<option value="${n}" ${+s.every === n ? "selected" : ""}>${n === 1 ? "day" : n + " days"}</option>`).join("")}</select></label>
       <label>at <input type="time" id="q-time" value="${esc(s.time)}"></label><span class="hint">Israel time</span></div>
     <p class="hint" id="q-next" style="margin:0"></p>
-    <p class="hint" style="margin:0">Tick "Own time" on a post to give it a different date and time.</p>`;
+    <p class="hint" style="margin:0" id="q-own-hint"></p>`;
   document.getElementById("q-logo").innerHTML = `<span class="label">Logo on photos</span>
     <div class="q-logo-row"><canvas id="q-logo-pv" width="180" height="225" aria-label="Logo preview"></canvas>
     <div class="q-logo-f">
@@ -1221,6 +1225,10 @@ function drawPosts() {
     const defAt = it.at || `${addDays(local().date, 1)}T${igq.schedule.time}`;
     return `<article class="panel q-post" data-i="${i}">
       <div class="q-post-h"><span class="num">${it.images.length > 1 ? `Carousel · ${it.images.length} photos` : "Photo"}</span><span>${head}</span></div>
+      <div class="q-own">
+        <label class="showbox"><input type="checkbox" data-q="custom" ${it.custom ? "checked" : ""}> Own time <span class="hint">instead of the schedule</span></label>
+        <input type="datetime-local" data-q="at" value="${esc(defAt)}" ${it.custom ? "" : "hidden"} aria-label="Date and time, Israel time">${it.custom ? '<span class="hint">Israel time</span>' : ""}
+      </div>
       <div class="q-photos">${it.images.map((ph, k) => `<figure class="q-ph" data-k="${k}"><img src="${esc(igSrc(ph.file))}" alt="Photo ${k + 1}">
         <figcaption><label class="showbox"><input type="checkbox" data-q="logo" ${ph.logo ? "checked" : ""}> Logo</label>
         <span class="q-ph-b"><button type="button" class="b sm" data-act="q-crop" aria-label="Crop photo ${k + 1}">${icon("crop")}</button>
@@ -1228,8 +1236,6 @@ function drawPosts() {
       ${it.images.length > 1 ? `<p class="hint" style="margin:0">Instagram shows every photo in a carousel in the first photo's shape.</p>` : ""}
       <label>Caption <span class="hint">${it.caption.length}/2200 · ${tags} hashtag${tags === 1 ? "" : "s"}${tags > 5 ? " (Instagram allows 5)" : ""}</span><textarea data-q="caption" rows="4">${esc(it.caption)}</textarea></label>
       <div class="q-row">
-        <label class="showbox"><input type="checkbox" data-q="custom" ${it.custom ? "checked" : ""}> Own time</label>
-        <input type="datetime-local" data-q="at" value="${esc(defAt)}" ${it.custom ? "" : "hidden"} aria-label="Date and time, Israel time">
         <label>Logo corner <select data-q="corner"><option value="">Default</option>${CORNERS.map(([k, n]) => `<option value="${k}" ${it.corner === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       </div>
       <div class="q-row q-actions">
