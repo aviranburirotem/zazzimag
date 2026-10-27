@@ -153,7 +153,8 @@ ${body}
 }
 
 // Where the cover is centred when it's cropped (set in the console: "Position on the home page")
-const coverPos = (a) => (/^\d{1,3}(\.\d+)?% \d{1,3}(\.\d+)?%$/.test(String(a.coverPosition || "").trim()) ? ` style="object-position:${String(a.coverPosition).trim()}"` : "");
+// coverPosition = home tiles, heroPosition = top of the article (each set separately in the console)
+const coverPos = (a, key = "coverPosition") => (/^\d{1,3}(\.\d+)?% \d{1,3}(\.\d+)?%$/.test(String(a[key] || "").trim()) ? ` style="object-position:${String(a[key]).trim()}"` : "");
 const artTile = (a, feat = false) => a.kind === "issue" ? issueTile(a, feat) : `<a class="tile art${feat ? " feat" : ""}" href="${a.url}" data-cat="${esc(a.category)}">
   <div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"${coverPos(a)}></div>
   <span class="label">${fmtDate(a.date)} · ${a.readTime} read</span><h3>${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap">${esc(a.dek)}</p>` : ""}</a>`;
@@ -231,7 +232,7 @@ function articlePage(a) {
       <div class="crumbs label"><a href="/articles/">Articles</a><span>/</span><span>${esc(a.category)}</span></div>
       <h1>${esc(a.title)}</h1>${a.dek ? `<p class="dek">${esc(a.dek)}</p>` : ""}
       <div class="meta label"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${a.readTime} read</span>${byline ? `<span>${tx("articles.byline")} ${esc(byline)}</span>` : ""}</div></div></header>
-    <figure class="wrap hero"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}"${coverPos(a)}></div>${a.coverCaption ? `<figcaption>${esc(a.coverCaption)}</figcaption>` : ""}</figure>
+    <figure class="wrap hero"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}"${coverPos(a, "heroPosition")}></div>${a.coverCaption ? `<figcaption>${esc(a.coverCaption)}</figcaption>` : ""}</figure>
     <div class="wrap"><div class="body">${a.html}</div>
       ${more.length && on("show.readNext") ? `<div class="section-h"><h2>${tx("articles.readNext")}</h2><a class="label with-ic" href="/articles/">${tx("articles.allLink")} ${icon("arrow-right")}</a></div><div class="grid">${more.map((x) => artTile(x)).join("")}</div>` : ""}
       ${on("show.feedStrip") ? `<section data-ig-section><div class="section-h"><h2>${tx("articles.feedHeading")}</h2><a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a></div>

@@ -185,7 +185,7 @@ const app = document.getElementById("app");
 const esc = (s = "") => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const slugify = (s) => s.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 70);
 const today = () => new Date().toISOString().slice(0, 10);
-const KNOWN = ["title", "dek", "date", "category", "cover", "coverPosition", "coverAlt", "coverCaption", "author", "draft"];
+const KNOWN = ["title", "dek", "date", "category", "cover", "coverPosition", "heroPosition", "coverAlt", "coverCaption", "author", "draft"];
 
 async function api(action, { method = "GET", body, query = "" } = {}) {
   const r = await fetch(`/api/admin?action=${action}${query}`, {
@@ -396,7 +396,7 @@ function renderEditor() {
     const f = e.target.files[0]; e.target.value = "";
     if (!f) return;
     const p = await addPhoto(f, "cover");
-    if (p) { ed.data.cover = p.url; ed.data.coverPosition = ""; $("cover-pick").style.backgroundImage = `url('${imgUrl(p.url)}')`; $("cover-pick").innerHTML = ""; if (!$("f-coverAlt").value) $("f-coverAlt").value = p.alt; drawPos(); preview(); }
+    if (p) { ed.data.cover = p.url; ed.data.coverPosition = ""; ed.data.heroPosition = ""; $("cover-pick").style.backgroundImage = `url('${imgUrl(p.url)}')`; $("cover-pick").innerHTML = ""; if (!$("f-coverAlt").value) $("f-coverAlt").value = p.alt; drawPos(); preview(); }
   };
 
   // ---- cover position: drag the cover in the Preview panel (or use its arrows) ----
@@ -404,7 +404,8 @@ function renderEditor() {
   const pv = $("pv");
   const setPos = (x, y, redraw = true) => {
     x = Math.round(Math.min(100, Math.max(0, x))); y = Math.round(Math.min(100, Math.max(0, y)));
-    ed.data.coverPosition = x === 50 && y === 50 ? "" : `${x}% ${y}%`;
+    const [dx, dy] = POS_DEFAULT[posKey()];
+    ed.data[posKey()] = x === dx && y === dy ? "" : `${x}% ${y}%`;
     drawPos(); if (redraw) preview();
   };
   pv.addEventListener("click", (e) => {
@@ -415,7 +416,7 @@ function renderEditor() {
     // "Move the photo up" slides the picture up in the frame, showing more of its lower part
     if (dir === "up") setPos(x, y + S); if (dir === "down") setPos(x, y - S);
     if (dir === "left") setPos(x + S, y); if (dir === "right") setPos(x - S, y);
-    if (dir === "center") setPos(50, 50);
+    if (dir === "center") setPos(...POS_DEFAULT[posKey()]);
   });
   let drag = null;
   pv.addEventListener("pointerdown", (e) => {
@@ -532,7 +533,7 @@ function collect() {
   const v = (id) => document.getElementById(id).value.trim().replace(/\s*\n\s*/g, " ");
   return {
     title: v("f-title"), dek: v("f-dek"), date: v("f-date"), category: v("f-cat"),
-    cover: ed.data.cover || "", coverPosition: ed.data.coverPosition || "", coverAlt: v("f-coverAlt"), coverCaption: v("f-coverCaption"),
+    cover: ed.data.cover || "", coverPosition: ed.data.coverPosition || "", heroPosition: ed.data.heroPosition || "", coverAlt: v("f-coverAlt"), coverCaption: v("f-coverCaption"),
     author: v("f-author"), draft: !document.getElementById("f-draft").checked,
   };
 }
@@ -547,10 +548,14 @@ function compose(d, body) {
 
 // cover position helpers (shared by the editor and the Preview panel)
 let posShape = "4/3"; // which crop the Preview panel shows: "4/3" top of the article, "2/3" home tile
-const posOf = () => { const m = String(ed?.data?.coverPosition || "").match(/^([\d.]+)% ([\d.]+)%$/); return m ? [+m[1], +m[2]] : [50, 50]; };
+// Two separate positions: coverPosition for the home tiles, heroPosition for the top of the article.
+// The Preview panel's Article / Home tile switch picks which one you're moving.
+const POS_DEFAULT = { coverPosition: [50, 50], heroPosition: [50, 30] }; // the site's own defaults
+const posKey = () => (posShape === "2/3" ? "coverPosition" : "heroPosition");
+const posOf = (key = posKey()) => { const m = String(ed?.data?.[key] || "").match(/^([\d.]+)% ([\d.]+)%$/); return m ? [+m[1], +m[2]] : POS_DEFAULT[key]; };
 function drawPos() { // the small cover thumbnail follows the chosen position
   const t = document.getElementById("cover-pick"); if (!t || !ed?.data?.cover) return;
-  const [x, y] = posOf(); t.style.backgroundPosition = `${x}% ${y}%`;
+  const [x, y] = posOf("coverPosition"); t.style.backgroundPosition = `${x}% ${y}%`; // the thumbnail is tile-shaped
 }
 
 function preview() {
