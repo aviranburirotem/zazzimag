@@ -181,6 +181,7 @@ export default async function handler(req, res) {
       const LOGO = /^[a-z0-9][a-z0-9-]{0,60}\.png$/;
       const logos = await getJSON(IGK.logos, []); // the gallery is saved on its own (igLogoAdd / igLogoRemove)
       const logoOk = (id) => id === "default" || logos.some((l) => l.file === id);
+      const USER = /^[A-Za-z0-9._]{1,30}$/;
       const FILE = /^[a-z0-9][a-z0-9-]{0,80}\.jpg$/, SHA = /^[a-f0-9]{40}$/, AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
       const posted = new Set((await getJSON(IGK.history, [])).map((h) => h.id));
       const old = new Map((await getJSON(IGK.queue, [])).map((it) => [it.id, it]));
@@ -190,14 +191,16 @@ export default async function handler(req, res) {
         if (!/^[a-z0-9]{6,24}$/.test(id) || posted.has(id)) continue; // never bring back something already posted
         const images = (Array.isArray(it.images) ? it.images : []).slice(0, 10)
           .filter((p) => FILE.test(p.file) && (!p.orig || FILE.test(p.orig)))
-          .map((p) => ({ file: p.file, orig: p.orig || p.file, ...(FILE.test(p.first || "") ? { first: p.first } : {}), logo: p.logo !== false, frame: p.frame === true }));
+          .map((p) => ({ file: p.file, orig: p.orig || p.file, ...(FILE.test(p.first || "") ? { first: p.first } : {}), logo: p.logo !== false, frame: p.frame === true,
+            tags: (Array.isArray(p.tags) ? p.tags : []).filter((t) => USER.test(t.u || "")).slice(0, 20)
+              .map((t) => ({ u: t.u.toLowerCase(), x: Math.round(Math.min(1, Math.max(0, +t.x || 0)) * 1000) / 1000, y: Math.round(Math.min(1, Math.max(0, +t.y || 0)) * 1000) / 1000 })) }));
         if (!images.length) continue;
         const caption = String(it.caption || "").slice(0, 2200);
         const custom = it.custom === true && AT.test(it.at || "");
         const was = old.get(id);
         let status = it.status === "queued" ? "queued" : (was?.status || "queued"); // "Try again" sends queued
         if (was?.status === "posting") status = "posting";
-        queue.push({ id, images, caption, custom, at: custom ? it.at : "", corner: ["tl", "tc", "tr", "bl", "bc", "br", "c"].includes(it.corner) ? it.corner : "", logoSrc: logoOk(it.logoSrc) ? it.logoSrc : "", status, error: status === "error" ? was?.error || "" : "", created: it.created || new Date().toISOString() });
+        queue.push({ id, images, caption, custom, at: custom ? it.at : "", corner: ["tl", "tc", "tr", "bl", "bc", "br", "c"].includes(it.corner) ? it.corner : "", logoSrc: logoOk(it.logoSrc) ? it.logoSrc : "", collabs: [...new Set((Array.isArray(it.collabs) ? it.collabs : []).filter((c) => USER.test(c)).map((c) => c.toLowerCase()))].slice(0, 3), status, error: status === "error" ? was?.error || "" : "", created: it.created || new Date().toISOString() });
       }
       const s = body.schedule || {}, prev = await getJSON(IGK.schedule, {});
       const schedule = {

@@ -238,6 +238,15 @@
 .q-h-row{display:flex;gap:14px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
 .q-h-cap{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
 @media (max-width:800px){.q-top{grid-template-columns:1fr}}
+/* tag people */
+.tag-wrap{position:relative;line-height:0;cursor:crosshair}
+.tag-wrap img{max-width:100%;max-height:calc(100vh - 220px);display:block}
+.tag-layer{position:absolute;inset:0}
+.tag-pin{position:absolute;transform:translate(-50%,8px);line-height:1;display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.8);color:#fff;border-radius:6px;padding:6px 8px;font:600 13px/1 Archivo,system-ui,sans-serif;white-space:nowrap;cursor:default}
+.tag-pin::before{content:"";position:absolute;left:50%;top:-6px;margin-left:-6px;border:6px solid transparent;border-top:0;border-bottom-color:rgba(0,0,0,.8)}
+.tag-pin input{all:unset;width:130px;color:#fff;font:inherit}
+.tag-x{all:unset;cursor:pointer;padding:0 2px;font-size:15px;opacity:.8}
+.tag-x:hover{opacity:1}
 /* Video tab */
 .vid-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px}
 .vid-box{display:flex;flex-direction:column;gap:12px;padding:18px}
@@ -1177,6 +1186,59 @@ async function igRefresh(post, p) {
   p.file = await igUpload(data, `${post.id}-${rid(6)}.jpg`);
 }
 
+// Tag people: click on the photo where the person is, type their Instagram username.
+function tagPeople(src, tags) {
+  tags = tags.map((t) => ({ ...t }));
+  return new Promise((resolve) => {
+    const dlg = document.createElement("div");
+    dlg.className = "crop-modal";
+    dlg.innerHTML = `<div class="crop-box tag-box" role="dialog" aria-modal="true" aria-label="Tag people">
+      <div class="crop-top"><strong>Tag people</strong><span class="hint">Click on a person, then type their Instagram username. Up to 20 per photo.</span></div>
+      <div class="crop-stage"><div class="tag-wrap"><img alt="" draggable="false"><div class="tag-layer"></div></div></div>
+      <div class="crop-bar"><span class="hint" id="tag-count"></span><span style="flex:1"></span>
+        <button type="button" class="b" data-c="cancel">Cancel</button><button type="button" class="b primary" data-c="ok">Done</button></div></div>`;
+    document.body.append(dlg);
+    const wrap = dlg.querySelector(".tag-wrap"), layer = dlg.querySelector(".tag-layer");
+    dlg.querySelector("img").src = src;
+    const done = (v) => { dlg.remove(); document.removeEventListener("keydown", onKey); resolve(v); };
+    const draw = (editIndex = -1) => {
+      layer.innerHTML = tags.map((t, i) => `<span class="tag-pin" style="left:${t.x * 100}%;top:${t.y * 100}%" data-i="${i}">
+        ${i === editIndex ? `<input class="tag-in" value="${esc(t.u)}" placeholder="username" aria-label="Instagram username" autocomplete="off" spellcheck="false">` : `<b>@${esc(t.u)}</b><button type="button" class="tag-x" data-del="${i}" aria-label="Remove @${esc(t.u)}">×</button>`}</span>`).join("");
+      dlg.querySelector("#tag-count").textContent = tags.filter((t) => t.u).length ? `${tags.filter((t) => t.u).length} tagged` : "No one tagged yet";
+      const inp = layer.querySelector(".tag-in");
+      if (inp) {
+        inp.focus();
+        let closed = false; // Enter and the blur that follows must only count once
+        const commit = (keep = true) => {
+          if (closed) return; closed = true;
+          const v = inp.value.replace(/^@/, "").trim().toLowerCase();
+          if (keep && /^[a-z0-9._]{1,30}$/.test(v)) tags[editIndex].u = v; else tags.splice(editIndex, 1);
+          setTimeout(() => draw(), 0);
+        };
+        inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") { e.stopPropagation(); commit(false); } });
+        inp.addEventListener("blur", () => commit());
+      }
+    };
+    wrap.addEventListener("click", (e) => {
+      const del = e.target.closest("[data-del]");
+      if (del) { tags.splice(+del.dataset.del, 1); return draw(); }
+      if (e.target.closest(".tag-pin")) return;
+      if (layer.querySelector(".tag-in")) return; // this click just finishes the name being typed
+      if (tags.length >= 20) return;
+      const r = wrap.getBoundingClientRect();
+      tags.push({ u: "", x: Math.round(((e.clientX - r.left) / r.width) * 1000) / 1000, y: Math.round(((e.clientY - r.top) / r.height) * 1000) / 1000 });
+      draw(tags.length - 1);
+    });
+    const onKey = (e) => { if (e.key === "Escape" && !e.target.closest?.(".tag-in")) done(null); };
+    document.addEventListener("keydown", onKey);
+    dlg.addEventListener("click", (e) => {
+      if (e.target === dlg || e.target.closest("[data-c=cancel]")) return done(null);
+      if (e.target.closest("[data-c=ok]")) return done(tags.filter((t) => t.u));
+    });
+    draw();
+  });
+}
+
 async function renderQueue(flash = "") {
   tab = "queue";
   app.innerHTML = topBar() + `<main class="wrap c"><div class="panel empty">Loading the queue…</div></main>`;
@@ -1324,9 +1386,11 @@ function drawPosts() {
       <div class="q-photos">${it.images.map((ph, k) => `<figure class="q-ph" data-k="${k}"><img src="${esc(igSrc(ph.file))}" alt="Photo ${k + 1}">
         <figcaption><span class="q-ticks"><label class="showbox"><input type="checkbox" data-q="logo" ${ph.logo ? "checked" : ""}> Logo</label>
         <label class="showbox" title="Keeps the whole photo with a white border. Untick to crop it to Instagram's shape instead."><input type="checkbox" data-q="frame" ${ph.frame ? "checked" : ""}> Frame</label></span>
-        <span class="q-ph-b"><button type="button" class="b sm" data-act="q-crop" aria-label="Crop photo ${k + 1}">${icon("crop")}</button>${ph.first ? `<button type="button" class="b sm" data-act="q-uncrop" aria-label="Photo ${k + 1}: back to original" title="Back to original">${icon("rotate-ccw")}<span>Original</span></button>` : ""}
+        <span class="q-ph-b"><button type="button" class="b sm" data-act="q-tag" aria-label="Tag people in photo ${k + 1}">${icon("at-sign")}<span>${(ph.tags || []).length ? `Tags (${ph.tags.length})` : "Tag"}</span></button><button type="button" class="b sm" data-act="q-crop" aria-label="Crop photo ${k + 1}">${icon("crop")}</button>${ph.first ? `<button type="button" class="b sm" data-act="q-uncrop" aria-label="Photo ${k + 1}: back to original" title="Back to original">${icon("rotate-ccw")}<span>Original</span></button>` : ""}
         ${it.images.length > 1 ? `<button type="button" class="b sm" data-act="q-left" aria-label="Move photo ${k + 1} earlier" ${k === 0 ? "disabled" : ""}>${icon("chevron-left")}</button><button type="button" class="b sm" data-act="q-right" aria-label="Move photo ${k + 1} later" ${k === it.images.length - 1 ? "disabled" : ""}>${icon("chevron-right")}</button><button type="button" class="b sm danger" data-act="q-del-photo" aria-label="Remove photo ${k + 1}">${icon("x")}</button>` : ""}</span></figcaption></figure>`).join("")}</div>
       ${it.images.length > 1 ? `<p class="hint" style="margin:0">Instagram shows every photo in a carousel in the first photo's shape.</p>` : ""}
+      <label>Collaborators <span class="hint">up to 3 Instagram usernames, separated by commas. They're invited to share the post; it shows on their profile once they accept</span>
+        <input data-q="collabs" value="${esc((it.collabs || []).map((c) => "@" + c).join(", "))}" placeholder="@shop, @photographer" autocomplete="off" spellcheck="false"></label>
       <label>Caption <span class="hint">${it.caption.length}/2200 · ${tags} hashtag${tags === 1 ? "" : "s"}${tags > 5 ? " (Instagram allows 5)" : ""}</span><textarea data-q="caption" rows="4">${esc(it.caption)}</textarea></label>
       <div class="q-row">
         <label>Logo <select data-q="logoSrc"><option value="">Default (${esc(logoName(igq.schedule.logo.src))})</option>${[{ file: "default", name: "Zazzi heart" }, ...igq.logos].map((l) => `<option value="${esc(l.file)}" ${it.logoSrc === l.file ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></label>
@@ -1346,6 +1410,7 @@ function drawPosts() {
     const it = igq.queue[+card.dataset.i], k = e.target.dataset.q;
     if (k === "caption") { it.caption = e.target.value.slice(0, 2200); const tags = (it.caption.match(/(^|\s)#[^\s#]+/g) || []).length; e.target.previousElementSibling.textContent = `${it.caption.length}/2200 · ${tags} hashtag${tags === 1 ? "" : "s"}${tags > 5 ? " (Instagram allows 5)" : ""}`; qDirty(); }
     if (k === "at") { it.at = e.target.value; qDirty(); }
+    if (k === "collabs") { it.collabs = [...new Set(e.target.value.split(/[\s,]+/).map((s) => s.replace(/^@/, "").trim().toLowerCase()).filter((s) => /^[a-z0-9._]{1,30}$/.test(s)))].slice(0, 3); qDirty(); }
   };
   box.onchange = async (e) => {
     const card = e.target.closest(".q-post"); if (!card) return;
@@ -1424,6 +1489,10 @@ async function qClick(act, e) {
   if (act === "q-del-photo") { it.images.splice(k, 1); qDirty(); drawPosts(); }
   if (act === "q-del") { igq.queue.splice(i, 1); qDirty("Post removed."); drawPosts(); drawLogoPreview(); }
   if (act === "q-retry") { it.status = "queued"; it.error = ""; qDirty("It will be tried again."); drawPosts(); }
+  if (act === "q-tag") {
+    const ph = it.images[k], tags = await tagPeople(igSrc(ph.file), ph.tags || []);
+    if (tags) { ph.tags = tags; qDirty(tags.length ? `${tags.length} ${tags.length === 1 ? "person" : "people"} tagged.` : "Tags removed."); drawPosts(); }
+  }
   if (act === "q-crop") {
     const ph = it.images[k];
     const data = await cropPhoto(igSrc(ph.orig), null, { shapes: IG_SHAPES, title: "Crop for Instagram", onData: async (d) => d });
