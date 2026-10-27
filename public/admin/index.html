@@ -158,7 +158,14 @@
 .pos-frame img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
 .pos-ctl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .pos-ctl .b{min-width:40px;justify-content:center}
-.pos-art{aspect-ratio:4/3;border-radius:4px}
+.pos-hero{position:relative}
+.pos-ui{position:absolute;left:10px;bottom:10px;display:flex;gap:4px;background:rgba(0,0,0,.55);padding:4px;border-radius:999px}
+.pos-ui button{all:unset;cursor:pointer;color:#fff;min-width:30px;height:30px;border-radius:999px;display:grid;place-items:center;font:600 12px/1 Archivo,system-ui,sans-serif}
+.pos-ui button.txt{padding:0 10px}
+.pos-ui button:hover{background:rgba(255,255,255,.18)}
+.pos-ui button:focus-visible{outline:2px solid #fff}
+.pos-ui .ic{width:16px;height:16px}
+.pos-hint{position:absolute;left:10px;top:10px;background:rgba(0,0,0,.55);color:#fff;font:600 11px/1 Archivo,system-ui,sans-serif;padding:7px 10px;border-radius:999px;pointer-events:none}
 .mh-grid{display:grid;grid-template-columns:2fr 1fr;gap:10px;align-items:start}
 .mh-col{display:grid;gap:10px}
 .mh-tile{display:grid;gap:4px;min-width:0}
@@ -407,43 +414,45 @@ function renderEditor() {
     if (p) { ed.data.cover = p.url; ed.data.coverPosition = ""; ed.data.heroPosition = ""; $("cover-pick").style.backgroundImage = `url('${imgUrl(p.url)}')`; $("cover-pick").innerHTML = ""; if (!$("f-coverAlt").value) $("f-coverAlt").value = p.alt; drawPos(); preview(); }
   };
 
-  // ---- cover position: two separate positions in the left panel ----
-  // "Home page" (coverPosition) moves the home tiles only; "Top of the article" (heroPosition) moves the article photo only.
-  const pb = $("pos-box");
+  // ---- cover position: two separate positions ----
+  // Home page (coverPosition): the box in this panel, with a small copy of the home page.
+  // Top of the article (heroPosition): drag the photo in the Preview panel, or use its arrows.
   const setPos = (key, x, y, redraw = true) => {
     x = Math.round(Math.min(100, Math.max(0, x))); y = Math.round(Math.min(100, Math.max(0, y)));
     const [dx, dy] = POS_DEFAULT[key];
     ed.data[key] = x === dx && y === dy ? "" : `${x}% ${y}%`;
-    if (redraw) { drawPos(); preview(); }
-    else pb.querySelectorAll(`[data-key="${key}"] img`).forEach((im) => (im.style.objectPosition = `${x}% ${y}%`));
+    if (redraw) preview(); // preview() also redraws the home box
+    else app.querySelectorAll(`[data-key="${key}"] img`).forEach((im) => (im.style.objectPosition = `${x}% ${y}%`));
   };
-  pb.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-pos]"); if (!btn) return;
-    const key = btn.closest("[data-sec]").dataset.sec, dir = btn.dataset.pos;
-    const [x, y] = posOf(key), S = 5;
-    // "Move the photo up" slides the picture up in the frame, showing more of its lower part
-    if (dir === "up") setPos(key, x, y + S); if (dir === "down") setPos(key, x, y - S);
-    if (dir === "left") setPos(key, x + S, y); if (dir === "right") setPos(key, x - S, y);
-    if (dir === "center") setPos(key, ...POS_DEFAULT[key]);
-    pb.querySelector(`[data-sec="${key}"] [data-pos="${dir}"]`)?.focus(); // the box was redrawn: keep keyboard focus on the same button
-  });
   let drag = null;
-  pb.addEventListener("pointerdown", (e) => {
-    const fr = e.target.closest(".pos-frame"); if (!fr) return;
-    const im = fr.querySelector("img"); if (!im || !im.naturalWidth) return;
-    const fw = fr.clientWidth, fh = fr.clientHeight, s = Math.max(fw / im.naturalWidth, fh / im.naturalHeight);
-    drag = { fr, key: fr.dataset.key, x0: e.clientX, y0: e.clientY, p: posOf(fr.dataset.key), ox: im.naturalWidth * s - fw, oy: im.naturalHeight * s - fh };
-    fr.setPointerCapture(e.pointerId); fr.classList.add("dragging"); e.preventDefault();
-  });
-  pb.addEventListener("pointermove", (e) => {
-    if (!drag) return;
-    // dragging the photo right shows more of its left side (a lower % across)
-    const nx = drag.ox > 0 ? drag.p[0] - ((e.clientX - drag.x0) / drag.ox) * 100 : drag.p[0];
-    const ny = drag.oy > 0 ? drag.p[1] - ((e.clientY - drag.y0) / drag.oy) * 100 : drag.p[1];
-    setPos(drag.key, nx, ny, false); // move the pictures only while dragging; redraw when you let go
-  });
-  const endDrag = () => { if (!drag) return; drag.fr.classList.remove("dragging"); drag = null; drawPos(); preview(); };
-  pb.addEventListener("pointerup", endDrag); pb.addEventListener("pointercancel", endDrag);
+  for (const area of [$("pos-box"), $("pv")]) {
+    area.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-pos]"); if (!btn) return;
+      const key = btn.closest("[data-sec]").dataset.sec, dir = btn.dataset.pos;
+      const [x, y] = posOf(key), S = 5;
+      // "Move the photo up" slides the picture up in the frame, showing more of its lower part
+      if (dir === "up") setPos(key, x, y + S); if (dir === "down") setPos(key, x, y - S);
+      if (dir === "left") setPos(key, x + S, y); if (dir === "right") setPos(key, x - S, y);
+      if (dir === "center") setPos(key, ...POS_DEFAULT[key]);
+      area.querySelector(`[data-sec="${key}"] [data-pos="${dir}"]`)?.focus(); // redrawn: keep keyboard focus on the same button
+    });
+    area.addEventListener("pointerdown", (e) => {
+      const fr = e.target.closest(".pos-frame"); if (!fr || e.target.closest("button")) return;
+      const im = fr.querySelector("img"); if (!im || !im.naturalWidth) return;
+      const fw = fr.clientWidth, fh = fr.clientHeight, s = Math.max(fw / im.naturalWidth, fh / im.naturalHeight);
+      drag = { fr, key: fr.dataset.key, x0: e.clientX, y0: e.clientY, p: posOf(fr.dataset.key), ox: im.naturalWidth * s - fw, oy: im.naturalHeight * s - fh };
+      fr.setPointerCapture(e.pointerId); fr.classList.add("dragging"); e.preventDefault();
+    });
+    area.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      // dragging the photo right shows more of its left side (a lower % across)
+      const nx = drag.ox > 0 ? drag.p[0] - ((e.clientX - drag.x0) / drag.ox) * 100 : drag.p[0];
+      const ny = drag.oy > 0 ? drag.p[1] - ((e.clientY - drag.y0) / drag.oy) * 100 : drag.p[1];
+      setPos(drag.key, nx, ny, false); // move the pictures only while dragging; redraw when you let go
+    });
+    const endDrag = () => { if (!drag) return; drag.fr.classList.remove("dragging"); drag = null; preview(); };
+    area.addEventListener("pointerup", endDrag); area.addEventListener("pointercancel", endDrag);
+  }
   drawPos();
   drawPos();
 
@@ -574,12 +583,8 @@ function drawPos() { // (re)draws the position box in the left panel and the cov
   const tile = (big) => `<div class="mh-tile${big ? " big" : ""}"><div class="pos-frame" data-key="coverPosition" title="Drag to reposition"><img src="${src}" alt="" draggable="false" style="object-position:${home}"></div>
     <span class="mh-label">${esc(label)}</span><span class="mh-title">${esc(d.title || "Your headline")}</span></div>`;
   box.innerHTML = `<section class="pos-sec" data-sec="coverPosition" aria-label="Position on the home page">
-      <div class="pos-sec-h"><strong>Home page</strong><span class="hint">drag a tile or use the arrows · big tile while it's the newest article</span></div>
+      <div class="pos-sec-h"><strong>Home page</strong><span class="hint">drag a tile or use the arrows · big tile while it's the newest article · the article photo is moved in the Preview</span></div>
       <div class="mh-grid">${tile(true)}<div class="mh-col"><div class="mh-follow">FOLLOW<br>@ZAZZIMAG</div>${tile(false)}</div></div>
-      ${posCtl()}</section>
-    <section class="pos-sec" data-sec="heroPosition" aria-label="Position at the top of the article">
-      <div class="pos-sec-h"><strong>Top of the article</strong><span class="hint">separate from the home page</span></div>
-      <div class="pos-frame pos-art" data-key="heroPosition" title="Drag to reposition"><img src="${src}" alt="" draggable="false" style="object-position:${posCss("heroPosition")}"></div>
       ${posCtl()}</section>`;
   const t = document.getElementById("cover-pick"); if (t) t.style.backgroundPosition = home; // the thumbnail is tile-shaped
 }
@@ -592,7 +597,9 @@ function preview() {
   pv.innerHTML = `<div class="article-head"><div class="crumbs label"><span>Articles</span><span>/</span><span>${esc(d.category || "Category")}</span></div>
     <h1>${esc(d.title || "Your headline")}</h1>${d.dek ? `<p class="dek">${esc(d.dek)}</p>` : ""}
     <div class="meta label"><span>${esc(d.date)}</span>${d.author ? `<span>Written by ${esc(d.author)}</span>` : ""}</div></div>
-    ${d.cover ? `<figure class="hero"><div class="ph"><img src="${esc(imgUrl(d.cover))}" alt="" style="object-position:${posCss("heroPosition")}"></div>${d.coverCaption ? `<figcaption>${esc(d.coverCaption)}</figcaption>` : ""}</figure>` : ""}
+    ${d.cover ? `<figure class="hero" data-sec="heroPosition"><div class="ph pos-frame pos-hero" data-key="heroPosition" title="Drag to reposition the article photo"><img src="${esc(imgUrl(d.cover))}" alt="" draggable="false" style="object-position:${posCss("heroPosition")}">
+      <div class="pos-ui" role="group" aria-label="Article photo position"><button type="button" data-pos="up" aria-label="Move the photo up">${icon("chevron-up")}</button><button type="button" data-pos="down" aria-label="Move the photo down">${icon("chevron-down")}</button><button type="button" data-pos="left" aria-label="Move the photo left">${icon("chevron-left")}</button><button type="button" data-pos="right" aria-label="Move the photo right">${icon("chevron-right")}</button><button type="button" data-pos="center" class="txt">Center</button></div>
+      <span class="pos-hint">Drag to reposition · only the article</span></div>${d.coverCaption ? `<figcaption>${esc(d.coverCaption)}</figcaption>` : ""}</figure>` : ""}
     <div class="body">${html}</div>`;
 }
 
