@@ -722,7 +722,9 @@ async function renderVideo(flash = "") {
     <p class="hint" style="max-width:52ch;margin:0">The silent, looping video at the top of the footer on every page. Choose any video: it's cropped to a wide strip, the sound is removed, and it's shrunk so the site stays fast.</p></div>
     <p class="status ok" id="flash">${esc(flash)}</p>
     <div class="vid-grid">
-      <section class="panel vid-box"><span class="label">On the site now</span><div id="vid-now" class="vid-frame"><span class="hint">Loading…</span></div><div id="vid-now-meta" class="hint"></div></section>
+      <section class="panel vid-box"><span class="label">On the site now</span><div id="vid-now" class="vid-frame"><span class="hint">Loading…</span></div><div id="vid-now-meta" class="hint"></div>
+        <label class="showbox" for="vid-show"><input type="checkbox" id="vid-show" disabled> Show the video on the site</label>
+        <p class="hint" id="vid-show-st" style="margin:0">Untick to hide it everywhere. Your video stays saved, so you can show it again any time.</p></section>
       <section class="panel vid-box"><span class="label">New video</span>
         <div id="vid-new">
           <input type="file" id="vid-file" accept="video/*" hidden>
@@ -733,6 +735,25 @@ async function renderVideo(flash = "") {
     </div>
     <div class="texts-bar" style="max-width:1100px"><span class="status" id="st"></span></div></main>`;
   document.getElementById("vid-file").onchange = (e) => { const f = e.target.files[0]; if (f) pickVideo(f); };
+  // show / hide (the same switch as Site texts → Show / hide parts of the site)
+  api("settings").then(({ saved }) => {
+    const cb = document.getElementById("vid-show"); if (!cb) return;
+    const get = (k) => k.split(".").reduce((o, x) => (o && typeof o === "object" ? o[x] : undefined), saved);
+    cb.checked = get("show.videoStrip") !== "off"; cb.disabled = false;
+    cb.onchange = async () => {
+      cb.disabled = true;
+      const st = document.getElementById("vid-show-st"); st.className = "hint"; st.textContent = "Saving…";
+      const values = {};
+      for (const g of SCHEMA) for (const f of g.fields) { const v = get(f.key); if (typeof v === "string") values[f.key] = v; }
+      values["show.videoStrip"] = cb.checked ? "on" : "off";
+      try {
+        await api("saveSettings", { method: "POST", body: { values } });
+        saved.show = { ...(saved.show || {}), videoStrip: values["show.videoStrip"] };
+        st.className = "status ok"; st.textContent = cb.checked ? "Shown. The site updates in about a minute." : "Hidden. The site updates in about a minute.";
+      } catch (err) { if (err.message !== "auth") { cb.checked = !cb.checked; st.className = "status err"; st.textContent = err.message; } }
+      cb.disabled = false;
+    };
+  }).catch(() => {});
   try {
     const { video } = await api("video");
     const src = video ? `/assets/footer-video/${video.id}-wide.mp4` : "/assets/strip-wide.mp4";

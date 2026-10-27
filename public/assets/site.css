@@ -119,9 +119,9 @@ figcaption{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:
 .section-h{display:flex;justify-content:space-between;align-items:baseline;margin:48px 0 16px;gap:12px}
 .section-h .with-ic .ic{width:14px;height:14px}
 .section-h h2{margin:0;font-size:22px;font-stretch:75%;font-weight:800;font-style:italic;text-transform:uppercase}
-.strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
 .strip .ph{aspect-ratio:1}
-@media (max-width:640px){.strip{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.strip{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}}
 
 /* info + store */
 .page{padding-block:44px 64px}
