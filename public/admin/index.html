@@ -194,6 +194,11 @@
 .crop-rect i{position:absolute;width:16px;height:16px;background:#fff;border-radius:2px}
 .crop-rect i[data-h=nw]{left:-8px;top:-8px;cursor:nwse-resize}.crop-rect i[data-h=se]{right:-8px;bottom:-8px;cursor:nwse-resize}
 .crop-rect i[data-h=ne]{right:-8px;top:-8px;cursor:nesw-resize}.crop-rect i[data-h=sw]{left:-8px;bottom:-8px;cursor:nesw-resize}
+/* Instagram connection */
+.ig-conn{display:grid;gap:10px;padding:16px;max-width:1100px;margin-bottom:16px}
+.ig-conn summary{cursor:pointer;font-size:13px;font-weight:600}
+.ig-token{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-top:10px}
+.ig-token label{flex:1;min-width:260px;display:grid;gap:4px}
 /* Video tab */
 .vid-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px}
 .vid-box{display:flex;flex-direction:column;gap:12px;padding:18px}
@@ -844,7 +849,27 @@ async function renderInsta(flash = "") {
   tab = "insta";
   app.innerHTML = topBar() + `<main class="wrap c"><div class="list-head"><div><span class="label">Instagram</span><h1>Feed posts</h1></div>
     <p class="hint" style="max-width:48ch;margin:0">Click a post to hide it from the website (it stays on Instagram). Changes show on the site within about 2 minutes.</p></div>
+    <section class="panel ig-conn" id="ig-conn"><span class="label">Connection</span> <span id="ig-conn-st" class="hint">Checking…</span>
+      <details><summary>Replace the Instagram token</summary>
+        <form id="ig-token-f" class="ig-token" autocomplete="off"><label for="ig-token">New token <span class="hint">from the Meta dashboard → Generate token. It's saved privately and renewed automatically.</span>
+          <input id="ig-token" type="password" spellcheck="false" autocomplete="off" required></label>
+          <button class="b primary" type="submit">${icon("save")}<span>Save token</span></button><span class="status" id="ig-token-st"></span></form></details></section>
     <p class="status ok" id="flash">${esc(flash)}</p><div id="ig" class="ig-grid"><div class="panel empty">Loading your posts…</div></div></main>`;
+  const showConn = (s) => {
+    const el = document.getElementById("ig-conn-st"); if (!el) return;
+    el.className = s.connected ? "status ok" : "status err";
+    el.textContent = !s.connected ? "Not connected. Add a token below." : `Connected as @${s.username} · ${s.canPublish ? "posting from the console is allowed" : "posting not allowed yet (the token needs the content publish permission)"}`;
+  };
+  api("igStatus").then(showConn).catch(() => {});
+  document.getElementById("ig-token-f").onsubmit = async (e) => {
+    e.preventDefault();
+    const st = document.getElementById("ig-token-st"), inp = document.getElementById("ig-token");
+    st.className = "status"; st.textContent = "Checking…";
+    try {
+      const s = await api("saveIgToken", { method: "POST", body: { token: inp.value } });
+      inp.value = ""; st.className = "status ok"; st.textContent = "Saved."; showConn(s);
+    } catch (err) { if (err.message !== "auth") { st.className = "status err"; st.textContent = err.message; } }
+  };
   try {
     const { posts, hidden } = await api("igPosts");
     insta = { posts, hidden: new Set(hidden) };

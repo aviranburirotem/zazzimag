@@ -9,7 +9,7 @@
 import crypto from "node:crypto";
 import { frontmatter } from "../lib/markdown.js";
 import { SCHEMA } from "../lib/site-schema.js";
-import { getToken, getHiddenPosts, setHiddenPosts, hasStore } from "../lib/token.js";
+import { getToken, saveToken, getHiddenPosts, setHiddenPosts, hasStore } from "../lib/token.js";
 import { fetchPosts } from "./instagram.js";
 
 const REPO = process.env.GITHUB_REPO || "aviranburirotem/zazzimag";
@@ -120,6 +120,21 @@ async function imagePaths(slug) {
   return (tree.tree || []).filter((t) => t.type === "blob" && t.path.startsWith(prefix)).map((t) => t.path);
 }
 
+// ---------- Instagram token check ----------
+async function igStatus(token) {
+  if (!token) return { connected: false };
+  const API = "https://graph.instagram.com/v26.0";
+  try {
+    const me = await (await fetch(`${API}/me?fields=user_id,username&access_token=${encodeURIComponent(token)}`)).json();
+    if (me.error || !me.user_id) return { connected: false, error: me.error?.message };
+    // only tokens with the publishing permission may read the publishing limit
+    const lim = await (await fetch(`${API}/${me.user_id}/content_publishing_limit?access_token=${encodeURIComponent(token)}`)).json();
+    return { connected: true, username: me.username, canPublish: !lim.error };
+  } catch (err) {
+    return { connected: false, error: err.message };
+  }
+}
+
 // ---------- handler ----------
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
@@ -143,6 +158,18 @@ export default async function handler(req, res) {
     if (!isLoggedIn(req)) return fail(401, "Please log in again.");
 
     // Instagram: list recent posts and choose which ones the site hides (stored in Redis, no redeploy needed)
+    // ---- Instagram connection: which account the token belongs to, and whether it may publish posts ----
+    if (action === "igStatus") return res.json(await igStatus(await getToken()));
+    if (action === "saveIgToken" && req.method === "POST") {
+      const token = String(body.token || "").trim();
+      if (!/^[A-Za-z0-9_.|-]{40,1000}$/.test(token)) return fail(400, "That doesn't look like an Instagram token. Copy the whole token from the Meta dashboard.");
+      const s = await igStatus(token);
+      if (!s.connected) return fail(400, `Instagram didn't accept this token${s.error ? `: ${s.error}` : "."}`);
+      if (!hasStore()) return fail(500, "The token store (Redis) isn't connected, so the token can't be saved here.");
+      await saveToken(token); // the weekly job keeps renewing it from here
+      return res.json(s);
+    }
+
     if (action === "igPosts") {
       const token = await getToken();
       if (!token) return fail(503, "Instagram isn't connected (IG_ACCESS_TOKEN is missing in Vercel).");
