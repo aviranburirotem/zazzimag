@@ -11,4 +11,4 @@ jobs:
     timeout-minutes: 3
     steps:
       - name: Post if due
-        run: curl -sS --max-time 90 -X POST https://www.zazzimag.com/api/ig-publish
+        run: curl -sS --fail --max-time 90 -X POST https://www.zazzimag.com/api/ig-publish/
