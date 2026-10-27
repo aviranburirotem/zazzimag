@@ -146,16 +146,21 @@
   .photo-row .num{font-family:var(--mono);font-size:11px;color:var(--muted)}
   .confirm{display:flex;gap:6px;align-items:center;font-size:13px}
   .empty{padding:40px;text-align:center;color:var(--muted)}
-/* cover position */
-.pos-box{display:grid;gap:10px;margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:8px}
-.pos-box[hidden]{display:none}
-.pos-previews{display:grid;grid-template-columns:2fr 2.4fr 3.6fr;gap:12px;align-items:end}
-.pos-previews figure{margin:0;display:grid;gap:4px}
-.pos-frame{overflow:hidden;border-radius:4px;background:var(--soft);cursor:grab;touch-action:none;user-select:none}
-.pos-frame.dragging{cursor:grabbing}
-.pos-frame img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
-.pos-ctl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.pos-ctl .b{min-width:40px;justify-content:center}
+/* cover position (drag the cover in the Preview panel) */
+.pos-target{position:relative;cursor:grab;touch-action:none;user-select:none;margin:0 auto}
+.preview .hero .pos-target[style*="2/3"]{max-width:320px}
+.pos-target.dragging{cursor:grabbing}
+.pos-target img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.pos-ui,.pos-shape{position:absolute;display:flex;gap:4px;background:rgba(0,0,0,.55);padding:4px;border-radius:999px;opacity:.9}
+.pos-ui{left:10px;bottom:10px}.pos-shape{right:10px;top:10px}
+.pos-ui button,.pos-shape button{all:unset;cursor:pointer;color:#fff;min-width:30px;height:30px;border-radius:999px;display:grid;place-items:center;font:600 12px/1 Archivo,system-ui,sans-serif;padding:0 2px}
+.pos-ui button.txt,.pos-shape button{padding:0 10px}
+.pos-ui button:hover,.pos-shape button:hover{background:rgba(255,255,255,.18)}
+.pos-ui button:focus-visible,.pos-shape button:focus-visible{outline:2px solid #fff}
+.pos-shape button[aria-pressed="true"]{background:#fff;color:#111}
+.pos-ui .ic{width:16px;height:16px}
+.pos-target[style*="2/3"] .pos-hint{display:none}
+.pos-hint{position:absolute;left:10px;top:10px;background:rgba(0,0,0,.55);color:#fff;font:600 11px/1 Archivo,system-ui,sans-serif;padding:7px 10px;border-radius:999px;pointer-events:none}
 /* Video tab */
 .vid-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px}
 .vid-box{display:flex;flex-direction:column;gap:12px;padding:18px}
@@ -313,22 +318,6 @@ function renderEditor() {
           </div>
         </div>
         <input type="file" id="cover-file" accept="image/*" hidden>
-        <div class="pos-box" id="pos-box" ${d.cover ? "" : "hidden"}>
-          <div><span class="label">Position on the home page</span> <span class="hint">· drag the photo or use the arrows, so faces and outfits aren't cut off</span></div>
-          <div class="pos-previews">
-            <figure><div class="pos-frame" style="aspect-ratio:2/3"><img alt="" draggable="false"></div><figcaption class="hint">Grid tile</figcaption></figure>
-            <figure><div class="pos-frame" style="aspect-ratio:4/5"><img alt="" draggable="false"></div><figcaption class="hint">Big tile</figcaption></figure>
-            <figure><div class="pos-frame" style="aspect-ratio:4/3"><img alt="" draggable="false"></div><figcaption class="hint">Top of the article</figcaption></figure>
-          </div>
-          <div class="pos-ctl" role="group" aria-label="Move the photo">
-            <button type="button" class="b" data-pos="up" aria-label="Move the photo up">${icon("chevron-up")}</button>
-            <button type="button" class="b" data-pos="down" aria-label="Move the photo down">${icon("chevron-down")}</button>
-            <button type="button" class="b" data-pos="left" aria-label="Move the photo left">${icon("chevron-left")}</button>
-            <button type="button" class="b" data-pos="right" aria-label="Move the photo right">${icon("chevron-right")}</button>
-            <button type="button" class="b" data-pos="center">Center</button>
-            <span class="hint" id="pos-val"></span>
-          </div>
-        </div>
       </div>
       <div>
         <label for="body">Article text</label>
@@ -410,22 +399,17 @@ function renderEditor() {
     if (p) { ed.data.cover = p.url; ed.data.coverPosition = ""; $("cover-pick").style.backgroundImage = `url('${imgUrl(p.url)}')`; $("cover-pick").innerHTML = ""; if (!$("f-coverAlt").value) $("f-coverAlt").value = p.alt; drawPos(); preview(); }
   };
 
-  // ---- cover position: where the photo is centred when the site crops it ----
-  const posOf = () => { const m = String(ed.data.coverPosition || "").match(/^([\d.]+)% ([\d.]+)%$/); return m ? [+m[1], +m[2]] : [50, 50]; };
-  const setPos = (x, y) => {
+  // ---- cover position: drag the cover in the Preview panel (or use its arrows) ----
+  // The point chosen stays in view wherever the site crops the photo (home tiles, top of the article).
+  const pv = $("pv");
+  const setPos = (x, y, redraw = true) => {
     x = Math.round(Math.min(100, Math.max(0, x))); y = Math.round(Math.min(100, Math.max(0, y)));
     ed.data.coverPosition = x === 50 && y === 50 ? "" : `${x}% ${y}%`;
-    drawPos(); preview();
+    drawPos(); if (redraw) preview();
   };
-  function drawPos() {
-    const box = $("pos-box"); if (!box) return;
-    box.hidden = !ed.data.cover;
-    if (!ed.data.cover) return;
-    const [x, y] = posOf(), src = imgUrl(ed.data.cover);
-    box.querySelectorAll(".pos-frame img").forEach((im) => { if (im.getAttribute("src") !== src) im.src = src; im.style.objectPosition = `${x}% ${y}%`; });
-    $("pos-val").textContent = ed.data.coverPosition ? `${x}% across, ${y}% down` : "Centred";
-  }
-  $("pos-box").addEventListener("click", (e) => {
+  pv.addEventListener("click", (e) => {
+    const shape = e.target.closest("[data-shape]")?.dataset.shape;
+    if (shape) { posShape = shape; preview(); return; }
     const dir = e.target.closest("[data-pos]")?.dataset.pos; if (!dir) return;
     const [x, y] = posOf(), S = 5;
     // "Move the photo up" slides the picture up in the frame, showing more of its lower part
@@ -433,24 +417,24 @@ function renderEditor() {
     if (dir === "left") setPos(x + S, y); if (dir === "right") setPos(x - S, y);
     if (dir === "center") setPos(50, 50);
   });
-  $("pos-box").querySelectorAll(".pos-frame").forEach((fr) => {
-    let drag = null;
-    fr.addEventListener("pointerdown", (e) => {
-      const im = fr.querySelector("img"); if (!im.naturalWidth) return;
-      const fw = fr.clientWidth, fh = fr.clientHeight, s = Math.max(fw / im.naturalWidth, fh / im.naturalHeight);
-      drag = { x0: e.clientX, y0: e.clientY, p: posOf(), ox: im.naturalWidth * s - fw, oy: im.naturalHeight * s - fh };
-      fr.setPointerCapture(e.pointerId); fr.classList.add("dragging");
-    });
-    fr.addEventListener("pointermove", (e) => {
-      if (!drag) return;
-      // dragging the photo right shows more of its left side (a lower % across)
-      const nx = drag.ox > 0 ? drag.p[0] - ((e.clientX - drag.x0) / drag.ox) * 100 : drag.p[0];
-      const ny = drag.oy > 0 ? drag.p[1] - ((e.clientY - drag.y0) / drag.oy) * 100 : drag.p[1];
-      setPos(nx, ny);
-    });
-    const end = () => { drag = null; fr.classList.remove("dragging"); };
-    fr.addEventListener("pointerup", end); fr.addEventListener("pointercancel", end);
+  let drag = null;
+  pv.addEventListener("pointerdown", (e) => {
+    const fr = e.target.closest(".pos-target"); if (!fr || e.target.closest("button")) return;
+    const im = fr.querySelector("img"); if (!im || !im.naturalWidth) return;
+    const fw = fr.clientWidth, fh = fr.clientHeight, s = Math.max(fw / im.naturalWidth, fh / im.naturalHeight);
+    drag = { fr, im, x0: e.clientX, y0: e.clientY, p: posOf(), ox: im.naturalWidth * s - fw, oy: im.naturalHeight * s - fh };
+    fr.setPointerCapture(e.pointerId); fr.classList.add("dragging"); e.preventDefault();
   });
+  pv.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    // dragging the photo right shows more of its left side (a lower % across)
+    const nx = drag.ox > 0 ? drag.p[0] - ((e.clientX - drag.x0) / drag.ox) * 100 : drag.p[0];
+    const ny = drag.oy > 0 ? drag.p[1] - ((e.clientY - drag.y0) / drag.oy) * 100 : drag.p[1];
+    setPos(nx, ny, false); // move only the picture while dragging; the panel redraws when you let go
+    const [x, y] = posOf(); drag.im.style.objectPosition = `${x}% ${y}%`;
+  });
+  const endDrag = () => { if (!drag) return; drag.fr.classList.remove("dragging"); drag = null; preview(); };
+  pv.addEventListener("pointerup", endDrag); pv.addEventListener("pointercancel", endDrag);
   drawPos();
 
   function needSlug() {
@@ -561,6 +545,14 @@ function compose(d, body) {
   return `---\n${fm}---\n${body.trim()}\n`;
 }
 
+// cover position helpers (shared by the editor and the Preview panel)
+let posShape = "4/3"; // which crop the Preview panel shows: "4/3" top of the article, "2/3" home tile
+const posOf = () => { const m = String(ed?.data?.coverPosition || "").match(/^([\d.]+)% ([\d.]+)%$/); return m ? [+m[1], +m[2]] : [50, 50]; };
+function drawPos() { // the small cover thumbnail follows the chosen position
+  const t = document.getElementById("cover-pick"); if (!t || !ed?.data?.cover) return;
+  const [x, y] = posOf(); t.style.backgroundPosition = `${x}% ${y}%`;
+}
+
 function preview() {
   const pv = document.getElementById("pv"); if (!pv) return;
   const d = collect(), body = document.getElementById("body").value;
@@ -568,7 +560,10 @@ function preview() {
   pv.innerHTML = `<div class="article-head"><div class="crumbs label"><span>Articles</span><span>/</span><span>${esc(d.category || "Category")}</span></div>
     <h1>${esc(d.title || "Your headline")}</h1>${d.dek ? `<p class="dek">${esc(d.dek)}</p>` : ""}
     <div class="meta label"><span>${esc(d.date)}</span>${d.author ? `<span>Written by ${esc(d.author)}</span>` : ""}</div></div>
-    ${d.cover ? `<figure class="hero"><div class="ph"><img src="${esc(imgUrl(d.cover))}" alt=""${d.coverPosition ? ` style="object-position:${esc(d.coverPosition)}"` : ""}></div>${d.coverCaption ? `<figcaption>${esc(d.coverCaption)}</figcaption>` : ""}</figure>` : ""}
+    ${d.cover ? `<figure class="hero"><div class="ph pos-target" style="aspect-ratio:${posShape}" title="Drag to reposition the cover"><img src="${esc(imgUrl(d.cover))}" alt="" draggable="false" style="object-position:${posOf().map((n) => n + "%").join(" ")}">
+      <div class="pos-ui" role="group" aria-label="Cover position"><button type="button" data-pos="up" aria-label="Move the photo up">${icon("chevron-up")}</button><button type="button" data-pos="down" aria-label="Move the photo down">${icon("chevron-down")}</button><button type="button" data-pos="left" aria-label="Move the photo left">${icon("chevron-left")}</button><button type="button" data-pos="right" aria-label="Move the photo right">${icon("chevron-right")}</button><button type="button" data-pos="center" class="txt">Center</button></div>
+      <div class="pos-shape" role="group" aria-label="Preview crop"><button type="button" data-shape="4/3" aria-pressed="${posShape === "4/3"}">Article</button><button type="button" data-shape="2/3" aria-pressed="${posShape === "2/3"}">Home tile</button></div>
+      <span class="pos-hint">Drag to reposition</span></div>${d.coverCaption ? `<figcaption>${esc(d.coverCaption)}</figcaption>` : ""}</figure>` : ""}
     <div class="body">${html}</div>`;
 }
 
