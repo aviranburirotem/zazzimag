@@ -13,10 +13,6 @@ Just seven minutes from Shinjuku by train, Shimokitazawa, affectionately known a
 
 ## Shops to explore
 
-
-![The Flamingo vintage clothing store in Shimokitazawa, with its storefront illuminated by neon lights](/images/articles/shimokitazawa-tokyo-guide/sihmokita-article-6-2.jpg "Vintage finds and neon nights at Flamingo, one of Shimokitazawa’s vintage shopping stops | Photo by Netta Meisles")
-
-
 - **Flamingo** — American and European vintage, from graphic tees and classic denim to distinctive accessories.
 - **STEP AHEAD** — American casualwear, streetwear and second-hand vintage staples.
 - **American Joe** — A second-hand store where visitors can sell pre-loved clothes, giving garments a second life and supporting circular fashion.
@@ -33,20 +29,9 @@ Just seven minutes from Shinjuku by train, Shimokitazawa, affectionately known a
 ![A person wearing a contemporary kimono outside KIMONO ARCH in Shimokitazawa, Tokyo](/images/articles/shimokitazawa-tokyo-guide/shimokitazawa-2-74-2.jpg "Traditional Japanese dress, reimagined. Contemporary kimono design meets an eco-conscious approach at KIMONO ARCH  | Photo by Netta Meisles ")
 
 
-
-
-
 ## Old streets, new spaces
 
 Shimokitazawa’s newer developments offer distinct perspectives on urban life. **reload**, along the former Odakyu railway corridor, combines low-rise architecture, open walkways and independent boutiques in a design-led setting. **Bonus Track** has a neighbourhood-village feel, bringing together small shops, cafés, a shared gallery and community events. **Mikan Shimokita**, beneath the elevated Keio Inokashira Line, embraces an urban aesthetic, with restaurants, retail, books and entertainment integrated into the railway surroundings.
-
-
-
-![A modern low-rise development with shops and pedestrian walkways near a railway station in Shimokitazawa, Tokyo](/images/articles/shimokitazawa-tokyo-guide/sihmokita-article11.jpg "A new layer of Shimokitazawa. Contemporary spaces and independent destinations shape the neighbourhood around the station | Photo by Netta Meisles ")
-
-
-
-
 
 ## Where to eat
 
