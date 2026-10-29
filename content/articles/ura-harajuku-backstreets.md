@@ -8,6 +8,7 @@ coverAlt: Cat Street in Ura-Harajuku, a quiet shopping street lined with low bui
 coverCaption: Cat Street, Ura-Harajuku. Photo: Aw1805, CC BY-SA 3.0
 author: Zazzi
 tags: [Ura-Harajuku, streetwear, BAPE, UNDERCOVER]
+draft: true
 ---
 "Ura" means back or reverse, and Ura-Harajuku is exactly that: the web of side streets and alleys behind the crowds of Takeshita Street. Its spine is Cat Street, which runs between Omotesando and Shibuya. In the 1990s this quiet area became the birthplace of Japanese streetwear.
 
