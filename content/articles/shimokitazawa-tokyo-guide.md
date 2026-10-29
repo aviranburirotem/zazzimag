@@ -7,7 +7,6 @@ cover: /images/articles/shimokitazawa-tokyo-guide/cover-shimokitazawa-2-19-2.jpg
 heroPosition: 50% 5%
 coverAlt: A Japanese man wearing vintage American casual clothing rides a bicycle near Bonus Track in Shimokitazawa, Tokyo.
 author: netta meisles
-draft: true
 cropOriginals: {"sihmokita-article-14-2-crop-4.jpg":"/images/articles/shimokitazawa-tokyo-guide/sihmokita-article-14-2.jpg"}
 ---
 Just seven minutes from Shinjuku by train, Shimokitazawa, affectionately known as Shimokita, is a neighbourhood shaped by vintage fashion, live music and independent culture. Its narrow streets weave between second-hand shops, intimate theatres, cafés and creative spaces, making it a favourite for vintage lovers and street-style enthusiasts.
@@ -43,7 +42,7 @@ Shimokitazawa’s newer developments offer distinct perspectives on urban life. 
 
 
 
-![sihmokita article11](/images/articles/shimokitazawa-tokyo-guide/sihmokita-article11.jpg "A new layer of Shimokitazawa. Contemporary spaces and independent destinations shape the neighbourhood around the station | Photo by Netta Meisles ")
+![A modern low-rise development with shops and pedestrian walkways near a railway station in Shimokitazawa, Tokyo](/images/articles/shimokitazawa-tokyo-guide/sihmokita-article11.jpg "A new layer of Shimokitazawa. Contemporary spaces and independent destinations shape the neighbourhood around the station | Photo by Netta Meisles ")
 
 
 
@@ -54,10 +53,10 @@ Shimokitazawa’s newer developments offer distinct perspectives on urban life. 
 Shimokitazawa’s food scene is as eclectic as its fashion. **Ming Teng HAO HAO**, inside reload, serves entirely vegan Taiwanese-inspired dishes, including mapo tofu rice, dumplings and *douhua*, a delicate soy-milk pudding.
  **Curry Spice Gelateria KALPASI** pairs aromatic curries with inventive gelato. For tacos, **TACOS 3Hermanos** brings Mexican street food to the neighbourhood, while **400℃ PIZZA Piu** serves creative pizzas in a contemporary setting. For something sweet, **FLIPPER’S** is known for its signature soufflé pancakes, served with toppings such as fresh strawberries and maple buttercream, alongside savoury brunch dishes.
 
-![sihmokita article 10](/images/articles/shimokitazawa-tokyo-guide/sihmokita-article-10.jpg "")
+![A serving of fluffy soufflé pancakes topped with fresh strawberries at FLIPPER’S](/images/articles/shimokitazawa-tokyo-guide/sihmokita-article-10.jpg "Cloud-soft soufflé pancakes topped with fresh strawberries at FLIPPER’S in Shimokitazawa  | Photo by Netta Meisles ")
 
 
 
 From vintage discoveries and independent boutiques to inventive food and thoughtfully designed spaces, Shimokitazawa brings together the many sides of Tokyo’s creative culture. Its charm lies in the details: a tucked-away shop, a lively backstreet or an unexpected find around the corner.
 
-![shimokitazawa 2 81](/images/articles/shimokitazawa-tokyo-guide/shimokitazawa-2-81-2.jpg "")
+![A stylishly dressed Japanese man wearing a galabiya and black loafers on the rooftop of reload in Shimokitazawa, Tokyo.](/images/articles/shimokitazawa-tokyo-guide/shimokitazawa-2-81-2.jpg "Personal style beyond the expected. A flowing galabiya and black loafers make a distinctive statement on the rooftop of reload  | Photo by Netta Meisles ")
