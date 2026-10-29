@@ -8,6 +8,7 @@ coverAlt: A narrow shopping street in Shimokitazawa with shop signs and pedestri
 coverCaption: Shimokitazawa. Photo: Aw1805, CC BY-SA 4.0
 author: Zazzi
 tags: [Shimokitazawa, vintage, furugi, Tokyo]
+draft: true
 ---
 Shimokitazawa, or "Shimokita" to locals, sits in Tokyo's Setagaya ward, where the Odakyu and Keio Inokashira lines cross. It's a short ride from Shinjuku on the Odakyu Line, but it feels like a different city: low buildings, narrow streets and a dense mix of cafes, bars, small theatres, live music venues and second-hand clothing shops.
 
