@@ -6,7 +6,6 @@ category: Guide
 cover: /images/articles/shimokitazawa-tokyo-guide/cover-sihmokita-article-2.jpg
 coverPosition: 100% 0%
 heroPosition: 100% 30%
-coverAlt: A Japanese man wearing vintage American casual clothing rides a bicycle near Bonus Track in Shimokitazawa, Tokyo.
 author: netta meisles
 cropOriginals: {"sihmokita-article-14-2-crop-4.jpg":"/images/articles/shimokitazawa-tokyo-guide/sihmokita-article-14-2.jpg"}
 ---
@@ -50,4 +49,4 @@ Shimokitazawa’s food scene is as eclectic as its fashion. **Ming Teng HAO HAO*
 
 From vintage discoveries and independent boutiques to inventive food and thoughtfully designed spaces, Shimokitazawa brings together the many sides of Tokyo’s creative culture. Its charm lies in the details: a tucked-away shop, a lively backstreet or an unexpected find around the corner.
 
-![A stylishly dressed Japanese man wearing a galabiya and black loafers on the rooftop of reload in Shimokitazawa, Tokyo.](/images/articles/shimokitazawa-tokyo-guide/shimokitazawa-2-81-2.jpg "Personal style beyond the expected. A flowing galabiya and black loafers make a distinctive statement on the rooftop of reload  | Photo by Netta Meisles ")
+![A stylishly dressed Japanese man wearing a galabiya and black and white loafers on the rooftop of reload in Shimokitazawa, Tokyo.](/images/articles/shimokitazawa-tokyo-guide/shimokitazawa-2-81-2.jpg "Personal style beyond the expected. A flowing galabiya and black loafers make a distinctive statement on the rooftop of reload  | Photo by Netta Meisles ")
