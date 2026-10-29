@@ -34,6 +34,11 @@ Just seven minutes from Shinjuku by train, Shimokitazawa, affectionately known a
 
 Shimokitazawa’s newer developments offer distinct perspectives on urban life. **reload**, along the former Odakyu railway corridor, combines low-rise architecture, open walkways and independent boutiques in a design-led setting. **Bonus Track** has a neighbourhood-village feel, bringing together small shops, cafés, a shared gallery and community events. **Mikan Shimokita**, beneath the elevated Keio Inokashira Line, embraces an urban aesthetic, with restaurants, retail, books and entertainment integrated into the railway surroundings.
 
+
+![A sign featuring a Daruma doll, the official logo of Bonus Track, a neighbourhood complex in Shimokitazawa, Tokyo](/images/articles/shimokitazawa-tokyo-guide/sihmokita-article131-2.jpg "A familiar symbol with a local identity. The Daruma doll marks the entrance to Bonus Track, Shimokitazawa’s creative neighbourhood complex | Photo by Netta Meisles")
+
+
+
 ## Where to eat
 
 Shimokitazawa’s food scene is as eclectic as its fashion. **Ming Teng HAO HAO**, inside reload, serves entirely vegan Taiwanese-inspired dishes, including mapo tofu rice, dumplings and *douhua*, a delicate soy-milk pudding.
