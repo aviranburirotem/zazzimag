@@ -3,8 +3,9 @@ title: Exploring Shimokitazawa: Shopping, Food & More
 dek: Discover Shimokitazawa, Tokyo, through its second-hand treasures, designer kimonos, independent boutiques and creative food scene.
 date: 2026-10-29
 category: Guide
-cover: /images/articles/shimokitazawa-tokyo-guide/cover-sihmokita-article11.jpg
-heroPosition: 50% 16%
+cover: /images/articles/shimokitazawa-tokyo-guide/cover-sihmokita-article-2.jpg
+coverPosition: 100% 0%
+heroPosition: 100% 30%
 coverAlt: A Japanese man wearing vintage American casual clothing rides a bicycle near Bonus Track in Shimokitazawa, Tokyo.
 author: netta meisles
 cropOriginals: {"sihmokita-article-14-2-crop-4.jpg":"/images/articles/shimokitazawa-tokyo-guide/sihmokita-article-14-2.jpg"}
