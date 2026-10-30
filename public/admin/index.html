@@ -258,6 +258,9 @@
 .chip-b{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 12px;font:600 12px/1 Archivo,system-ui,sans-serif;cursor:pointer}
 .chip-b[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .ig-cover-b{display:flex;flex-wrap:wrap;gap:6px}
+.embed-box{max-width:620px}
+.embed-body{padding:16px;display:grid;gap:8px}
+.embed-body textarea{width:100%;font:12px/1.4 ui-monospace,monospace}
 /* Video tab */
 .vid-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px}
 .vid-box{display:flex;flex-direction:column;gap:12px;padding:18px}
@@ -506,14 +509,7 @@ function renderEditor() {
     if (kind === "link") { before = "["; after = "](https://)"; text ||= "link text"; }
     if (kind === "h2") { before = "\n\n## "; after = "\n\n"; text ||= "Subheading"; }
     if (kind === "quote") { before = "\n\n> "; after = "\n\n"; text ||= "Quote"; }
-    if (kind === "instagram") {
-      const url = (window.prompt("Paste the link of the Instagram post or reel (from Instagram: ··· → Copy link)") || "").trim();
-      if (!url) return;
-      if (!/^https:\/\/(www\.)?instagram\.com\/([A-Za-z0-9._]+\/)?(p|reel|tv)\/[A-Za-z0-9_-]+/.test(url)) { status("That isn't a link to an Instagram post or reel.", "err"); return; }
-      body.setRangeText(`\n\n@[instagram](${url.split("?")[0]})\n\n`, s, e, "end"); body.focus(); preview();
-      status("Instagram post added. It shows in the article as a card readers can open.", "ok");
-      return;
-    }
+    if (kind === "instagram") { igEmbedDialog((url) => { body.setRangeText(`\n\n@[instagram](${url})\n\n`, s, e, "end"); body.focus(); preview(); }); return; }
     if (kind === "list") { text = (sel || "First item\nSecond item").split("\n").map((l) => `- ${l.replace(/^- /, "")}`).join("\n"); before = "\n\n"; after = "\n\n"; }
     body.setRangeText(before + text + after, s, e, "end");
     body.focus(); preview();
@@ -687,6 +683,35 @@ async function resize(file, max = 2000) {
   const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
   URL.revokeObjectURL(url);
   return c.toDataURL("image/jpeg", 0.85);
+}
+
+// ---------- embed an Instagram post ----------
+// Paste Instagram's embed code (··· → Embed → Copy embed code) or just the post's link.
+function igEmbedDialog(done) {
+  const dlg = document.createElement("div");
+  dlg.className = "crop-modal";
+  dlg.innerHTML = `<div class="crop-box embed-box" role="dialog" aria-modal="true" aria-label="Embed an Instagram post">
+    <div class="crop-top"><strong>Embed an Instagram post</strong></div>
+    <div class="embed-body">
+      <label for="emb-code">Paste the embed code <span class="hint">In Instagram on a computer: open the post → ··· → Embed → Copy embed code. The post's link works too.</span>
+        <textarea id="emb-code" rows="7" spellcheck="false" placeholder="<blockquote class=&quot;instagram-media&quot; …"></textarea></label>
+      <p class="status" id="emb-st"></p>
+    </div>
+    <div class="crop-bar"><span style="flex:1"></span><button type="button" class="b" data-c="cancel">Cancel</button><button type="button" class="b primary" data-c="ok">${icon("instagram")}<span>Add to the article</span></button></div></div>`;
+  document.body.append(dlg);
+  const ta = dlg.querySelector("#emb-code"), st = dlg.querySelector("#emb-st");
+  ta.focus();
+  const close = () => { dlg.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  dlg.addEventListener("click", (e) => {
+    if (e.target === dlg || e.target.closest("[data-c=cancel]")) return close();
+    if (!e.target.closest("[data-c=ok]")) return;
+    const m = ta.value.match(/https:\/\/(?:www\.)?instagram\.com\/(?:[A-Za-z0-9._]+\/)?(p|reel|tv)\/([A-Za-z0-9_-]+)/);
+    if (!m) { st.className = "status err"; st.textContent = "No Instagram post found in what you pasted. Copy the embed code (or the link) again."; return; }
+    close(); done(`https://www.instagram.com/${m[1]}/${m[2]}/`);
+    status(`Instagram ${m[1] === "reel" ? "reel" : "post"} added. Readers see it right in the article.`, "ok");
+  });
 }
 
 // ---------- crop a photo in the article ----------
