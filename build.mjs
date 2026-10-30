@@ -81,7 +81,8 @@ const issues = (fs.existsSync(idir) ? fs.readdirSync(idir) : []).filter((f) => f
 }).filter((i) => i.draft !== true && i.title && i.date && i.pages.length).sort((a, b) => (a.date < b.date ? 1 : -1));
 
 // Articles and issues together, newest first (home grid and the All articles page)
-const stories = [...articles, ...issues].sort((a, b) => (a.date < b.date ? 1 : -1));
+// newest first, except items pinned in the console, which stay on top (newest pinned first)
+const stories = [...articles, ...issues].sort((a, b) => (Boolean(b.pinned) - Boolean(a.pinned)) || (a.date < b.date ? 1 : -1));
 
 // ---------- templates ----------
 function layout({ title, description, active, body, image, type = "website", pathname = "/", scripts = [] }) {
@@ -161,7 +162,7 @@ const artTile = (a, feat = false) => a.kind === "issue" ? issueTile(a, feat) : `
 // Issues look like a printed magazine: the cover sits on a little stack of pages.
 // Clicking opens the flip-through popup (flipbook.js); the link still works on its own.
 const issueTile = (a, feat = false) => `<a class="tile art issue${feat ? " feat" : ""}" href="${a.url}" data-issue="${esc(a.slug)}" data-cat="${esc(a.category)}">
-  <div class="ph"><div class="mag"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"></div></div>
+  <div class="ph"><div class="mag"><img src="${esc(fbPage({ image: a.cover }).imageM || a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"></div></div>
   <span class="label issue-label">${icon("book-open")}${tx("issues.category")} · ${esc(a.readTime)}</span><h3>${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap">${esc(a.dek)}</p>` : ""}</a>`;
 const igSlot = () => `<div class="tile ig ig-slot" aria-hidden="true"><div class="ph"></div></div>`;
 
@@ -232,7 +233,7 @@ function articlePage(a) {
       <div class="crumbs label"><a href="/articles/">Articles</a><span>/</span><span>${esc(a.category)}</span></div>
       <h1>${esc(a.title)}</h1>${a.dek ? `<p class="dek">${esc(a.dek)}</p>` : ""}
       <div class="meta label"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${a.readTime} read</span>${byline ? `<span>${tx("articles.byline")} ${esc(byline)}</span>` : ""}</div></div></header>
-    <figure class="wrap hero"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}"${coverPos(a, "heroPosition")}></div>${a.coverCaption ? `<figcaption>${esc(a.coverCaption)}</figcaption>` : ""}</figure>
+    <figure class="wrap hero${a.heroShape === "vertical" ? " vertical" : ""}"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}"${coverPos(a, "heroPosition")}></div>${a.coverCaption ? `<figcaption>${esc(a.coverCaption)}</figcaption>` : ""}</figure>
     <div class="wrap"><div class="body">${a.html}</div>
       ${more.length && on("show.readNext") ? `<div class="section-h"><h2>${tx("articles.readNext")}</h2><a class="label with-ic" href="/articles/">${tx("articles.allLink")} ${icon("arrow-right")}</a></div><div class="grid">${more.map((x) => artTile(x)).join("")}</div>` : ""}
       ${on("show.feedStrip") ? `<section data-ig-section><div class="section-h"><h2>${tx("articles.feedHeading")}</h2><a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a></div>
@@ -241,8 +242,14 @@ function articlePage(a) {
   });
 }
 
+// an issue page for the flipbook, with its lighter phone copy (images/issues/<slug>/m/<file>) when there is one
+const fbPage = (p) => {
+  const m = /^\/images\/issues\/([a-z0-9-]+)\/([^/]+)$/.exec(p.image);
+  const light = m && fs.existsSync(`public/images/issues/${m[1]}/m/${m[2]}`) ? `/images/issues/${m[1]}/m/${m[2]}` : "";
+  return { image: p.image, ...(light ? { imageM: light } : {}), caption: p.caption || "", alt: p.alt || "" };
+};
 function issuePage(i) {
-  const data = JSON.stringify(i.pages.map((p) => ({ image: p.image, caption: p.caption || "", alt: p.alt || "" }))).replace(/</g, "\\u003c");
+  const data = JSON.stringify(i.pages.map(fbPage)).replace(/</g, "\\u003c");
   return layout({
     title: i.title, description: i.dek || `${i.title}: ${T("issues.pages").replace(/\{n\}/g, i.pages.length)}`, active: "articles", pathname: i.url, image: i.cover, type: "article",
     body: `<article class="issue">
@@ -544,13 +551,21 @@ if (VIDEO_MANIFEST) { // join the uploaded parts back into the footer video file
 }
 const write = (p, html) => { const f = path.join(OUT, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, html); };
 
+// Old article addresses (after a title change in the console) forward to the new ones
+const REDIRECTS = fs.existsSync("content/redirects.json") ? JSON.parse(fs.readFileSync("content/redirects.json", "utf8")) : {};
+for (const [from, to] of Object.entries(REDIRECTS)) {
+  if (!/^\/articles\/[a-z0-9-]+\/$/.test(from) || !/^\/articles\/[a-z0-9-]+\/$/.test(to)) continue;
+  if (articles.some((a) => a.url === from)) continue; // a real article lives there now
+  write(`${from.slice(1)}index.html`, `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Moved</title><meta name="robots" content="noindex"><link rel="canonical" href="${SITE.url}${to}"><meta http-equiv="refresh" content="0; url=${to}"><script>location.replace(${JSON.stringify(to)} + location.hash)</script></head><body><p>This article moved: <a href="${to}">continue to the new address</a>.</p></body></html>`);
+}
+
 // Full site. While coming-soon is on, the home page lives at /preview/ (hidden from search engines).
 write("preview/index.html", home()); // private preview, always password-protected
 if (!COMING_SOON) write("index.html", home());
 write("articles/index.html", articlesIndex());
 for (const a of articles) write(`articles/${a.slug}/index.html`, articlePage(a));
 for (const i of issues) write(`issues/${i.slug}/index.html`, issuePage(i));
-write("issues/data.json", JSON.stringify(Object.fromEntries(issues.map((i) => [i.slug, { title: i.title, dek: i.dek || "", pagesLabel: i.readTime, pages: i.pages.map((p) => ({ image: p.image, caption: p.caption || "", alt: p.alt || "" })) }]))));
+write("issues/data.json", JSON.stringify(Object.fromEntries(issues.map((i) => [i.slug, { title: i.title, dek: i.dek || "", pagesLabel: i.readTime, pages: i.pages.map(fbPage) }]))));
 write("about/index.html", about());
 write("store/index.html", store());
 for (const p of PRODUCTS) write(`store/${p.slug}/index.html`, productPage(p));

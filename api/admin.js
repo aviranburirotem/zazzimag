@@ -82,6 +82,7 @@ async function listArticles() {
       category: data.category || "",
       cover: data.cover || "",
       draft: data.draft === true,
+      pinned: data.pinned === true,
     };
   }));
   return items.sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -297,14 +298,39 @@ export default async function handler(req, res) {
         const exists = await gh(repo(`/contents/content/articles/${slug}.md?ref=${BRANCH}`));
         if (exists) return fail(409, "An article with this address already exists. Change the address.");
       }
-      const entries = [{ path: `content/articles/${slug}.md`, content }];
+      let content2 = content;
+      const entries = [];
+      // a changed web address: move the article and its photos, and forward the old address to the new one
+      const from = body.renameFrom ? String(body.renameFrom) : "";
+      if (from && from !== slug && !body.isNew) {
+        if (!SLUG.test(from)) return fail(400, "Invalid old address.");
+        if (await gh(repo(`/contents/content/articles/${slug}.md?ref=${BRANCH}`))) return fail(409, "Another article already uses this address. Change the address.");
+        content2 = content.split(`/images/articles/${from}/`).join(`/images/articles/${slug}/`);
+        const ref = await gh(repo(`/git/ref/heads/${BRANCH}`));
+        const parent = await gh(repo(`/git/commits/${ref.object.sha}`));
+        const tree = await gh(repo(`/git/trees/${parent.tree.sha}?recursive=1`));
+        for (const t of tree.tree || []) {
+          if (t.type === "blob" && t.path.startsWith(`public/images/articles/${from}/`)) {
+            entries.push({ path: `public/images/articles/${slug}/${t.path.slice(`public/images/articles/${from}/`.length)}`, sha: t.sha }, { path: t.path, remove: true });
+          }
+        }
+        entries.push({ path: `content/articles/${from}.md`, remove: true });
+        let redirects = {};
+        try { redirects = JSON.parse((await gh(repo(`/contents/content/redirects.json?ref=${BRANCH}`), { raw: true })) || "{}"); } catch {}
+        const oldUrl = `/articles/${from}/`, newUrl = `/articles/${slug}/`;
+        for (const k of Object.keys(redirects)) if (redirects[k] === oldUrl) redirects[k] = newUrl; // keep older links working too
+        redirects[oldUrl] = newUrl;
+        delete redirects[newUrl]; // the new address is a real page again
+        entries.push({ path: "content/redirects.json", content: JSON.stringify(redirects, null, 2) + "\n" });
+      }
+      entries.unshift({ path: `content/articles/${slug}.md`, content: content2 });
       for (const img of body.images || []) {
         const name = String(img.name || "");
         if (!IMG_NAME.test(name) || !/^[a-f0-9]{40}$/.test(img.sha)) return fail(400, `Invalid photo: ${name}`);
         entries.push({ path: `public/images/articles/${slug}/${name}`, sha: img.sha });
       }
       const title = (content.match(/\ntitle:\s*(.+)/) || [])[1] || slug;
-      const sha = await commit(entries, `${body.isNew ? "Add" : "Update"} article: ${title.slice(0, 70)}`);
+      const sha = await commit(entries, `${body.isNew ? "Add" : from && from !== slug ? "Rename" : "Update"} article: ${title.slice(0, 70)}`);
       return res.json({ ok: true, commit: sha });
     }
 
@@ -378,7 +404,7 @@ export default async function handler(req, res) {
       const list = await Promise.all(files.filter((f) => f.type === "file" && f.name.endsWith(".json")).map(async (f) => {
         let d = {};
         try { d = JSON.parse(await gh(repo(`/contents/${f.path}?ref=${BRANCH}`), { raw: true })); } catch {}
-        return { slug: f.name.replace(/\.json$/, ""), title: d.title || f.name, date: d.date || "", cover: d.pages?.[0]?.image || "", pages: (d.pages || []).length, draft: d.draft === true };
+        return { slug: f.name.replace(/\.json$/, ""), title: d.title || f.name, date: d.date || "", cover: d.pages?.[0]?.image || "", pages: (d.pages || []).length, draft: d.draft === true, pinned: d.pinned === true };
       }));
       return res.json({ issues: list.sort((a, b) => (a.date < b.date ? 1 : -1)) });
     }
@@ -405,12 +431,15 @@ export default async function handler(req, res) {
       }
       if (!pages.length && d.draft !== true) return fail(400, "Add at least one page, or untick Published to save a draft.");
       if (body.isNew && (await gh(repo(`/contents/content/issues/${slug}.json?ref=${BRANCH}`)))) return fail(409, "An issue with this address already exists. Change the address.");
-      const issue = { title, dek: String(d.dek || "").replace(/\s*\n\s*/g, " ").trim().slice(0, 400), date: d.date, ...(d.draft === true ? { draft: true } : {}), pages };
+      const issue = { title, dek: String(d.dek || "").replace(/\s*\n\s*/g, " ").trim().slice(0, 400), date: d.date, ...(d.draft === true ? { draft: true } : {}), ...(d.pinned === true ? { pinned: true } : {}), pages };
       const entries = [{ path: `content/issues/${slug}.json`, content: JSON.stringify(issue, null, 2) + "\n" }];
       for (const img of body.images || []) {
         const name = String(img.name || "");
         if (!IMG_NAME.test(name) || !/^[a-f0-9]{40}$/.test(img.sha)) return fail(400, `Invalid photo: ${name}`);
-        if (pages.some((p) => p.image === `/images/issues/${slug}/${name}`)) entries.push({ path: `public/images/issues/${slug}/${name}`, sha: img.sha });
+        if (pages.some((p) => p.image === `/images/issues/${slug}/${name}`)) {
+          entries.push({ path: `public/images/issues/${slug}/${name}`, sha: img.sha });
+          if (/^[a-f0-9]{40}$/.test(img.smallSha || "")) entries.push({ path: `public/images/issues/${slug}/m/${name}`, sha: img.smallSha }); // phone copy
+        }
       }
       await commit(entries, `${body.isNew ? "Add" : "Update"} issue: ${title.slice(0, 70)}`);
       return res.json({ ok: true });

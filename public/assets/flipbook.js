@@ -6,7 +6,9 @@
 // Used on issue pages, and in a popup when an issue tile is clicked (home and All articles).
 (() => {
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const face = (p, side, i) => `<div class="face ${side}">${p ? `<img src="${esc(p.image)}" alt="${esc(p.alt || `Page ${i + 1}`)}" ${i > 3 ? 'loading="lazy"' : ""} draggable="false">` : ""}</div>`;
+  // Pages get their photo only when the reader is near them (phones would otherwise load every page at once),
+  // and phones get a lighter copy (imageM); zooming in swaps to the full photo.
+  const face = (p, side, i) => `<div class="face ${side}">${p ? `<img data-i="${i}" alt="${esc(p.alt || `Page ${i + 1}`)}" draggable="false" decoding="async">` : ""}</div>`;
 
   function mount(root, pages) {
     if (!root || !pages || !pages.length) return { destroy() {} };
@@ -32,6 +34,7 @@
       if (anim) { zw.classList.add("fb-anim"); setTimeout(() => zw.classList.remove("fb-anim"), 260); }
       zw.style.transform = z > 1 ? `translate(${tx}px,${ty}px) scale(${z})` : "";
       root.classList.toggle("fb-zoomed", z > 1);
+      if ((z > 1) !== fullRes) { fullRes = z > 1; if (leaves.length) hydrate(); } // sharp photo while zoomed
       if (zoomBtn) { zoomBtn.setAttribute("aria-pressed", String(z > 1)); zoomBtn.setAttribute("aria-label", z > 1 ? "Zoom out" : "Zoom in"); }
     }
     // zoom to nz, keeping the point under (cx, cy) in place
@@ -49,6 +52,22 @@
     zoomBtn?.addEventListener("click", () => (z > 1 ? unzoom() : setZoom(2.2, undefined, undefined, true)));
 
     const isDouble = () => matchMedia("(min-width: 760px)").matches;
+    const light = () => !isDouble() && !matchMedia("(min-resolution: 2.5dppx) and (min-width: 600px)").matches;
+    const srcOf = (i, full) => (!full && light() && pages[i].imageM) || pages[i].image;
+    let fullRes = false; // true while zoomed in
+    // give photos to the pages around the reader; leaves further away are hidden entirely
+    function hydrate() {
+      const near = mode === "double" ? (i) => i >= flipped - 2 && i <= flipped + 1 : (i) => i >= flipped - 1 && i <= flipped + 2;
+      leaves.forEach((leaf, i) => {
+        const on = near(i);
+        leaf.classList.toggle("far", !on);
+        if (!on) return;
+        leaf.querySelectorAll("img[data-i]").forEach((img) => {
+          const want = srcOf(+img.dataset.i, fullRes && (i === flipped || i === flipped - 1));
+          if (img.getAttribute("src") !== want) img.setAttribute("src", want);
+        });
+      });
+    }
     const total = () => leaves.length;
     // last position: on spreads, stop when the final page is showing (no empty spread at the end)
     const max = () => (mode === "double" ? Math.floor(pages.length / 2) : total() - 1);
@@ -91,7 +110,8 @@
       const shown = mode === "double" ? [flipped * 2 - 1, flipped * 2].filter((p) => p >= 0 && p < pages.length) : [flipped];
       count.textContent = shown.length === 2 ? `${shown[0] + 1}–${shown[1] + 1} / ${pages.length}` : `${shown[0] + 1} / ${pages.length}`;
       caption.textContent = shown.map((p) => pages[p].caption).filter(Boolean).join("  ·  ");
-      shown.forEach((p) => [p + 1, p + 2].forEach((q) => { if (pages[q]) new Image().src = pages[q].image; }));
+      hydrate();
+      shown.forEach((p) => [p + 1, p + 2, p + 3].forEach((q) => { if (pages[q]) new Image().src = srcOf(q); })); // warm up the next pages
     }
 
     function go(delta) {

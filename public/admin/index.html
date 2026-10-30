@@ -136,6 +136,9 @@
   .preview .article-head{padding:24px 20px 0}
   .preview .article-head h1{font-size:clamp(28px,4vw,46px)}
   .preview .hero{margin:20px 20px 0;max-width:none}
+  .preview .hero.vertical{max-width:380px;margin-left:auto;margin-right:auto}
+  .preview .hero.vertical .ph{aspect-ratio:4/5}
+  .shape-pick{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
   .preview .body{margin:24px 20px 0;font-size:17px}
   .uploading{display:flex;gap:8px;flex-wrap:wrap}
   .photos{display:grid;gap:10px;margin-top:14px}
@@ -247,6 +250,7 @@
 .tag-pin input{all:unset;width:130px;color:#fff;font:inherit}
 .tag-x{all:unset;cursor:pointer;padding:0 2px;font-size:15px;opacity:.8}
 .tag-x:hover{opacity:1}
+.b.sm.danger.sure{background:var(--accent);color:#fff;border-color:var(--accent)}
 /* Video tab */
 .vid-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px}
 .vid-box{display:flex;flex-direction:column;gap:12px;padding:18px}
@@ -272,7 +276,7 @@ const app = document.getElementById("app");
 const esc = (s = "") => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const slugify = (s) => s.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 70);
 const today = () => new Date().toISOString().slice(0, 10);
-const KNOWN = ["title", "dek", "date", "category", "cover", "coverPosition", "heroPosition", "coverAlt", "coverCaption", "author", "draft"];
+const KNOWN = ["title", "dek", "date", "category", "cover", "coverPosition", "heroPosition", "heroShape", "coverAlt", "coverCaption", "author", "pinned", "draft"];
 
 async function api(action, { method = "GET", body, query = "" } = {}) {
   const r = await fetch(`/api/admin?action=${action}${query}`, {
@@ -345,7 +349,7 @@ async function renderList(flash = "") {
     if (!articles.length) { rows.innerHTML = `<div class="panel empty">No articles yet. Click <b>New article</b> to write your first one.</div>`; return; }
     rows.innerHTML = articles.map((a) => `<div class="row" data-slug="${esc(a.slug)}">
       ${a.cover ? `<img src="${esc(shown(a.cover))}" alt="" loading="lazy">` : `<div class="noimg"></div>`}
-      <div><h3>${esc(a.title)}</h3><div class="meta-l">${visBtn("article", a.slug, a.draft)}<span class="label">${esc(a.category)} · ${esc(a.date)}</span></div></div>
+      <div><h3>${esc(a.title)}</h3><div class="meta-l">${visBtn("article", a.slug, a.draft)}${a.pinned ? `<span class="pill live">Pinned</span>` : ""}<span class="label">${esc(a.category)} · ${esc(a.date)}</span></div></div>
       <div class="row-actions">
         ${a.draft ? "" : `<a class="b" href="/articles/${esc(a.slug)}/" target="_blank" rel="noopener" aria-label="View">${icon("eye")}</a>`}
         <button class="b" type="button" data-act="edit">${icon("pencil")}<span>Edit</span></button>
@@ -372,7 +376,7 @@ async function openEditor(slug) {
     const { raw } = await api("article", { query: `&slug=${encodeURIComponent(slug)}` });
     const { data, body } = frontmatter(raw);
     const extras = Object.fromEntries(Object.entries(data).filter(([k]) => !KNOWN.includes(k)));
-    ed = { slug, isNew: false, data, extras, body: body.replace(/^\n+/, ""), pending: new Map() };
+    ed = { slug, origSlug: slug, isNew: false, data, extras, body: body.replace(/^\n+/, ""), pending: new Map() };
     renderEditor();
   } catch (err) { if (err.message !== "auth") renderList(); }
 }
@@ -388,8 +392,8 @@ function renderEditor() {
     <form class="panel form" id="ed" autocomplete="off">
       <span class="label">${ed.isNew ? "New article" : "Edit article"}</span>
       ${field("f-title", "Title", d.title, "required")}
-      <label for="f-slug">Web address <span class="hint">${ed.isNew ? "set automatically from the title" : "can't be changed after publishing"}</span>
-        <div class="slug-row"><span>zazzimag.com/articles/</span><input id="f-slug" value="${esc(ed.slug)}" ${ed.isNew ? "" : "disabled"} pattern="[a-z0-9][a-z0-9\-]*"></div></label>
+      <label for="f-slug">Web address <span class="hint">${ed.isNew ? "set automatically from the title" : "follows the title · if it changes, the old link forwards to the new one"}</span>
+        <div class="slug-row"><span>zazzimag.com/articles/</span><input id="f-slug" value="${esc(ed.slug)}" pattern="[a-z0-9][a-z0-9\-]*"></div></label>
       <label for="f-dek">Summary <span class="hint">one or two sentences under the headline</span><textarea id="f-dek" style="min-height:70px">${esc(d.dek || "")}</textarea></label>
       <div class="two">
         <label for="f-cat">Category<input id="f-cat" list="cats" value="${esc(d.category || "")}" required><datalist id="cats">${[...new Set([...categories, "Street Style", "Trends", "Guide", "History", "Streetwear", "Interview"])].map((c) => `<option value="${esc(c)}">`).join("")}</datalist></label>
@@ -403,6 +407,9 @@ function renderEditor() {
             <button type="button" class="b" id="cover-btn">${icon("image-plus")}<span>${d.cover ? "Replace cover" : "Upload cover"}</span></button>
             ${field("f-coverAlt", "Describe the photo", d.coverAlt, "", "for screen readers")}
             ${field("f-coverCaption", "Caption / photo credit", d.coverCaption)}
+            <div class="shape-pick" role="radiogroup" aria-label="Shape at the top of the article"><span class="hint">Shape at the top of the article</span>
+              <label class="showbox"><input type="radio" name="f-heroShape" value="horizontal" ${d.heroShape === "vertical" ? "" : "checked"}> Horizontal</label>
+              <label class="showbox"><input type="radio" name="f-heroShape" value="vertical" ${d.heroShape === "vertical" ? "checked" : ""}> Vertical</label></div>
           </div>
         </div>
         <input type="file" id="cover-file" accept="image/*" hidden>
@@ -427,6 +434,7 @@ function renderEditor() {
         <div class="photos" id="photos"></div>
       </div>
       <label class="switch"><input type="checkbox" id="f-draft" ${d.draft === true ? "" : "checked"}> Published <span class="hint">untick to keep it as a hidden draft</span></label>
+      <label class="switch"><input type="checkbox" id="f-pinned" ${d.pinned === true ? "checked" : ""}> Pin to the top of the home page <span class="hint">stays first even when newer stories are added</span></label>
       <div class="save-bar">
         <button class="b primary" type="submit" id="save">${icon("save")}<span>Save</span></button>
         ${ed.isNew ? "" : `<a class="b" href="/articles/${esc(ed.slug)}/" target="_blank" rel="noopener">${icon("eye")}<span>Open live page</span></a>`}
@@ -438,9 +446,10 @@ function renderEditor() {
 
   const $ = (id) => document.getElementById(id);
   const titleEl = $("f-title"), slugEl = $("f-slug"), body = $("body");
-  let slugTouched = !ed.isNew || Boolean(ed.slug);
+  // the address follows the title, unless it was set by hand (to something other than the title)
+  let slugTouched = Boolean(ed.slug) && ed.slug !== slugify(titleEl.value);
 
-  titleEl.oninput = () => { if (ed.isNew && !slugTouched) setSlug(slugify(titleEl.value)); preview(); };
+  titleEl.oninput = () => { if (!slugTouched) setSlug(slugify(titleEl.value)); preview(); };
   slugEl.oninput = () => { slugTouched = true; setSlug(slugify(slugEl.value), true); };
   app.querySelectorAll("#ed input, #ed textarea").forEach((el) => el.addEventListener("input", preview));
 
@@ -550,6 +559,19 @@ function renderEditor() {
     renderPhotos(); preview();
   });
   box.addEventListener("click", async (e) => {
+    const del = e.target.closest("[data-delphoto]");
+    if (del) { // takes the photo (and its caption) out of the article; click twice to confirm
+      if (!del.classList.contains("sure")) {
+        del.classList.add("sure"); del.querySelector("span").textContent = "Click again to delete";
+        setTimeout(() => { if (del.isConnected) { del.classList.remove("sure"); del.querySelector("span").textContent = "Delete"; } }, 4000);
+        return;
+      }
+      const i = +del.dataset.delphoto, m = [...body.value.matchAll(IMG_RE)][i]; if (!m) return;
+      const v = body.value, start = v[m.index - 1] === "~" ? m.index - 1 : m.index;
+      body.value = (v.slice(0, start).replace(/\n*$/, "") + "\n\n" + v.slice(m.index + m[0].length).replace(/^\n*/, "")).replace(/^\n+/, "");
+      renderPhotos(); preview(); status("Photo deleted from the article. Save to apply.", "ok");
+      return;
+    }
     const u = e.target.closest("[data-uncrop]");
     if (u) {
       const i = +u.dataset.uncrop, m = [...body.value.matchAll(IMG_RE)][i]; if (!m) return;
@@ -598,7 +620,8 @@ function renderPhotos() {
       <div class="fields"><span class="num">Photo ${i + 1}</span>
         <div class="row-btns"><label class="showbox"><input type="checkbox" data-show="${i}" ${isHidden(m) ? "" : "checked"}> Shown on the site</label>
         <button type="button" class="b sm" data-crop="${i}">${icon("crop")}<span>Crop</span></button>
-        ${cropMap()[fileOf(m[2])] ? `<button type="button" class="b sm" data-uncrop="${i}">${icon("rotate-ccw")}<span>Back to original</span></button>` : ""}</div>
+        ${cropMap()[fileOf(m[2])] ? `<button type="button" class="b sm" data-uncrop="${i}">${icon("rotate-ccw")}<span>Back to original</span></button>` : ""}
+        <button type="button" class="b sm danger" data-delphoto="${i}">${icon("trash-2")}<span>Delete</span></button></div>
         <label for="pc-${i}">Caption / photo credit<input id="pc-${i}" data-k="cap" value="${esc(m[3] || "")}" placeholder="e.g. Shibuya, October 2026. Photo: Your Name"></label>
         <label for="pa-${i}">Describe the photo <span class="hint">for screen readers</span><input id="pa-${i}" data-k="alt" value="${esc(m[1] || "")}"></label>
       </div>
@@ -606,9 +629,12 @@ function renderPhotos() {
 }
 
 function imgUrl(u) { // pending uploads show from memory until they're published
-  const m = u && u.match(/^\/images\/articles\/[^/]+\/(.+)$/);
-  const p = m && ed?.pending.get(m[1]);
-  return p ? p.preview : shown(u);
+  const m = u && u.match(/^\/images\/articles\/([^/]+)\/(.+)$/);
+  const p = m && ed?.pending.get(m[2]);
+  if (p) return p.preview;
+  // address being changed: photos already on the site are still in the old folder until saving
+  if (m && ed?.origSlug && m[1] === ed.slug && ed.slug !== ed.origSlug) return shown(`/images/articles/${ed.origSlug}/${m[2]}`);
+  return shown(u);
 }
 
 function status(text, kind = "") { const s = document.getElementById("st"); if (s) { s.textContent = text; s.className = `status ${kind}`; } }
@@ -744,15 +770,16 @@ function collect() {
   const v = (id) => document.getElementById(id).value.trim().replace(/\s*\n\s*/g, " ");
   return {
     title: v("f-title"), dek: v("f-dek"), date: v("f-date"), category: v("f-cat"),
-    cover: ed.data.cover || "", coverPosition: ed.data.coverPosition || "", heroPosition: ed.data.heroPosition || "", coverAlt: v("f-coverAlt"), coverCaption: v("f-coverCaption"),
-    author: v("f-author"), draft: !document.getElementById("f-draft").checked,
+    cover: ed.data.cover || "", coverPosition: ed.data.coverPosition || "", heroPosition: ed.data.heroPosition || "",
+    heroShape: document.querySelector("[name=f-heroShape]:checked")?.value === "vertical" ? "vertical" : "", coverAlt: v("f-coverAlt"), coverCaption: v("f-coverCaption"),
+    author: v("f-author"), draft: !document.getElementById("f-draft").checked, pinned: document.getElementById("f-pinned")?.checked === true,
   };
 }
 
 function compose(d, body) {
   const line = (k, val) => (val === "" || val === undefined || val === null ? "" : `${k}: ${Array.isArray(val) ? `[${val.join(", ")}]` : val}\n`);
   let fm = "";
-  for (const k of KNOWN) fm += k === "draft" ? (d.draft ? "draft: true\n" : "") : line(k, d[k]);
+  for (const k of KNOWN) fm += k === "draft" ? (d.draft ? "draft: true\n" : "") : k === "pinned" ? (d.pinned ? "pinned: true\n" : "") : line(k, d[k]);
   for (const [k, val] of Object.entries(ed.extras)) fm += line(k, val === true ? "true" : val);
   return `---\n${fm}---\n${body.trim()}\n`;
 }
@@ -790,7 +817,7 @@ function preview() {
   pv.innerHTML = `<div class="article-head"><div class="crumbs label"><span>Articles</span><span>/</span><span>${esc(d.category || "Category")}</span></div>
     <h1>${esc(d.title || "Your headline")}</h1>${d.dek ? `<p class="dek">${esc(d.dek)}</p>` : ""}
     <div class="meta label"><span>${esc(d.date)}</span>${d.author ? `<span>Written by ${esc(d.author)}</span>` : ""}</div></div>
-    ${d.cover ? `<figure class="hero" data-sec="heroPosition"><div class="ph pos-frame pos-hero" data-key="heroPosition" title="Drag to reposition the article photo"><img src="${esc(imgUrl(d.cover))}" alt="" draggable="false" style="object-position:${posCss("heroPosition")}">
+    ${d.cover ? `<figure class="hero${d.heroShape === "vertical" ? " vertical" : ""}" data-sec="heroPosition"><div class="ph pos-frame pos-hero" data-key="heroPosition" title="Drag to reposition the article photo"><img src="${esc(imgUrl(d.cover))}" alt="" draggable="false" style="object-position:${posCss("heroPosition")}">
       <div class="pos-ui" role="group" aria-label="Article photo position"><button type="button" data-pos="up" aria-label="Move the photo up">${icon("chevron-up")}</button><button type="button" data-pos="down" aria-label="Move the photo down">${icon("chevron-down")}</button><button type="button" data-pos="left" aria-label="Move the photo left">${icon("chevron-left")}</button><button type="button" data-pos="right" aria-label="Move the photo right">${icon("chevron-right")}</button><button type="button" data-pos="center" class="txt">Center</button></div>
       <span class="pos-hint">Drag to reposition · only the article</span></div>${d.coverCaption ? `<figcaption>${esc(d.coverCaption)}</figcaption>` : ""}</figure>` : ""}
     <div class="body">${html}</div>`;
@@ -807,7 +834,8 @@ async function save() {
   const btn = document.getElementById("save"); btn.disabled = true; status("Saving…");
   try {
     { const map = cropMap(); for (const k of Object.keys(map)) if (!body.includes("/" + k)) delete map[k]; setCropMap(map); } // forget crops no longer in the text
-    await api("save", { method: "POST", body: { slug: ed.slug, isNew: ed.isNew, content: compose(d, body), images: used } });
+    const renameFrom = !ed.isNew && ed.origSlug && ed.origSlug !== ed.slug ? ed.origSlug : undefined;
+    await api("save", { method: "POST", body: { slug: ed.slug, isNew: ed.isNew, content: compose(d, body), images: used, renameFrom } });
     for (const { name } of used) recent.set(`/images/articles/${ed.slug}/${name}`, ed.pending.get(name).preview);
     renderList(d.draft ? `Saved "${d.title}" as a draft.` : `Saved "${d.title}". It will be live on the site in about a minute.`);
   } catch (err) { if (err.message !== "auth") { status(err.message, "err"); btn.disabled = false; } }
@@ -1555,7 +1583,7 @@ async function renderIssues(flash = "") {
     const box = document.getElementById("irows");
     box.innerHTML = issues.length ? issues.map((i) => `<div class="row" data-islug="${esc(i.slug)}">
       ${i.cover ? `<img src="${esc(shown(i.cover))}" alt="" loading="lazy">` : `<div class="noimg"></div>`}
-      <div><h3>${esc(i.title)}</h3><div class="meta-l">${visBtn("issue", i.slug, i.draft)}<span class="label">${i.pages} pages · ${esc(i.date)}</span></div></div>
+      <div><h3>${esc(i.title)}</h3><div class="meta-l">${visBtn("issue", i.slug, i.draft)}${i.pinned ? `<span class="pill live">Pinned</span>` : ""}<span class="label">${i.pages} pages · ${esc(i.date)}</span></div></div>
       <div class="row-actions">
         ${i.draft ? "" : `<a class="b" href="/issues/${esc(i.slug)}/" target="_blank" rel="noopener" aria-label="View">${icon("eye")}</a>`}
         <button class="b" type="button" data-act="edit-issue">${icon("pencil")}<span>Edit</span></button>
@@ -1587,6 +1615,7 @@ function drawIssue() {
     <div><span class="label">Pages</span> <span class="hint">· the first page is the cover · change the order with the arrows</span><div class="pages" id="pages"></div>
       <input type="file" id="pg-file" accept="image/*" multiple hidden><div class="uploading" id="uploading"></div></div>
     <label class="switch"><input type="checkbox" id="i-pub" ${d.draft === true ? "" : "checked"}> Published <span class="hint">untick to keep it as a hidden draft</span></label>
+    <label class="switch"><input type="checkbox" id="i-pinned" ${d.pinned === true ? "checked" : ""}> Pin to the top of the home page <span class="hint">stays first even when newer stories are added</span></label>
     <div class="save-bar"><button class="b primary" type="submit" id="isave">${icon("save")}<span>Save issue</span></button>
       ${iss.isNew ? "" : `<a class="b" href="/issues/${esc(iss.slug)}/" target="_blank" rel="noopener">${icon("eye")}<span>Open live page</span></a>`}<span class="status" id="st"></span></div>
   </form></main>`;
@@ -1603,8 +1632,10 @@ function drawIssue() {
       try {
         const data = await resize(f, 1800);
         const { sha } = await api("upload", { method: "POST", body: { data } });
+        // a lighter copy for phones, so the magazine flips smoothly there
+        const { sha: smallSha } = await api("upload", { method: "POST", body: { data: await resize(f, 1080) } });
         let name = `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}.jpg`;
-        iss.pending.set(name, { sha, preview: data });
+        iss.pending.set(name, { sha, smallSha, preview: data });
         iss.data.pages.push({ image: `/images/issues/${iss.slug}/${name}`, caption: "", alt: "" });
         chip.remove(); drawPages();
       } catch (err) { chip.textContent = `Couldn't upload ${f.name}: ${err.message}`; chip.style.color = "var(--accent)"; }
@@ -1634,7 +1665,7 @@ function drawPages() {
 
 function syncIssue() {
   const d = iss.data, v = (id) => document.getElementById(id)?.value ?? "";
-  d.title = v("i-title").trim(); d.dek = v("i-dek").trim(); d.date = v("i-date"); d.draft = !document.getElementById("i-pub")?.checked;
+  d.title = v("i-title").trim(); d.dek = v("i-dek").trim(); d.date = v("i-date"); d.draft = !document.getElementById("i-pub")?.checked; d.pinned = document.getElementById("i-pinned")?.checked === true;
   document.querySelectorAll(".page-card").forEach((c) => {
     const p = d.pages[+c.dataset.i];
     c.querySelectorAll("[data-f]").forEach((el) => (p[el.dataset.f] = el.value));
@@ -1650,7 +1681,7 @@ async function saveIssue() {
   if (!d.title) return status("Add a title.", "err");
   if (!iss.slug) return status("Add a web address.", "err");
   if (!d.pages.length && !d.draft) return status("Add at least one page, or untick Published to save a draft.", "err");
-  const used = [...iss.pending.entries()].filter(([n]) => d.pages.some((p) => p.image.endsWith("/" + n))).map(([name, v]) => ({ name, sha: v.sha }));
+  const used = [...iss.pending.entries()].filter(([n]) => d.pages.some((p) => p.image.endsWith("/" + n))).map(([name, v]) => ({ name, sha: v.sha, smallSha: v.smallSha }));
   const btn = document.getElementById("isave"); btn.disabled = true; status("Saving…");
   try {
     await api("saveIssue", { method: "POST", body: { slug: iss.slug, isNew: iss.isNew, issue: d, images: used } });

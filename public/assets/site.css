@@ -407,3 +407,17 @@ html.a11y-still .fb-zoomwrap.fb-anim{transition:none}
 /* space between the end of an article (Read next / From the feed) and the footer */
 article{padding-bottom:72px}
 @media (max-width:700px){article{padding-bottom:56px}}
+
+/* flipbook: pages far from the reader aren't drawn at all (keeps phones smooth) */
+.leaf.far{display:none}
+
+/* Instagram posts on the home page: small Instagram icon left of the text */
+.ig-cap{display:flex;gap:6px;align-items:flex-start;margin:0;text-align:left}
+.ig-cap .cap{flex:1;min-width:0}
+.ig-ic{flex:none;display:inline-flex;margin-top:1px;color:var(--muted)}
+.ig-ic svg{width:14px;height:14px}
+.tile.ig:hover .ig-ic{color:var(--accent)}
+
+/* article top photo: vertical (portrait) option, set per article in the console */
+.hero.vertical{max-width:620px}
+.hero.vertical .ph{aspect-ratio:4/5}
