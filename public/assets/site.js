@@ -34,12 +34,15 @@
       <p class="ig-cap"><span class="ig-ic" aria-hidden="true">${IC.instagram}</span><span class="cap">${esc(firstLine(p.caption))}</span></p></button>`;
   }
 
-  // Posts made with a white frame: show just the photo inside it, so the tile (and its text) line up with the
-  // photo's edge. The photo is read through /api/ig-img/ because browsers only allow reading pixels from our own site.
+  // Posts made with a white frame keep it (the logo sits near its edge), but the text under the tile is
+  // indented to start where the photo inside the frame starts. The photo is read through /api/ig-img/
+  // because browsers only allow reading pixels from our own site.
   function trimFrame(img) {
     const src = img.getAttribute("src");
     if (!src || img.dataset.trim) return;
     img.dataset.trim = "1";
+    const cap = img.closest(".tile")?.querySelector(".ig-cap");
+    if (!cap) return;
     const pic = new Image();
     pic.onload = () => {
       try {
@@ -57,12 +60,14 @@
         while (r > l && colWhite(r)) r--;
         const L = l / c.width, R = (c.width - 1 - r) / c.width, T = t / c.height, B = (c.height - 1 - b) / c.height;
         // only a real frame: white on both sides (left and right, or top and bottom), about evenly
-        const sides = (L > 0.02 && R > 0.02 && Math.abs(L - R) < 0.03) || (T > 0.02 && B > 0.02 && Math.abs(T - B) < 0.03);
-        if (!sides || (r - l) < c.width * 0.4 || (b - t) < c.height * 0.4) return;
-        const sx = (l + 1) / s, sy = (t + 1) / s, sw = (r - l - 1) / s, sh = (b - t - 1) / s, k = Math.min(1, 900 / sw);
-        const o = document.createElement("canvas"); o.width = Math.round(sw * k); o.height = Math.round(sh * k);
-        o.getContext("2d").drawImage(pic, sx, sy, sw, sh, 0, 0, o.width, o.height);
-        o.toBlob((blob) => { if (blob) img.src = URL.createObjectURL(blob); }, "image/jpeg", 0.9);
+        const framed = (L > 0.02 && R > 0.02 && Math.abs(L - R) < 0.03) || (T > 0.02 && B > 0.02 && Math.abs(T - B) < 0.03);
+        if (!framed || (r - l) < c.width * 0.4 || (b - t) < c.height * 0.4) return;
+        // where the photo's left and right edges fall in the tile (a 4:5 box the picture covers), as a share of its width
+        const ph = img.closest(".ph"), box = ph ? ph.clientHeight / ph.clientWidth : 1.25;
+        const k = Math.max(1 / W, box / H), shown = W * k, off = (shown - 1) / 2;
+        const left = Math.max(0, (l + 1) / c.width * shown - off), right = Math.max(0, (c.width - r) / c.width * shown - off);
+        cap.style.paddingLeft = `${(left * 100).toFixed(2)}%`;
+        cap.style.paddingRight = `${(right * 100).toFixed(2)}%`;
       } catch {}
     };
     pic.src = "/api/ig-img/?u=" + encodeURIComponent(src);
@@ -80,7 +85,6 @@
       if (!posts.length) { strip.closest("[data-ig-section]")?.remove(); return; }
       strip.innerHTML = posts.slice(0, 6).map((p, i) =>
         `<button class="tile ig" type="button" data-ig="${i}" aria-label="Open Instagram post"><div class="ph"><img src="${esc(p.image)}" alt="" loading="lazy"></div></button>`).join("");
-      strip.querySelectorAll(".ph img").forEach(trimFrame);
     }
   }
 
