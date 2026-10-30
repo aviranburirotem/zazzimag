@@ -183,22 +183,44 @@ function ticker() {
 
 // ---------- pages ----------
 function home() {
-  // Newest article large, then two Instagram posts per article.
-  const items = [];
-  // the big tile is the newest article; issues always sit in the grid at normal size
-  const fi = Math.max(0, stories.findIndex((s) => s.kind !== "issue"));
-  const first = stories[fi], rest = stories.filter((_, i) => i !== fi);
-  if (first) items.push(artTile(first, true));
-  if (on("show.feed")) {
-    const IG_COUNT = 12;
-    let a = 0;
-    for (let i = 0; i < IG_COUNT; i++) {
-      items.push(igSlot());
-      if (i % 2 === 1 && a < rest.length && a < 6) items.push(artTile(rest[a++]));
+  // The home page in sections:
+  //  1. the newest article (big, left) · the newest Instagram post and the newest issue (right)
+  //  2. the next 2 articles + "More articles" (left) · the next 2 Instagram posts (right)
+  //  3. more issues
+  //  4. the next 2 articles (left) · the next 2 Instagram posts (right)
+  // Pinned items come first in their kind. Instagram slots are filled in by site.js, in page order.
+  const feed = on("show.feed");
+  const arts = stories.filter((s) => s.kind !== "issue"), iss = stories.filter((s) => s.kind === "issue");
+  let ai = 0;
+  const nextArt = () => (ai < arts.length ? artTile(arts[ai++]) : "");
+  const igOr = () => (feed ? igSlot() : nextArt()); // without the feed, articles take the Instagram places
+  const igLink = `<a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a>`;
+  const sections = [];
+
+  const big = arts[ai] ? artTile(arts[ai++], true) : "";
+  const s1 = [big, igOr(), iss[0] ? artTile(iss[0]) : igOr()].filter(Boolean);
+  if (s1.length) sections.push(`<section class="wrap home-sec sec-hero" aria-label="Latest">${s1.join("")}</section>`);
+
+  const pair = (withMore) => {
+    const left = [nextArt(), nextArt()].filter(Boolean), right = [igOr(), igOr()].filter(Boolean);
+    if (!left.length && !right.length) return "";
+    // only one side has something: it takes the whole width (4 tiles) instead of leaving a gap
+    if (!left.length && feed) {
+      right.push(igOr(), igOr());
+      return `<section class="wrap home-sec sec-full"><div class="section-h"><h2>${tx("home.secInstagram")}</h2>${igLink}</div><div class="row4">${right.join("")}</div></section>`;
     }
-  } else {
-    rest.slice(0, 15).forEach((x) => items.push(artTile(x))); // no Instagram posts: stories only
-  }
+    return `<section class="wrap home-sec sec-pair">
+      ${left.length ? `<div class="half"><div class="section-h"><h2>${tx("home.secStories")}</h2></div><div class="half-grid">${left.join("")}</div>
+        ${withMore ? `<a class="btn alt more-btn" href="/articles/">${tx("home.moreArticles")} ${icon("arrow-right")}</a>` : ""}</div>` : ""}
+      ${right.length ? `<div class="half"><div class="section-h"><h2>${feed ? tx("home.secInstagram") : tx("home.secStories")}</h2>${feed ? igLink : ""}</div><div class="half-grid">${right.join("")}</div></div>` : ""}
+    </section>`;
+  };
+  sections.push(pair(true));
+  const moreIssues = iss.slice(1, 5);
+  if (moreIssues.length) sections.push(`<section class="wrap home-sec sec-issues"><div class="section-h"><h2>${tx("home.secIssues")}</h2></div><div class="row4">${moreIssues.map((x) => artTile(x)).join("")}</div></section>`);
+  sections.push(pair(false));
+  const grid = sections.filter(Boolean).join("\n");
+
   return layout({
     active: "home", pathname: "/",
     description: `${SITE.name}. ${SITE.tagline}`,
@@ -208,7 +230,7 @@ function home() {
       <h1>${br("home.headline")}</h1>
       ${md("home.intro")}</div>
       ${on("show.igButton") ? `<a class="handle" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}${icon("arrow-up-right")}</a>` : ""}</section>
-    <section class="wrap grid" aria-label="Latest posts and stories">${items.join("")}</section>
+    <div class="home-sections">${grid}</div>
     ${on("show.band") ? `<section class="band"><div class="wrap"><h2>${tx("home.bandHeading")}</h2><a class="btn alt" href="/articles/">${tx("home.bandButton")} ${icon("arrow-right")}</a></div></section>` : ""}`,
   });
 }

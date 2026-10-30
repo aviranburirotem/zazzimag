@@ -445,3 +445,28 @@ html.a11y-contrast .tile.issue:hover h3,html.a11y-contrast .tile.ig:hover .ig-te
 .ig-embed-card .btn{justify-self:center;font-family:var(--display);cursor:pointer}
 .body .ig-embed-card a.label{color:var(--fg)}
 .ig-embed .instagram-media{margin:0 auto!important;min-width:0!important;width:100%!important}
+
+/* ---- home page in sections ---- */
+.home-sections{padding-bottom:56px}
+.home-sec{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 14px;container-type:inline-size}
+.home-sec+.home-sec{margin-top:8px}
+.home-sec .section-h{margin:40px 0 14px}
+/* 1. big newest article: as tall as the tiles beside it, so the row lines up */
+.sec-hero{margin-top:4px}
+.sec-hero .feat{grid-column:span 2;grid-row:auto}
+.sec-hero .feat .ph{aspect-ratio:auto;height:calc((100cqw - 42px) / 4 * 1.25)}
+/* 2 and 4. two halves, each two tiles wide (same tile size as everywhere else) */
+.sec-pair{grid-template-columns:repeat(2,minmax(0,1fr))}
+.half{display:flex;flex-direction:column;min-width:0}
+.half-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 14px}
+.more-btn{align-self:flex-start;margin-top:22px}
+/* 3. issues in a row */
+.sec-issues,.sec-full{display:block}
+.row4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 14px}
+@media (max-width:760px){
+  .home-sec{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 10px}
+  .sec-hero .feat .ph{height:auto;aspect-ratio:4/5}
+  .sec-pair{grid-template-columns:1fr}
+  .half-grid,.row4{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 10px}
+  .home-sec .section-h{margin:32px 0 12px}
+}
