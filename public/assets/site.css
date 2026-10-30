@@ -411,12 +411,10 @@ article{padding-bottom:72px}
 /* flipbook: pages far from the reader aren't drawn at all (keeps phones smooth) */
 .leaf.far{display:none}
 
-/* Instagram posts on the home page: small Instagram icon left of the text */
-.ig-cap{display:flex;gap:6px;align-items:flex-start;margin:0;text-align:left}
-.ig-cap .cap{flex:1;min-width:0}
-.ig-ic{flex:none;display:inline-flex;margin-top:1px;color:var(--muted)}
-.ig-ic svg{width:14px;height:14px}
-.tile.ig:hover .ig-ic{color:var(--accent)}
+/* Instagram posts on the home page: same two lines as issues ("Post" label in red with the icon, then the caption) */
+.ig-cap{display:grid;gap:4px;text-align:left}
+.ig-label svg{width:14px;height:14px}
+.ig-text{color:var(--fg)}
 
 /* article top photo: vertical (portrait) option, set per article in the console */
 .hero.vertical{max-width:620px}

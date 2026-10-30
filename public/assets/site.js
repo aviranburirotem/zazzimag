@@ -31,7 +31,7 @@
   function igTile(p, i) {
     return `<button class="tile ig" type="button" data-ig="${i}" aria-label="Open Instagram post">
       <div class="ph"><img src="${esc(p.image)}" alt="${esc(firstLine(p.caption).slice(0, 120) || "Instagram post by @" + HANDLE)}" loading="lazy">${p.type === "VIDEO" ? `<span class="play" aria-hidden="true">${IC.play}</span>` : ""}</div>
-      <p class="ig-cap"><span class="ig-ic" aria-hidden="true">${IC.instagram}</span><span class="cap">${esc(firstLine(p.caption))}</span></p></button>`;
+      <span class="ig-cap"><span class="label issue-label ig-label">${IC.instagram}Post</span>${firstLine(p.caption) ? `<span class="cap ig-text">${esc(firstLine(p.caption))}</span>` : ""}</span></button>`;
   }
 
   // Posts made with a white frame keep it (the logo sits near its edge), but the text under the tile is
