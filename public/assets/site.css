@@ -451,22 +451,39 @@ html.a11y-contrast .tile.issue:hover h3,html.a11y-contrast .tile.ig:hover .ig-te
 .home-sec{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 14px;container-type:inline-size}
 .home-sec+.home-sec{margin-top:8px}
 .home-sec .section-h{margin:40px 0 14px}
-/* 1. big newest article: as tall as the tiles beside it, so the row lines up */
-.sec-hero{margin-top:4px}
-.sec-hero .feat{grid-column:span 2;grid-row:auto}
-.sec-hero .feat .ph{aspect-ratio:auto;height:calc((100cqw - 42px) / 4 * 1.25)}
-/* 2 and 4. two halves, each two tiles wide (same tile size as everywhere else) */
-.sec-pair{grid-template-columns:repeat(2,minmax(0,1fr))}
+/* 1. big newest article: 2 tiles wide and 2 rows tall, at the tiles' 4:5 shape */
+.sec-hero{margin-top:4px;grid-auto-flow:row dense}
+.sec-hero .feat{grid-column:span 2;grid-row:span 2}
+/* 2. carousels: two halves, two tiles showing in each (four across when only one is shown) */
+.sec-car{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 14px}
+.sec-car.solo{grid-template-columns:1fr}
 .half{display:flex;flex-direction:column;min-width:0}
-.half-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 14px}
+.car-ctl{display:flex;align-items:center;gap:6px;margin-left:auto}
+.car-ctl .label{margin-right:8px}
+.car-btn{width:34px;height:34px;display:inline-grid;place-items:center;border:1px solid var(--line,currentColor);border-radius:999px;background:transparent;color:var(--fg);cursor:pointer;padding:0}
+.car-btn:hover{background:var(--fg);color:var(--bg)}
+.car-btn:focus-visible{outline:3px solid #2b6cff;outline-offset:2px}
+.car-btn svg{width:16px;height:16px}
+.car-btn .i-play,.car-btn[aria-pressed="true"] .i-pause{display:none}
+.car-btn[aria-pressed="true"] .i-play{display:inline-grid}
+.car-track{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 14px) / 2);gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;overscroll-behavior-x:contain;align-items:start}
+.car-track::-webkit-scrollbar{display:none}
+.car-track>*{scroll-snap-align:start;min-width:0}
+.car-track:focus-visible{outline:3px solid #2b6cff;outline-offset:4px}
+.solo .car-track{grid-auto-columns:calc((100% - 42px) / 4)}
+html.a11y-still .car-track{scroll-behavior:auto}
+@media (prefers-reduced-motion:reduce){.car-track{scroll-behavior:auto}}
 .more-btn{align-self:flex-start;margin-top:22px}
 /* 3. issues in a row */
 .sec-issues,.sec-full{display:block}
 .row4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 14px}
 @media (max-width:760px){
   .home-sec{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 10px}
-  .sec-hero .feat .ph{height:auto;aspect-ratio:4/5}
-  .sec-pair{grid-template-columns:1fr}
-  .half-grid,.row4{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 10px}
+  .sec-car{grid-template-columns:1fr}
+  .car-track,.solo .car-track{grid-auto-columns:calc((100% - 10px) / 2);gap:10px}
+  .row4{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 10px}
   .home-sec .section-h{margin:32px 0 12px}
 }
+.carousel .section-h{align-items:center}
+.carousel.car-off .car-btn{display:none}
+@media (max-width:760px){.car-ctl .label{display:none}.car-btn{width:32px;height:32px}.carousel .section-h h2{white-space:nowrap}}

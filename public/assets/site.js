@@ -371,3 +371,48 @@
     });
   });
 })();
+
+// ---- home carousels: move one tile every few seconds; stop on hover, focus, off screen, or "Stop animations" ----
+(() => {
+  const still = () => document.documentElement.classList.contains("a11y-still") || matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const EVERY = 4500;
+  document.querySelectorAll("[data-carousel]").forEach((box, n) => {
+    const track = box.querySelector(".car-track"), pauseBtn = box.querySelector('[data-car="pause"]');
+    let paused = false, hover = false, focus = false, seen = false, timer = null;
+    const step = () => { const t = track.firstElementChild; return t ? t.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0) : track.clientWidth; };
+    const atEnd = () => track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+    const go = (dir) => {
+      if (dir > 0 && atEnd()) track.scrollTo({ left: 0 });
+      else if (dir < 0 && track.scrollLeft <= 4) track.scrollTo({ left: track.scrollWidth });
+      else track.scrollBy({ left: dir * step() });
+    };
+    const canMove = () => !paused && !hover && !focus && seen && !document.hidden && !still() && track.scrollWidth > track.clientWidth + 4;
+    // nothing to scroll (only 2 tiles): hide the arrows and pause button
+    const sync = () => box.classList.toggle("car-off", track.scrollWidth <= track.clientWidth + 4);
+    sync(); addEventListener("resize", sync); addEventListener("load", sync); setTimeout(sync, 2500);
+    const tick = () => { sync(); if (canMove()) go(1); };
+    const start = () => { if (!timer) timer = setTimeout(function loop() { tick(); timer = setTimeout(loop, EVERY); }, EVERY + n * (EVERY / 2)); };
+    start();
+    box.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-car]"); if (!b) return;
+      if (b.dataset.car === "pause") {
+        paused = !paused;
+        b.setAttribute("aria-pressed", String(paused));
+        b.setAttribute("aria-label", paused ? "Play the carousel" : "Pause the carousel");
+      } else go(b.dataset.car === "next" ? 1 : -1);
+    });
+    track.addEventListener("pointerenter", () => (hover = true));
+    track.addEventListener("pointerleave", () => (hover = false));
+    box.addEventListener("focusin", (e) => { if (!e.target.closest("[data-car]")) focus = true; });
+    box.addEventListener("focusout", () => (focus = false));
+    track.addEventListener("touchstart", () => { hover = true; }, { passive: true });
+    track.addEventListener("touchend", () => setTimeout(() => (hover = false), EVERY), { passive: true });
+    track.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+    });
+    if ("IntersectionObserver" in window) new IntersectionObserver(([en]) => (seen = en.isIntersecting), { threshold: 0.3 }).observe(track);
+    else seen = true;
+    if (still()) { paused = true; pauseBtn?.setAttribute("aria-pressed", "true"); pauseBtn?.setAttribute("aria-label", "Play the carousel"); }
+  });
+})();

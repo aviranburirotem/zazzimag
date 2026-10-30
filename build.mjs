@@ -184,10 +184,9 @@ function ticker() {
 // ---------- pages ----------
 function home() {
   // The home page in sections:
-  //  1. the newest article (big, left) · the newest Instagram post and the newest issue (right)
-  //  2. the next 2 articles + "More articles" (left) · the next 2 Instagram posts (right)
+  //  1. the newest article (big, 2×2, left) · the newest Instagram post, the newest issue and 2 more posts (right)
+  //  2. carousels that move on their own: more articles + "More articles" (left) · more Instagram posts (right)
   //  3. more issues
-  //  4. the next 2 articles (left) · the next 2 Instagram posts (right)
   // Pinned items come first in their kind. Instagram slots are filled in by site.js, in page order.
   const feed = on("show.feed");
   const arts = stories.filter((s) => s.kind !== "issue"), iss = stories.filter((s) => s.kind === "issue");
@@ -198,27 +197,25 @@ function home() {
   const sections = [];
 
   const big = arts[ai] ? artTile(arts[ai++], true) : "";
-  const s1 = [big, igOr(), iss[0] ? artTile(iss[0]) : igOr()].filter(Boolean);
+  const s1 = [big, igOr(), iss[0] ? artTile(iss[0]) : igOr(), igOr(), igOr()].filter(Boolean);
   if (s1.length) sections.push(`<section class="wrap home-sec sec-hero" aria-label="Latest">${s1.join("")}</section>`);
 
-  const pair = (withMore) => {
-    const left = [nextArt(), nextArt()].filter(Boolean), right = [igOr(), igOr()].filter(Boolean);
-    if (!left.length && !right.length) return "";
-    // only one side has something: it takes the whole width (4 tiles) instead of leaving a gap
-    if (!left.length && feed) {
-      right.push(igOr(), igOr());
-      return `<section class="wrap home-sec sec-full"><div class="section-h"><h2>${tx("home.secInstagram")}</h2>${igLink}</div><div class="row4">${right.join("")}</div></section>`;
-    }
-    return `<section class="wrap home-sec sec-pair">
-      ${left.length ? `<div class="half"><div class="section-h"><h2>${tx("home.secStories")}</h2></div><div class="half-grid">${left.join("")}</div>
-        ${withMore ? `<a class="btn alt more-btn" href="/articles/">${tx("home.moreArticles")} ${icon("arrow-right")}</a>` : ""}</div>` : ""}
-      ${right.length ? `<div class="half"><div class="section-h"><h2>${feed ? tx("home.secInstagram") : tx("home.secStories")}</h2>${feed ? igLink : ""}</div><div class="half-grid">${right.join("")}</div></div>` : ""}
-    </section>`;
-  };
-  sections.push(pair(true));
+  // a carousel: header with arrows and pause, then a row of tiles that scrolls sideways
+  const car = (title, tiles, extra = "", foot = "") => `<div class="half carousel" data-carousel>
+      <div class="section-h"><h2>${title}</h2><div class="car-ctl">${extra}
+        <button class="car-btn" type="button" data-car="prev" aria-label="Previous">${icon("arrow-left")}</button>
+        <button class="car-btn" type="button" data-car="next" aria-label="Next">${icon("arrow-right")}</button>
+        <button class="car-btn" type="button" data-car="pause" aria-label="Pause the carousel" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></div></div>
+      <div class="car-track" role="region" aria-label="${esc(title)}" tabindex="0">${tiles.join("")}</div>${foot}</div>`;
+  const left = [], right = [];
+  for (let i = 0; i < 10; i++) { const t = nextArt(); if (t) left.push(t); }
+  if (feed) for (let i = 0; i < 9; i++) right.push(igSlot());
+  const more = `<a class="btn alt more-btn" href="/articles/">${tx("home.moreArticles")} ${icon("arrow-right")}</a>`;
+  const halves = [left.length ? car(tx("home.secStories"), left, "", more) : "", right.length ? car(tx("home.secInstagram"), right, igLink) : ""].filter(Boolean);
+  if (halves.length) sections.push(`<section class="wrap home-sec sec-car${halves.length === 1 ? " solo" : ""}">${halves.join("")}</section>`);
+
   const moreIssues = iss.slice(1, 5);
   if (moreIssues.length) sections.push(`<section class="wrap home-sec sec-issues"><div class="section-h"><h2>${tx("home.secIssues")}</h2></div><div class="row4">${moreIssues.map((x) => artTile(x)).join("")}</div></section>`);
-  sections.push(pair(false));
   const grid = sections.filter(Boolean).join("\n");
 
   return layout({
