@@ -20,7 +20,7 @@ Harajuku is known for its street fashion and independent boutiques. Its backstre
 
 Lolita fashion reimagines Victorian and Rococo aesthetics through structured silhouettes, voluminous petticoats, intricate lace, and theatrical details. The subculture branches into distinct directions: Sweet Lolita embraces pastels, whimsical prints, and doll-like innocence, while Gothic Lolita leans into dramatic tailoring, dark palettes, and melancholic romance.
 
-- Where to explore: Laforet Harajuku (opened in 1978), the iconic multi-story haven for alternative Japanese fashion brands.
+- Where to explore: Laforet Harajuku, the iconic multi-story haven for alternative Japanese fashion brands.
 
 
 
