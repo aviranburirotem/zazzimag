@@ -16,7 +16,10 @@ Harajuku is known for its street fashion and independent boutiques. Its backstre
 
 
 
-![Kinako Mochi wearing a detailed Lolita fashion outfit](/images/articles/harajuku-street-fashion-a-guide-to-lolita-and-decora/july-1.jpg "Kinako Mochi wearing a Lolita outfit | Photo by Netta Meisles")
+
+![Kinako Mochi wearing a detailed Lolita fashion outfit](/images/articles/japanese-street-fashion-a-guide-to-lolita-decora-jirai-kei-gyaru/july-1.jpg "Kinako Mochi wearing a Lolita outfit | Photo by Netta Meisles")
+
+
 
 
 
@@ -26,7 +29,10 @@ Lolita fashion reimagines Victorian and Rococo aesthetics through structured sil
 
 
 
-![Two Japanese girls wearing Sweet Lolita and Gothic Lolita fashion outfits](/images/articles/harajuku-street-fashion-a-guide-to-lolita-and-decora/j26-51-2.jpg "Two Japanese girls wearing Sweet Lolita and Gothic Lolita outfits | Photo by Netta Meisles")
+
+![Two Japanese girls wearing Sweet Lolita and Gothic Lolita fashion outfits](/images/articles/japanese-street-fashion-a-guide-to-lolita-decora-jirai-kei-gyaru/j26-51.jpg "Two Japanese girls wearing Sweet Lolita and Gothic Lolita outfits | Photo by Netta Meisles")
+
+
 
 
 ## Decora Fashion: Color, Chaos & Maximalism
@@ -39,7 +45,9 @@ Emerging in the late 1990s, Decora is known for hyper-saturated colors, layered 
 
 
 
-![The 6%DOKIDOKI storefront in Harajuku, Tokyo, known for its colorful Decora fashion and accessories.](/images/articles/harajuku-street-fashion-a-guide-to-lolita-and-decora/pxl-20240605-075211436-enhanced-sr-1.jpg "The 6%DOKIDOKI storefront in Harajuku, Tokyo | Photo by Netta Meisles")
+![The 6%DOKIDOKI storefront in Harajuku, Tokyo, known for its colorful Decora fashion and accessories.](/images/articles/japanese-street-fashion-a-guide-to-lolita-decora-jirai-kei-gyaru/pxl-20240605-075211436-enhanced-sr-1.jpg "The 6%DOKIDOKI storefront in Harajuku, Tokyo | Photo by Netta Meisles")
+
+
 
 
 
@@ -51,7 +59,9 @@ Jirai Kei is a contemporary Japanese fashion style that combines feminine detail
 
 Where to explore: Shibuya 109 is a good place to look for Jirai Kei-inspired fashion. The shopping mall includes brands such as MA*RS and LIZ LISA, which offer styles associated with this feminine, detail-rich aesthetic.
 
-![Two Girls in Pastel Jirai Kei on the Streets of Shibuya](/images/articles/harajuku-street-fashion-a-guide-to-lolita-and-decora/shibuya-2-21-2.jpg "A sweet mix of pastel colours, playful details and Jirai Kei fashion, spotted on the streets of Shibuya | Photo by Netta Meisles")
+
+
+![Two Girls in Pastel Jirai Kei on the Streets of Shibuya](/images/articles/japanese-street-fashion-a-guide-to-lolita-decora-jirai-kei-gyaru/2c4a6752.jpg "A sweet mix of pastel colours, playful details and Jirai Kei fashion, spotted on the streets of Shibuya | Photo by Netta Meisles")
 
 
 ## Gyaru Fashion: Bold Glamour & Individuality
@@ -63,4 +73,4 @@ Where to explore: Shibuya 109 is closely associated with Gyaru culture and remai
 
 
 
-![A Gyaru makeover by PPGALCLUB at Shibuya Scramble, featuring bold makeup and the unmistakable glamour of Gyaru style](/images/articles/harajuku-street-fashion-a-guide-to-lolita-and-decora/shibuya-edited-78.jpg "A Gyaru makeover by PPGALCLUB at Shibuya Scramble, featuring bold makeup and the unmistakable glamour of Gyaru style | Photo by Netta Meisles")
+![A Gyaru makeover by PPGALCLUB at Shibuya Scramble, featuring bold makeup and the unmistakable glamour of Gyaru style](/images/articles/japanese-street-fashion-a-guide-to-lolita-decora-jirai-kei-gyaru/shibuya-edited-78.jpg "A Gyaru makeover by @PPGALCLUB at Shibuya Scramble, featuring bold makeup and the unmistakable glamour of Gyaru style | Photo by Netta Meisles")
