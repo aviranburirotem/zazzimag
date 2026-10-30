@@ -2,7 +2,7 @@
 title: Exploring Shimokitazawa: Shopping, Food & More
 dek: Discover Shimokitazawa, Tokyo, through its second-hand treasures, designer kimonos, independent boutiques and creative food scene.
 date: 2026-10-29
-category: Guide
+category: [Guide, Vintage, Food]
 cover: /images/articles/shimokitazawa-tokyo-guide/cover-shimokitazawa-2-2.jpg
 coverPosition: 0% 100%
 heroPosition: 50% 58%

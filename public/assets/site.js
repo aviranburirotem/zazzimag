@@ -120,7 +120,7 @@
       const cat = chip.dataset.filter;
       document.querySelectorAll("[data-filter]").forEach((c) => c.setAttribute("aria-pressed", String(c === chip)));
       let n = 0;
-      document.querySelectorAll("[data-cat]").forEach((el) => { el.hidden = !(cat === "All" || el.dataset.cat === cat); if (!el.hidden) n++; });
+      document.querySelectorAll("[data-cat]").forEach((el) => { el.hidden = !(cat === "All" || el.dataset.cat.split("|").includes(cat)); if (!el.hidden) n++; });
       const live = document.getElementById("filter-status");
       if (live) live.textContent = `Showing ${n} ${n === 1 ? "story" : "stories"}${cat === "All" ? "" : " in " + cat}`;
     }

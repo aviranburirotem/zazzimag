@@ -56,7 +56,9 @@ const articles = fs.readdirSync(dir).filter((f) => f.endsWith(".md")).map((file)
   const { data, body } = frontmatter(fs.readFileSync(path.join(dir, file), "utf8"));
   const slug = data.slug || file.replace(/\.md$/, "");
   const words = body.split(/\s+/).length;
-  return { ...data, slug, html: markdown(body), readTime: `${Math.max(1, Math.round(words / 220))} min`, url: `/articles/${slug}/` };
+  // one or several categories: "category: Guide" or "category: [Guide, Street Style]"
+  const categories = [...new Set((Array.isArray(data.category) ? data.category : String(data.category || "").split(",")).map((c) => String(c).trim()).filter(Boolean))];
+  return { ...data, categories, category: categories[0] || "", slug, html: markdown(body), readTime: `${Math.max(1, Math.round(words / 220))} min`, url: `/articles/${slug}/` };
 }).filter((a) => a.draft !== true).sort((a, b) => (a.date < b.date ? 1 : -1));
 
 for (const a of articles) {
@@ -76,7 +78,7 @@ const issues = (fs.existsSync(idir) ? fs.readdirSync(idir) : []).filter((f) => f
   return {
     ...d, kind: "issue", slug, pages, url: `/issues/${slug}/`,
     cover: pages[0]?.image || "", coverAlt: pages[0]?.alt || d.title,
-    category: T("issues.category"), readTime: T("issues.pages").replace(/\{n\}/g, pages.length),
+    category: T("issues.category"), categories: [T("issues.category")], readTime: T("issues.pages").replace(/\{n\}/g, pages.length),
   };
 }).filter((i) => i.draft !== true && i.title && i.date && i.pages.length).sort((a, b) => (a.date < b.date ? 1 : -1));
 
@@ -156,12 +158,13 @@ ${body}
 // Where the cover is centred when it's cropped (set in the console: "Position on the home page")
 // coverPosition = home tiles, heroPosition = top of the article (each set separately in the console)
 const coverPos = (a, key = "coverPosition") => (/^\d{1,3}(\.\d+)?% \d{1,3}(\.\d+)?%$/.test(String(a[key] || "").trim()) ? ` style="object-position:${String(a[key]).trim()}"` : "");
-const artTile = (a, feat = false) => a.kind === "issue" ? issueTile(a, feat) : `<a class="tile art${feat ? " feat" : ""}" href="${a.url}" data-cat="${esc(a.category)}">
-  <div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"${coverPos(a)}></div>
+const catAttr = (a) => esc((a.categories || [a.category]).join("|")); // for the category filters
+const artTile = (a, feat = false) => a.kind === "issue" ? issueTile(a, feat) : `<a class="tile art${feat ? " feat" : ""}" href="${a.url}" data-cat="${catAttr(a)}">
+  <div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"${coverPos(a)}>${a.categories.length ? `<span class="badges">${a.categories.map((c) => `<span class="badge a">${esc(c)}</span>`).join("")}</span>` : ""}</div>
   <span class="label">${fmtDate(a.date)} · ${a.readTime} read</span><h3>${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap">${esc(a.dek)}</p>` : ""}</a>`;
 // Issues look like a printed magazine: the cover sits on a little stack of pages.
 // Clicking opens the flip-through popup (flipbook.js); the link still works on its own.
-const issueTile = (a, feat = false) => `<a class="tile art issue${feat ? " feat" : ""}" href="${a.url}" data-issue="${esc(a.slug)}" data-cat="${esc(a.category)}">
+const issueTile = (a, feat = false) => `<a class="tile art issue${feat ? " feat" : ""}" href="${a.url}" data-issue="${esc(a.slug)}" data-cat="${catAttr(a)}">
   <div class="ph"><div class="mag"${(() => { const d = a.cover && a.cover.startsWith("/") && imgDims(a.cover); return d ? ` style="aspect-ratio:${d.w}/${d.h}"` : ""; })()}><img src="${esc(fbPage({ image: a.cover }).imageM || a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"></div></div>
   <span class="label issue-label">${icon("book-open")}${tx("issues.category")} · ${esc(a.readTime)}</span><h3>${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap">${esc(a.dek)}</p>` : ""}</a>`;
 const igSlot = () => `<div class="tile ig ig-slot" aria-hidden="true"><div class="ph"></div></div>`;
@@ -212,7 +215,7 @@ function home() {
 
 function articlesIndex() {
   const ALL = T("articles.allFilter");
-  const cats = [ALL, ...new Set(stories.map((a) => a.category))];
+  const cats = [ALL, ...new Set(stories.flatMap((a) => a.categories || [a.category]))];
   return layout({
     title: T("articles.heading"), active: "articles", pathname: "/articles/",
     description: "All Zazzi stories: street style, trends, guides and interviews.",
@@ -230,7 +233,7 @@ function articlePage(a) {
     title: a.title, description: a.dek, active: "articles", pathname: a.url, image: a.cover, type: "article",
     body: `<article>
     <header class="wrap"><div class="article-head">
-      <div class="crumbs label"><a href="/articles/">Articles</a><span>/</span><span>${esc(a.category)}</span></div>
+      <div class="crumbs label"><a href="/articles/">Articles</a><span>/</span><span>${a.categories.map(esc).join(" · ")}</span></div>
       <h1>${esc(a.title)}</h1>${a.dek ? `<p class="dek">${esc(a.dek)}</p>` : ""}
       <div class="meta label"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${a.readTime} read</span>${byline ? `<span>${tx("articles.byline")} ${esc(byline)}</span>` : ""}</div></div></header>
     <figure class="wrap hero${a.heroShape === "vertical" ? " vertical" : ""}"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}"${coverPos(a, "heroPosition")}></div>${a.coverCaption ? `<figcaption>${esc(a.coverCaption)}</figcaption>` : ""}</figure>

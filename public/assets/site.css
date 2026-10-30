@@ -421,3 +421,7 @@ article{padding-bottom:72px}
 /* article top photo: vertical (portrait) option, set per article in the console */
 .hero.vertical{max-width:620px}
 .hero.vertical .ph{aspect-ratio:4/5}
+
+/* category labels on article tiles (one or several) */
+.badges{position:absolute;top:8px;left:8px;right:8px;display:flex;flex-wrap:wrap;gap:4px;pointer-events:none}
+.badges .badge{position:static}
