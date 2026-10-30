@@ -79,7 +79,7 @@
         cap.style.paddingRight = `${(right * 100).toFixed(2)}%`;
       } catch {}
     };
-    pic.src = "/api/ig-img/?u=" + encodeURIComponent(src);
+    pic.src = src.startsWith("/") ? src : "/api/ig-img/?u=" + encodeURIComponent(src);
   }
 
   function render() {

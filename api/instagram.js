@@ -1,6 +1,6 @@
 // GET /api/instagram → latest @zazzimag posts as JSON, minus any posts hidden in the console.
 // Cached on Vercel's CDN for 1 minute (so caption edits on Instagram show up quickly) (keeps well inside Instagram's 200 requests/hour limit).
-import { getToken, getHiddenPosts } from "../lib/token.js";
+import { getToken, getHiddenPosts, getJSON } from "../lib/token.js";
 
 const API = "https://graph.instagram.com/v26.0";
 const FIELDS = "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp";
@@ -37,7 +37,9 @@ export default async function handler(req, res) {
     const hidden = new Set(await getHiddenPosts());
     // ask for extra posts so hidden ones don't leave gaps
     const all = await fetchPosts(token, Math.min(limit + hidden.size, 50));
-    const posts = all.filter((p) => !hidden.has(p.id)).slice(0, limit);
+    // covers replaced in the console (Instagram tab) are shown instead of Instagram's own picture
+    const covers = (await getJSON("ig_covers", {})) || {};
+    const posts = all.filter((p) => !hidden.has(p.id)).slice(0, limit).map((p) => (covers[p.id] ? { ...p, image: covers[p.id], customCover: true } : p));
     res.setHeader("Cache-Control", "public, max-age=0, must-revalidate, s-maxage=60, stale-while-revalidate=120");
     res.status(200).json({ username: "zazzimag", posts });
   } catch (err) {

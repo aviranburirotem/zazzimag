@@ -257,6 +257,7 @@
 .cat-chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip-b{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 12px;font:600 12px/1 Archivo,system-ui,sans-serif;cursor:pointer}
 .chip-b[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.ig-cover-b{display:flex;flex-wrap:wrap;gap:6px}
 /* Video tab */
 .vid-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px}
 .vid-box{display:flex;flex-direction:column;gap:12px;padding:18px}
@@ -980,8 +981,8 @@ async function renderInsta(flash = "") {
     } catch (err) { if (err.message !== "auth") { st.className = "status err"; st.textContent = err.message; } }
   };
   try {
-    const { posts, hidden } = await api("igPosts");
-    insta = { posts, hidden: new Set(hidden) };
+    const { posts, hidden, covers } = await api("igPosts");
+    insta = { posts, hidden: new Set(hidden), covers: covers || {}, previews: new Map() };
     drawInsta();
   } catch (err) { if (err.message !== "auth") document.getElementById("ig").innerHTML = `<div class="panel empty status err">${esc(err.message)}</div>`; }
 }
@@ -992,12 +993,38 @@ function drawInsta() {
     const date = p.date ? new Date(p.date).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "";
     return `<label class="ig-item${off ? " is-hidden" : ""}" for="ig-${p.id}">
       <input type="checkbox" id="ig-${p.id}" data-ig="${p.id}" ${off ? "" : "checked"} aria-label="Show this post on the website">
-      <img src="${esc(p.image)}" alt="" loading="lazy">
+      <img src="${esc(insta.previews.get(p.id) || insta.covers[p.id] || p.image)}" alt="" loading="lazy">
       <span class="cap">${esc((p.caption || "").split("\n")[0] || "(no caption)")}</span>
-      <span class="row2"><span class="label">${esc(date)}</span><span class="pill ${off ? "draft" : "live"}">${off ? "Hidden" : "Shown"}</span></span>
+      <span class="row2"><span class="label">${p.type === "VIDEO" ? "Reel · " : ""}${esc(date)}</span><span class="pill ${off ? "draft" : "live"}">${off ? "Hidden" : "Shown"}</span></span>
+      <span class="ig-cover-b"><button type="button" class="b sm" data-cover="${p.id}">${icon("image-plus")}<span>${insta.covers[p.id] ? "Change cover" : "Replace cover"}</span></button>${insta.covers[p.id] ? `<button type="button" class="b sm" data-uncover="${p.id}">${icon("rotate-ccw")}<span>Instagram's cover</span></button>` : ""}</span>
     </label>`;
   }).join("") || `<div class="panel empty">No posts found.</div>`;
   box.insertAdjacentHTML("afterend", document.getElementById("ig-bar") ? "" : `<div class="texts-bar" id="ig-bar" style="max-width:1100px"><button class="b primary" type="button" data-act="ig-save">${icon("save")}<span>Save</span></button><span class="status" id="st"></span></div>`);
+  // replace the picture the site shows for a post (Instagram keeps its own)
+  let file = document.getElementById("ig-cover-file");
+  if (!file) { file = Object.assign(document.createElement("input"), { type: "file", accept: "image/*", hidden: true, id: "ig-cover-file" }); box.after(file); }
+  box.onclick = async (e) => {
+    const set = e.target.closest("[data-cover]"), clr = e.target.closest("[data-uncover]");
+    if (!set && !clr) return;
+    e.preventDefault(); // don't tick the show/hide box
+    if (set) {
+      file.onchange = async () => {
+        const f = file.files[0]; file.value = ""; if (!f) return;
+        const id = set.dataset.cover; status("Uploading the cover…");
+        try {
+          const data = await resize(f, 1440);
+          const r = await api("igSetCover", { method: "POST", body: { id, data } });
+          insta.covers = r.covers; insta.previews.set(id, data); drawInsta();
+          status("Cover replaced. The site shows it in about a minute.", "ok");
+        } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+      };
+      file.click();
+    } else {
+      const id = clr.dataset.uncover; status("Saving…");
+      try { const r = await api("igClearCover", { method: "POST", body: { id } }); insta.covers = r.covers; insta.previews.delete(id); drawInsta(); status("Back to Instagram's cover. The site updates in about a minute.", "ok"); }
+      catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+    }
+  };
   box.onchange = (e) => {
     const id = e.target.dataset.ig; if (!id) return;
     if (e.target.checked) insta.hidden.delete(id); else insta.hidden.add(id);

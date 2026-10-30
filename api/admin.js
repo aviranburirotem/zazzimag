@@ -259,8 +259,28 @@ export default async function handler(req, res) {
     if (action === "igPosts") {
       const token = await getToken();
       if (!token) return fail(503, "Instagram isn't connected (IG_ACCESS_TOKEN is missing in Vercel).");
-      const [posts, hidden] = await Promise.all([fetchPosts(token, 50), getHiddenPosts()]);
-      return res.json({ posts, hidden });
+      const [posts, hidden, covers] = await Promise.all([fetchPosts(token, 50), getHiddenPosts(), getJSON("ig_covers", {})]);
+      return res.json({ posts, hidden, covers: covers || {} });
+    }
+    // a post's picture on the site, replaced by your own (e.g. a reel whose new cover Instagram doesn't pass on)
+    if ((action === "igSetCover" || action === "igClearCover") && req.method === "POST") {
+      if (!hasStore()) return fail(500, "Storage (Upstash Redis) isn't connected in Vercel.");
+      const id = String(body.id || "");
+      if (!/^[0-9_]{1,40}$/.test(id)) return fail(400, "Invalid post.");
+      const covers = (await getJSON("ig_covers", {})) || {};
+      const entries = [];
+      if (covers[id]) entries.push({ path: `public${covers[id]}`, remove: true });
+      if (action === "igSetCover") {
+        const data = String(body.data || "").replace(/^data:image\/jpeg;base64,/, "");
+        if (!data || data.length > 4_000_000) return fail(400, "That picture couldn't be used. Try a smaller one.");
+        const blob = await gh(repo("/git/blobs"), { method: "POST", body: { content: data, encoding: "base64" } });
+        const url = `/ig-covers/${id}-${Date.now().toString(36)}.jpg`;
+        entries.push({ path: `public${url}`, sha: blob.sha });
+        covers[id] = url;
+      } else delete covers[id];
+      if (entries.length) await commit(entries, action === "igSetCover" ? "Instagram: custom cover for a post" : "Instagram: back to Instagram's cover");
+      await setJSON("ig_covers", covers);
+      return res.json({ ok: true, covers });
     }
     if (action === "saveIgHidden" && req.method === "POST") {
       if (!hasStore()) return fail(500, "Storage (Upstash Redis) isn't connected in Vercel, so hidden posts can't be saved.");
