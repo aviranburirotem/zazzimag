@@ -1,6 +1,6 @@
 ---
-title: Harajuku Street Fashion: A Guide to Lolita and Decora
-dek: Discover Harajuku fashion, from Lolita to Decora, and the best spots to explore these styles.
+title: Japanese Street Fashion: A Guide to Lolita, Decora, Jirai Kei & Gyaru
+dek: Discover Japanese street fashion through four distinctive styles, with a guide to the Tokyo shops and destinations where you can explore them.
 date: 2026-10-26
 category: Guide
 cover: /images/articles/harajuku-street-fashion-a-guide-to-lolita-and-decora/cover-enhanced-24-2.jpg
@@ -38,3 +38,27 @@ Emerging in the late 1990s, Decora is known for hyper-saturated colors, layered 
 
 
 ![The 6%DOKIDOKI storefront in Harajuku, Tokyo, known for its colorful Decora fashion and accessories.](/images/articles/harajuku-street-fashion-a-guide-to-lolita-and-decora/pxl-20240605-075211436-enhanced-sr-1.jpg "The 6%DOKIDOKI storefront in Harajuku, Tokyo | Photo by Netta Meisles")
+
+
+
+## Jirai Kei Fashion: Sweetness with an Edge
+
+
+
+Jirai Kei is a contemporary Japanese fashion style that combines feminine details with a distinctive mix of sweetness and darker elements. Black and pink are common colors, but the style also appears in softer pastel palettes. Frills, lace, ribbons, bows, platform shoes and doll-like makeup are among its recognizable features.
+
+Where to explore: Shibuya 109 is a good place to look for Jirai Kei-inspired fashion. The shopping mall includes brands such as MA*RS and LIZ LISA, which offer styles associated with this feminine, detail-rich aesthetic.
+
+![Two Girls in Pastel Jirai Kei on the Streets of Shibuya](/images/articles/harajuku-street-fashion-a-guide-to-lolita-and-decora/shibuya-2-21-2.jpg "A sweet mix of pastel colours, playful details and Jirai Kei fashion, spotted on the streets of Shibuya | Photo by Netta Meisles")
+
+
+## Gyaru Fashion: Bold Glamour & Individuality
+
+
+Gyaru is a Japanese fashion subculture that emerged in the 1990s, known for its glamorous, expressive approach to personal style. Bold makeup, dramatic lashes, styled hair, statement nails and eye-catching outfits are among its signature elements. Over the years, Gyaru has evolved into a variety of styles, each with its own take on glamour and self-expression.
+
+Where to explore: Shibuya 109 is closely associated with Gyaru culture and remains an important destination for Japanese youth fashion. For a more immersive experience, @ppgalclub in Shibuya offers Gyaru makeovers and photoshoots, giving visitors the chance to experience the style firsthand.
+
+
+
+![A Gyaru makeover by PPGALCLUB at Shibuya Scramble, featuring bold makeup and the unmistakable glamour of Gyaru style](/images/articles/harajuku-street-fashion-a-guide-to-lolita-and-decora/shibuya-edited-78.jpg "A Gyaru makeover by PPGALCLUB at Shibuya Scramble, featuring bold makeup and the unmistakable glamour of Gyaru style | Photo by Netta Meisles")
