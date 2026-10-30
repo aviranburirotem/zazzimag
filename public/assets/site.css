@@ -487,3 +487,16 @@ html.a11y-still .car-track{scroll-behavior:auto}
 .carousel .section-h{align-items:center}
 .carousel.car-off .car-btn{display:none}
 @media (max-width:760px){.car-ctl .label{display:none}.car-btn{width:32px;height:32px}.carousel .section-h h2{white-space:nowrap}}
+/* lava lamp inside the home headline letters (public/assets/lava.js) */
+.lava{position:relative}
+.lava canvas{position:absolute;inset:-12px -24px;width:calc(100% + 48px);height:calc(100% + 24px);pointer-events:none;display:none}
+.lava.on canvas{display:block}
+.lava.on h1{color:transparent}
+.lava h1{padding-right:40px}
+.lava-pause{position:absolute;right:0;bottom:4px;display:none;width:30px;height:30px;place-items:center;padding:0;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--fg);cursor:pointer;opacity:.7}
+.lava.on .lava-pause{display:grid}
+.lava-pause:hover,.lava-pause:focus-visible{opacity:1}
+.lava-pause:focus-visible{outline:3px solid #2b6cff;outline-offset:2px}
+.lava-pause svg{width:13px;height:13px}
+.lava-pause .i-play,.lava-pause[aria-pressed="true"] .i-pause{display:none}
+.lava-pause[aria-pressed="true"] .i-play{display:inline-grid}

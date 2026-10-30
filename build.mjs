@@ -25,7 +25,7 @@ const IG_URL = `https://www.instagram.com/${SITE.handle}/`;
 const OUT = "dist";
 import crypto from "node:crypto";
 // Version stamp for CSS/JS so browsers always load the latest files after a deploy
-const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.css")).update(fs.readFileSync("public/assets/site.js")).update(fs.readFileSync("public/assets/flipbook.js")).update(fs.readFileSync("public/assets/logo-animated.mp4")).update(fs.readFileSync("public/assets/logo-animated-dark.mp4")).digest("hex").slice(0, 8);
+const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.css")).update(fs.readFileSync("public/assets/site.js")).update(fs.readFileSync("public/assets/flipbook.js")).update(fs.readFileSync("public/assets/lava.js")).update(fs.readFileSync("public/assets/logo-animated.mp4")).update(fs.readFileSync("public/assets/logo-animated-dark.mp4")).digest("hex").slice(0, 8);
 
 // Footer video. The console can replace it (content/video/footer.json lists the uploaded parts,
 // which are joined back into files at build time). Without an upload, the original video is used.
@@ -150,7 +150,7 @@ ${body}
 </div>
 <template id="fb-icons"><span class="x">${icon("x")}</span><span class="l">${icon("chevron-left")}</span><span class="r">${icon("chevron-right")}</span><span class="zi">${icon("zoom-in")}</span><span class="zo">${icon("zoom-out")}</span></template>
 <script src="/assets/site.js?v=${V}" defer></script>
-<script src="/assets/flipbook.js?v=${V}" defer></script>${consentTag}${scripts.join("")}
+<script src="/assets/flipbook.js?v=${V}" defer></script>${active === "home" && on("show.lava") ? `\n<script src="/assets/lava.js?v=${V}" defer></script>` : ""}${consentTag}${scripts.join("")}
 </body>
 </html>`;
 }
@@ -224,7 +224,8 @@ function home() {
     body: `<section class="wrap intro">
       ${on("show.lightSwitch") ? `<button class="lightswitch" type="button" id="light-switch" aria-pressed="false" aria-label="Turn off the light" data-tip="Turn off the light"><span class="plate"><span class="screw"></span><span class="slot"><span class="lever"></span></span><span class="screw"></span></span></button>` : ""}
       <div>
-      <h1>${br("home.headline")}</h1>
+      ${on("show.lava") ? `<div class="lava" data-lava><canvas aria-hidden="true"></canvas><h1>${br("home.headline")}</h1>
+        <button class="lava-pause" type="button" data-lava-pause aria-label="Pause the animation" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></div>` : `<h1>${br("home.headline")}</h1>`}
       ${md("home.intro")}</div>
       ${on("show.igButton") ? `<a class="handle" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}${icon("arrow-up-right")}</a>` : ""}</section>
     <div class="home-sections">${grid}</div>
