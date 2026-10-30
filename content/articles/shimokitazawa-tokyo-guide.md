@@ -10,7 +10,6 @@ coverAlt: The American Joe second-hand and vintage clothing store in Shimokitaza
 coverCaption: Hunting for treasures at American Joe, a vintage clothing store in Shimokitazawa | Photo by Netta Meisles
 author: netta meisles
 cropOriginals: {"sihmokita-article-14-2-crop-4.jpg":"/images/articles/shimokitazawa-tokyo-guide/sihmokita-article-14-2.jpg"}
-draft: true
 ---
 Just seven minutes from Shinjuku by train, Shimokitazawa, affectionately known as Shimokita, is a neighbourhood shaped by vintage fashion, live music and independent culture. Its narrow streets weave between second-hand shops, intimate theatres, cafés and creative spaces, making it a favourite for vintage lovers and street-style enthusiasts.
 
