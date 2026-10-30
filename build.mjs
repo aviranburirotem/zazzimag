@@ -462,7 +462,7 @@ function privacy() {
       <h2>Content from other services</h2>
       <p>Some parts of the site load content directly from other companies, which means your browser connects to them and they receive your IP address:</p>
       <ul>
-        <li><strong>Instagram (Meta):</strong> the photos in our feed and links to our Instagram account.</li>
+        <li><strong>Instagram (Meta):</strong> the photos in our feed and links to our Instagram account. Some articles include Instagram posts; these load from Instagram only when you choose "Show it here", or straight away if you accepted cookies, and Instagram may then set its own cookies.</li>
         <li><strong>Google Fonts:</strong> the typefaces used on the site.</li>
         <li><strong>Wikimedia Commons</strong> and other image hosts: some photos in articles.</li>
       </ul>

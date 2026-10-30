@@ -17,6 +17,24 @@
   // Respect reduced-motion for the animated logo
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.querySelectorAll("video.logo-vid").forEach((v) => { v.removeAttribute("autoplay"); v.pause(); });
 
+  // ---- Instagram posts embedded in articles ----
+  // A card first; the real post loads when the reader asks (or right away if they accepted cookies),
+  // because it comes from Instagram (Meta) and may set its cookies.
+  const embeds = [...document.querySelectorAll("[data-ig-embed]")];
+  function loadEmbeds() {
+    embeds.forEach((fig) => {
+      if (fig.dataset.loaded) return; fig.dataset.loaded = "1";
+      fig.innerHTML = `<blockquote class="instagram-media" data-instgrm-permalink="${esc(fig.dataset.igEmbed)}?utm_source=ig_embed" data-instgrm-version="14" data-instgrm-captioned><a href="${esc(fig.dataset.igEmbed)}" target="_blank" rel="noopener">View this post on Instagram</a></blockquote>`;
+    });
+    if (window.instgrm) window.instgrm.Embeds.process();
+    else if (!document.getElementById("ig-embed-js")) document.head.append(Object.assign(document.createElement("script"), { id: "ig-embed-js", async: true, src: "https://www.instagram.com/embed.js" }));
+  }
+  if (embeds.length) {
+    let consent = null; try { consent = localStorage.getItem("zz-consent"); } catch {}
+    if (consent === "yes") loadEmbeds();
+    document.addEventListener("click", (e) => { if (e.target.closest("[data-ig-load]")) loadEmbeds(); });
+  }
+
   // ---- issues and Instagram posts: a random hover colour each time ----
   let lastHov = -1;
   document.addEventListener("pointerover", (e) => {

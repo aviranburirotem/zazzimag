@@ -435,3 +435,13 @@ html.a11y-contrast .tile.issue:hover h3,html.a11y-contrast .tile.ig:hover .ig-te
 .tile.issue .ph{aspect-ratio:4/5;padding:0;display:block;position:relative}
 .tile.issue .mag{position:absolute;top:0;left:0;width:auto;height:calc(100% - 10px);max-width:calc(100% - 10px)}
 .tile.issue.feat .ph{aspect-ratio:4/5}
+
+/* Instagram posts embedded in articles */
+.ig-embed,.body .ig-embed{margin:2em auto;max-width:540px}
+.ig-embed-card{display:grid;justify-items:center;gap:10px;text-align:center;padding:28px 20px;border:1px solid var(--line);border-radius:8px;background:var(--soft)}
+.ig-embed-card .ic{width:30px;height:30px}
+.ig-embed-card small{color:var(--muted);font-size:12px}
+.ig-embed-card{font-family:var(--display)}
+.ig-embed-card .btn{justify-self:center;font-family:var(--display);cursor:pointer}
+.body .ig-embed-card a.label{color:var(--fg)}
+.ig-embed .instagram-media{margin:0 auto!important;min-width:0!important;width:100%!important}

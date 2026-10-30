@@ -433,6 +433,7 @@ function renderEditor() {
           <button type="button" data-md="link" title="Link">${icon("link")}</button>
           <button type="button" data-md="quote" title="Quote">${icon("quote")}</button>
           <button type="button" data-md="list" title="List">${icon("list")}</button>
+          <button type="button" data-md="instagram" title="Embed an Instagram post or reel">${icon("instagram")}</button>
           <span class="sep"></span>
           <button type="button" class="wide" id="photo-btn" title="Insert photos">${icon("image-plus")}Add photos</button>
         </div>
@@ -505,6 +506,14 @@ function renderEditor() {
     if (kind === "link") { before = "["; after = "](https://)"; text ||= "link text"; }
     if (kind === "h2") { before = "\n\n## "; after = "\n\n"; text ||= "Subheading"; }
     if (kind === "quote") { before = "\n\n> "; after = "\n\n"; text ||= "Quote"; }
+    if (kind === "instagram") {
+      const url = (window.prompt("Paste the link of the Instagram post or reel (from Instagram: ··· → Copy link)") || "").trim();
+      if (!url) return;
+      if (!/^https:\/\/(www\.)?instagram\.com\/([A-Za-z0-9._]+\/)?(p|reel|tv)\/[A-Za-z0-9_-]+/.test(url)) { status("That isn't a link to an Instagram post or reel.", "err"); return; }
+      body.setRangeText(`\n\n@[instagram](${url.split("?")[0]})\n\n`, s, e, "end"); body.focus(); preview();
+      status("Instagram post added. It shows in the article as a card readers can open.", "ok");
+      return;
+    }
     if (kind === "list") { text = (sel || "First item\nSecond item").split("\n").map((l) => `- ${l.replace(/^- /, "")}`).join("\n"); before = "\n\n"; after = "\n\n"; }
     body.setRangeText(before + text + after, s, e, "end");
     body.focus(); preview();
