@@ -6,7 +6,7 @@ category: Guide
 cover: /images/articles/shimokitazawa-tokyo-guide/cover-shimokitazawa-2-2.jpg
 coverPosition: 0% 100%
 heroPosition: 50% 58%
-coverAlt: The American Joe second-hand and vintage clothing store in Shimokitazawa, Tokyo
+coverAlt: Three Japanese girls smiling together in Shimokitazawa, Tokyo, a neighbourhood known for its vintage shops, independent boutiques and creative street culture
 coverCaption: Hunting for treasures at American Joe, a vintage clothing store in Shimokitazawa | Photo by Netta Meisles
 author: netta meisles
 cropOriginals: {"sihmokita-article-14-2-crop-4.jpg":"/images/articles/shimokitazawa-tokyo-guide/sihmokita-article-14-2.jpg"}
