@@ -4,11 +4,11 @@ dek: Japanese workwear is making its mark on contemporary street fashion, with o
 date: 2026-10-30
 category: Trends
 cover: /images/articles/japanese-workwear-from-traditional-uniforms-to-modern-street-fashion/cover-workwear-article3.jpg
-heroPosition: 50% 13%
 heroShape: vertical
 coverAlt: A construction worker in Tokyo wearing a full Japanese workwear outfit, featuring oversized Nikka-pokka trousers
 coverCaption: A Tokyo construction worker in authentic Japanese workwear, wearing Nikka-pokka trousers in a striking ombré look  | Photo by Netta Meisles
 author: Netta Meisle
+pinned: true
 ---
 Big, rounded legs. A sharp taper at the ankle. A silhouette that's hard to miss. **Nikka-pokka trousers**, also known as **Tobi pants**, have long been part of Japan's construction workwear wardrobe. These days, their oversized proportions are turning up in fashion collections and streetwear looks, giving everyday outfits a distinctly Japanese edge.
 
