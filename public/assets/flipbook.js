@@ -72,6 +72,24 @@
     // last position: on spreads, stop when the final page is showing (no empty spread at the end)
     const max = () => (mode === "double" ? Math.floor(pages.length / 2) : total() - 1);
 
+    // the book takes the shape of the pages (from the first page), so pages fill it edge to edge
+    const first = pages.find((p) => p.w && p.h);
+    if (first) root.style.setProperty("--pr", (first.w / first.h).toFixed(4));
+    // a page with a different shape is shown whole, and the leftover edge takes the photo's own main colour
+    book.addEventListener("load", (e) => {
+      const img = e.target; if (img.tagName !== "IMG" || img.dataset.tinted) return;
+      img.dataset.tinted = "1";
+      const r = img.naturalWidth / img.naturalHeight, want = first ? first.w / first.h : r;
+      if (Math.abs(r - want) < 0.01) return; // same shape: fills the page, nothing to colour
+      try {
+        const c = document.createElement("canvas"); c.width = c.height = 12;
+        const x = c.getContext("2d"); x.drawImage(img, 0, 0, 12, 12);
+        const d = x.getImageData(0, 0, 12, 12).data; let R = 0, G = 0, B = 0;
+        for (let i = 0; i < d.length; i += 4) { R += d[i]; G += d[i + 1]; B += d[i + 2]; }
+        const n = d.length / 4; img.parentElement.style.background = `rgb(${R / n | 0},${G / n | 0},${B / n | 0})`;
+      } catch {}
+    }, true);
+
     function build() {
       // keep the reader on the same page when switching between phone and computer layouts
       const page = mode === "double" ? Math.max(0, flipped * 2 - 1) : flipped;

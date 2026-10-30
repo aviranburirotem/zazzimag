@@ -313,8 +313,8 @@ html.a11y-still .lightswitch.flick .plate{animation:none}
 .fb-stage{width:100%;display:flex;justify-content:center;overflow:hidden;padding:10px 0 18px}
 /* page shape 3:4 like a magazine; spreads are 3:2 */
 .fb-book{position:relative;perspective:2600px;transition:transform .6s cubic-bezier(.645,.045,.355,1);touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:pointer}
-.fb-double .fb-book{width:min(100%,calc(72vh * 1.5),1100px);aspect-ratio:3/2}
-.fb-single .fb-book{width:min(100%,calc(74vh * .75),520px);aspect-ratio:3/4}
+.fb-double .fb-book{width:min(100%,calc(72vh * 2 * var(--pr,.75)),1100px);aspect-ratio:calc(2 * var(--pr,.75))}
+.fb-single .fb-book{width:min(100%,calc(74vh * var(--pr,.75)),520px);aspect-ratio:var(--pr,.75)}
 .fb-double .fb-book.at-start{transform:translateX(-25%)}
 .fb-double .fb-book.at-end{transform:translateX(25%)}
 .leaf{position:absolute;top:0;height:100%;transform-style:preserve-3d;transform-origin:left center;transition:transform .85s cubic-bezier(.645,.045,.355,1)}
@@ -374,8 +374,8 @@ html.fb-lock,html.fb-lock body{overflow:hidden}
 .fb-close:hover{background:rgba(255,255,255,.1)}
 .fb-close .ic{width:22px;height:22px}
 .flipbook.in-modal{padding:4px 0 0;gap:10px}
-.in-modal.fb-double .fb-book{width:min(100%,calc(70vh * 1.5),1100px)}
-.in-modal.fb-single .fb-book{width:min(100%,calc(66vh * .75),520px)}
+.in-modal.fb-double .fb-book{width:min(100%,calc(70vh * 2 * var(--pr,.75)),1100px)}
+.in-modal.fb-single .fb-book{width:min(100%,calc(66vh * var(--pr,.75)),520px)}
 .in-modal .fb-btn{background:transparent;border-color:rgba(255,255,255,.3);color:#fff}
 .in-modal .fb-btn:hover:not(:disabled){border-color:#fff}
 .in-modal .fb-caption{color:#c9cbd1}

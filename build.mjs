@@ -162,7 +162,7 @@ const artTile = (a, feat = false) => a.kind === "issue" ? issueTile(a, feat) : `
 // Issues look like a printed magazine: the cover sits on a little stack of pages.
 // Clicking opens the flip-through popup (flipbook.js); the link still works on its own.
 const issueTile = (a, feat = false) => `<a class="tile art issue${feat ? " feat" : ""}" href="${a.url}" data-issue="${esc(a.slug)}" data-cat="${esc(a.category)}">
-  <div class="ph"><div class="mag"><img src="${esc(fbPage({ image: a.cover }).imageM || a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"></div></div>
+  <div class="ph"><div class="mag"${(() => { const d = a.cover && a.cover.startsWith("/") && imgDims(a.cover); return d ? ` style="aspect-ratio:${d.w}/${d.h}"` : ""; })()}><img src="${esc(fbPage({ image: a.cover }).imageM || a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"></div></div>
   <span class="label issue-label">${icon("book-open")}${tx("issues.category")} · ${esc(a.readTime)}</span><h3>${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap">${esc(a.dek)}</p>` : ""}</a>`;
 const igSlot = () => `<div class="tile ig ig-slot" aria-hidden="true"><div class="ph"></div></div>`;
 
@@ -242,11 +242,32 @@ function articlePage(a) {
   });
 }
 
+// width and height of a JPEG or PNG on the site (read from the file header), or null
+const dimsCache = new Map();
+function imgDims(url) {
+  if (dimsCache.has(url)) return dimsCache.get(url);
+  let out = null;
+  try {
+    const b = fs.readFileSync(path.join("public", url));
+    if (b[0] === 0x89 && b[1] === 0x50) out = { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
+    else if (b[0] === 0xff && b[1] === 0xd8) {
+      for (let i = 2; i < b.length - 9;) {
+        if (b[i] !== 0xff) { i++; continue; }
+        const m = b[i + 1], len = b.readUInt16BE(i + 2);
+        if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) { out = { w: b.readUInt16BE(i + 7), h: b.readUInt16BE(i + 5) }; break; }
+        i += 2 + len;
+      }
+    }
+  } catch {}
+  dimsCache.set(url, out);
+  return out;
+}
 // an issue page for the flipbook, with its lighter phone copy (images/issues/<slug>/m/<file>) when there is one
 const fbPage = (p) => {
   const m = /^\/images\/issues\/([a-z0-9-]+)\/([^/]+)$/.exec(p.image);
   const light = m && fs.existsSync(`public/images/issues/${m[1]}/m/${m[2]}`) ? `/images/issues/${m[1]}/m/${m[2]}` : "";
-  return { image: p.image, ...(light ? { imageM: light } : {}), caption: p.caption || "", alt: p.alt || "" };
+  const d = p.image.startsWith("/") ? imgDims(p.image) : null;
+  return { image: p.image, ...(light ? { imageM: light } : {}), ...(d ? { w: d.w, h: d.h } : {}), caption: p.caption || "", alt: p.alt || "" };
 };
 function issuePage(i) {
   const data = JSON.stringify(i.pages.map(fbPage)).replace(/</g, "\\u003c");
