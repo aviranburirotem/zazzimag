@@ -9,10 +9,6 @@ coverAlt: shibuya 2 29
 author: Netta Meisle
 draft: true
 ---
-![workwear article4](/images/articles/japanese-workwear-from-traditional-uniforms-to-modern-street-fashion/workwear-article4.jpg "")
-
-# Japanese Workwear: From Traditional Uniforms to Modern Street Fashion
-
 Big, rounded legs. A sharp taper at the ankle. A silhouette that's hard to miss. **Nikka-pokka trousers**, also known as **Tobi pants**, have long been part of Japan's construction workwear wardrobe. These days, their oversized proportions are turning up in fashion collections and streetwear looks, giving everyday outfits a distinctly Japanese edge.
 
 
@@ -40,7 +36,7 @@ That silhouette feels right at home in today's oversized fashion landscape. Styl
 
 For those looking to bring Japanese workwear into their own wardrobe, **TORAICHI KANDA** in Tokyo's Kanda district is well worth a stop.
 
-![workwear article8](/images/articles/japanese-workwear-from-traditional-uniforms-to-modern-street-fashion/workwear-article8-2.jpg "")
+![The exterior storefront of TORAICHI KANDA in Tokyo](/images/articles/japanese-workwear-from-traditional-uniforms-to-modern-street-fashion/workwear-article8-2.jpg "TORAICHI KANDA, bringing a fresh fashion perspective to Japanese workwear | photo by Netta Meisle")
 
 
 
@@ -49,5 +45,5 @@ This local design brand gives classic workwear cuts a chic, contemporary twist, 
 
 
 
-![workwear article4 2](/images/articles/japanese-workwear-from-traditional-uniforms-to-modern-street-fashion/workwear-article4-2-2.jpg "")
-![workwear article4](/images/articles/japanese-workwear-from-traditional-uniforms-to-modern-street-fashion/workwear-article4-4.jpg "")
+![The interior of TORAICHI KANDA, showing workwear-inspired garments displayed in a modern industrial-style retail space](/images/articles/japanese-workwear-from-traditional-uniforms-to-modern-street-fashion/workwear-article4-2-2.jpg "Inside TORAICHI KANDA, where contemporary design meets Japanese workwear | photo by Netta Meisle")
+![Clothing on display inside TORAICHI KANDA, with modern industrial interiors, clean lines and a chic, minimalist design](/images/articles/japanese-workwear-from-traditional-uniforms-to-modern-street-fashion/workwear-article4-4.jpg "A closer look at TORAICHI KANDA's carefully designed retail space and clothing collection | photo by Netta Meisle")
