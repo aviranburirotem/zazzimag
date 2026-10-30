@@ -1,5 +1,5 @@
 // GET /api/instagram → latest @zazzimag posts as JSON, minus any posts hidden in the console.
-// Cached on Vercel's CDN for 2 minutes (keeps well inside Instagram's 200 requests/hour limit).
+// Cached on Vercel's CDN for 1 minute (so caption edits on Instagram show up quickly) (keeps well inside Instagram's 200 requests/hour limit).
 import { getToken, getHiddenPosts } from "../lib/token.js";
 
 const API = "https://graph.instagram.com/v26.0";
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     // ask for extra posts so hidden ones don't leave gaps
     const all = await fetchPosts(token, Math.min(limit + hidden.size, 50));
     const posts = all.filter((p) => !hidden.has(p.id)).slice(0, limit);
-    res.setHeader("Cache-Control", "public, max-age=0, must-revalidate, s-maxage=120, stale-while-revalidate=86400");
+    res.setHeader("Cache-Control", "public, max-age=0, must-revalidate, s-maxage=60, stale-while-revalidate=120");
     res.status(200).json({ username: "zazzimag", posts });
   } catch (err) {
     console.error("Instagram API error:", err.detail || err.message);

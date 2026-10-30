@@ -411,10 +411,17 @@ article{padding-bottom:72px}
 /* flipbook: pages far from the reader aren't drawn at all (keeps phones smooth) */
 .leaf.far{display:none}
 
-/* Instagram posts on the home page: same two lines as issues ("Post" label in red with the icon, then the caption) */
+/* Issues and Instagram posts share one look: a black label line with the icon, then black text at caption size.
+   On hover they light up in a colour picked at random (site.js sets --hov; all colours readable on the page) */
 .ig-cap{display:grid;gap:4px;text-align:left}
 .ig-label svg{width:14px;height:14px}
-.ig-text{color:var(--fg)}
+.tile.issue .issue-label,.ig-label{color:var(--fg);transition:color .15s}
+.tile.issue h3,.ig-text{font-size:13px;font-weight:400;font-stretch:100%;line-height:1.4;color:var(--fg);transition:color .15s}
+.tile.issue:hover .issue-label,.tile.issue:hover h3,.tile.issue:focus-visible h3,
+.tile.ig:hover .ig-label,.tile.ig:hover .ig-text,.tile.ig:focus-visible .ig-text{color:var(--hov,var(--accent))}
+:root{--hov-0:#d10010;--hov-1:#c2410c;--hov-2:#047857;--hov-3:#1d4ed8;--hov-4:#6d28d9;--hov-5:#be185d;--hov-6:#0f766e}
+html[data-theme="dark"]{--hov-0:#ff6b6b;--hov-1:#fb923c;--hov-2:#34d399;--hov-3:#60a5fa;--hov-4:#a78bfa;--hov-5:#f472b6;--hov-6:#2dd4bf}
+html.a11y-contrast .tile.issue:hover h3,html.a11y-contrast .tile.ig:hover .ig-text{color:var(--fg)}
 
 /* article top photo: vertical (portrait) option, set per article in the console */
 .hero.vertical{max-width:620px}

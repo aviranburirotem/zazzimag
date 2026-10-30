@@ -17,6 +17,15 @@
   // Respect reduced-motion for the animated logo
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.querySelectorAll("video.logo-vid").forEach((v) => { v.removeAttribute("autoplay"); v.pause(); });
 
+  // ---- issues and Instagram posts: a random hover colour each time ----
+  let lastHov = -1;
+  document.addEventListener("pointerover", (e) => {
+    const t = e.target.closest?.(".tile.issue, .tile.ig");
+    if (!t || t.contains(e.relatedTarget)) return;
+    let n; do { n = Math.floor(Math.random() * 7); } while (n === lastHov);
+    lastHov = n; t.style.setProperty("--hov", `var(--hov-${n})`);
+  });
+
   // ---- feed ----
   const slots = [...document.querySelectorAll(".ig-slot")];
   const strip = document.querySelector("[data-ig-strip]");
