@@ -16,9 +16,7 @@ Harajuku is known for its street fashion and independent boutiques. Its backstre
 
 
 
-
 ![Kinako Mochi wearing a detailed Lolita fashion outfit](/images/articles/japanese-street-fashion-a-guide-to-lolita-decora-jirai-kei-gyaru/july-1.jpg "Kinako Mochi wearing a Lolita outfit | Photo by Netta Meisles")
-
 
 
 
@@ -61,7 +59,9 @@ Where to explore: Shibuya 109 is a good place to look for Jirai Kei-inspired fas
 
 
 
-![Two Girls in Pastel Jirai Kei on the Streets of Shibuya](/images/articles/japanese-street-fashion-a-guide-to-lolita-decora-jirai-kei-gyaru/2c4a6752.jpg "A sweet mix of pastel colours, playful details and Jirai Kei fashion, spotted on the streets of Shibuya | Photo by Netta Meisles")
+
+![Two Girls in Pastel Jirai Kei on the Streets of Shibuya](/images/articles/japanese-street-fashion-a-guide-to-lolita-decora-jirai-kei-gyaru/sihmokita-article111.jpg "A sweet mix of pastel colours, playful details and Jirai Kei fashion, spotted on the streets of Shibuya | Photo by Netta Meisles")
+
 
 
 ## Gyaru Fashion: Bold Glamour & Individuality
