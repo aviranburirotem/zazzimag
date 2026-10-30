@@ -411,12 +411,12 @@ article{padding-bottom:72px}
 /* flipbook: pages far from the reader aren't drawn at all (keeps phones smooth) */
 .leaf.far{display:none}
 
-/* Issues and Instagram posts share one look: a black label line with the icon, then black text at caption size.
+/* Issues and Instagram posts share one look: a black label line with the icon, then black text at the issue headline size.
    On hover they light up in a colour picked at random (site.js sets --hov; all colours readable on the page) */
-.ig-cap{display:grid;gap:4px;text-align:left}
+.ig-cap{display:grid;gap:8px;text-align:left}
 .ig-label svg{width:14px;height:14px}
 .tile.issue .issue-label,.ig-label{color:var(--fg);transition:color .15s}
-.tile.issue h3,.ig-text{font-size:13px;font-weight:400;font-stretch:100%;line-height:1.4;color:var(--fg);transition:color .15s}
+.tile.issue h3,.ig-text{font-size:16px;font-weight:700;font-stretch:85%;line-height:1.15;color:var(--fg);transition:color .15s}
 .tile.issue:hover .issue-label,.tile.issue:hover h3,.tile.issue:focus-visible h3,
 .tile.ig:hover .ig-label,.tile.ig:hover .ig-text,.tile.ig:focus-visible .ig-text{color:var(--hov,var(--accent))}
 :root{--hov-0:#d10010;--hov-1:#c2410c;--hov-2:#047857;--hov-3:#1d4ed8;--hov-4:#6d28d9;--hov-5:#be185d;--hov-6:#0f766e}
