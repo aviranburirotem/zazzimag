@@ -878,13 +878,29 @@ function preview() {
   const pv = document.getElementById("pv"); if (!pv) return;
   const d = collect(), body = document.getElementById("body").value;
   const html = markdown(body || "*Start writing…*").replace(/src="(\/images\/articles\/[^"]+)"/g, (m, u) => `src="${imgUrl(u)}"`);
-  pv.innerHTML = `<div class="article-head"><div class="crumbs label"><span>Articles</span><span>/</span><span>${esc([].concat(d.category || []).join(" · ") || "Category")}</span></div>
+  // two parts: the top (title, cover) redraws freely; the article text only when it changed,
+  // so embedded Instagram posts don't reload on every keystroke elsewhere
+  if (!pv.querySelector("#pv-top")) pv.innerHTML = `<div id="pv-top"></div><div class="body" id="pv-body"></div>`;
+  const top = pv.querySelector("#pv-top"), bodyEl = pv.querySelector("#pv-body");
+  if (bodyEl.dataset.src !== html) {
+    const draw = () => { if (bodyEl.dataset.src === html) return; bodyEl.dataset.src = html; bodyEl.innerHTML = html; liveEmbeds(bodyEl); };
+    // with Instagram posts in the text, wait for a pause in typing before redrawing (each redraw reloads them)
+    clearTimeout(preview.t);
+    if (html.includes("data-ig-embed") && bodyEl.dataset.src) preview.t = setTimeout(draw, 800); else draw();
+  }
+  top.innerHTML = `<div class="article-head"><div class="crumbs label"><span>Articles</span><span>/</span><span>${esc([].concat(d.category || []).join(" · ") || "Category")}</span></div>
     <h1>${esc(d.title || "Your headline")}</h1>${d.dek ? `<p class="dek">${esc(d.dek)}</p>` : ""}
     <div class="meta label"><span>${esc(d.date)}</span>${d.author ? `<span>Written by ${esc(d.author)}</span>` : ""}</div></div>
     ${d.cover ? `<figure class="hero${d.heroShape === "vertical" ? " vertical" : ""}" data-sec="heroPosition"><div class="ph pos-frame pos-hero" data-key="heroPosition" title="Drag to reposition the article photo"><img src="${esc(imgUrl(d.cover))}" alt="" draggable="false" style="object-position:${posCss("heroPosition")}">
       <div class="pos-ui" role="group" aria-label="Article photo position"><button type="button" data-pos="up" aria-label="Move the photo up">${icon("chevron-up")}</button><button type="button" data-pos="down" aria-label="Move the photo down">${icon("chevron-down")}</button><button type="button" data-pos="left" aria-label="Move the photo left">${icon("chevron-left")}</button><button type="button" data-pos="right" aria-label="Move the photo right">${icon("chevron-right")}</button><button type="button" data-pos="center" class="txt">Center</button></div>
-      <span class="pos-hint">Drag to reposition · only the article</span></div>${d.coverCaption ? `<figcaption>${esc(d.coverCaption)}</figcaption>` : ""}</figure>` : ""}
-    <div class="body">${html}</div>`;
+      <span class="pos-hint">Drag to reposition · only the article</span></div>${d.coverCaption ? `<figcaption>${esc(d.coverCaption)}</figcaption>` : ""}</figure>` : ""}`;
+}
+// in the console preview, embedded Instagram posts load straight away, so you see exactly what readers get
+function liveEmbeds(root) {
+  const figs = root.querySelectorAll("[data-ig-embed]"); if (!figs.length) return;
+  figs.forEach((fig) => { fig.innerHTML = `<blockquote class="instagram-media" data-instgrm-permalink="${esc(fig.dataset.igEmbed)}?utm_source=ig_embed" data-instgrm-version="14" data-instgrm-captioned><a href="${esc(fig.dataset.igEmbed)}" target="_blank" rel="noopener">Loading the post from Instagram…</a></blockquote>`; });
+  if (window.instgrm) window.instgrm.Embeds.process();
+  else if (!document.getElementById("ig-embed-js")) document.head.append(Object.assign(document.createElement("script"), { id: "ig-embed-js", async: true, src: "https://www.instagram.com/embed.js" }));
 }
 
 async function save() {
