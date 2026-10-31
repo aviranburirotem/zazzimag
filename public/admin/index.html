@@ -200,6 +200,12 @@
   .row .meta-l{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   .pill{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:999px;border:1px solid var(--line)}
   .pill.live{background:#e7f6ec;border-color:#bfe5cb;color:#1d6b36}
+  .pub-btn{position:relative}
+  .pub-n{min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#fff;color:var(--accent);font:700 11px/18px var(--mono, monospace);text-align:center}
+  .pub-n.warn{background:#ffd34d;color:#222}
+  .pub-btn[aria-current]{outline:2px solid var(--fg);outline-offset:2px}
+  .pub-list{margin:8px 0 0;padding-left:18px;line-height:1.7;max-height:260px;overflow:auto}
+  .pill.err{background:#fde8e8;border-color:#f3b9b9;color:#9b1c1c}
   .pill.draft{background:#fff4e0;border-color:#f3d9a6;color:#8a5a00}
   .row-actions{display:flex;gap:6px}
   @media (max-width:640px){.row{grid-template-columns:52px minmax(0,1fr)}.row img,.row .noimg{width:52px;height:66px}.row-actions{grid-column:1/-1}}
@@ -402,7 +408,72 @@ async function api(action, { method = "GET", body, query = "" } = {}) {
   try { data = await r.json(); } catch {}
   if (r.status === 401 && action !== "login") { renderLogin("Your session ended. Please log in again."); throw new Error("auth"); }
   if (!r.ok) throw new Error(data.error || `Request failed (${r.status})`);
+  if (method === "POST" && !["login", "logout", "publish", "saveDeployHook"].includes(action)) pubSoon();
   return data;
+}
+
+// ---------- Publish: saves wait on GitHub until the Publish button puts them on the site ----------
+let pub = null, pubTimer = 0;
+function pubBadge() {
+  if (!pub) return `<span class="pub-n" hidden></span>`;
+  if (!pub.hook) return `<span class="pub-n warn" title="Publishing isn't set up yet">!</span>`;
+  const n = pub.waiting;
+  return n ? `<span class="pub-n" title="${n} saved change${n === 1 ? "" : "s"} waiting">${n > 99 ? "99+" : n}</span>` : `<span class="pub-n" hidden></span>`;
+}
+async function pubRefresh() {
+  try { pub = await api("publishStatus"); } catch { return; }
+  document.querySelectorAll(".pub-btn .pub-n").forEach((el) => { el.outerHTML = pubBadge(); });
+}
+function pubSoon() { clearTimeout(pubTimer); pubTimer = setTimeout(pubRefresh, 1500); }
+
+const ago = (iso) => { if (!iso) return ""; const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : new Date(iso).toLocaleString("en-GB", { timeZone: "Asia/Jerusalem", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); };
+let pubPoll = 0;
+async function renderPublish(flash = "", kind = "ok") {
+  tab = "publish"; clearTimeout(pubPoll);
+  app.innerHTML = topBar() + `<main class="wrap c"><div class="list-head"><div><span class="label">Publish</span><h1>Put your changes on the site</h1></div><p class="status ${kind}" id="flash">${esc(flash)}</p></div><div class="panel empty">Loading…</div></main>`;
+  try { pub = await api("publishStatus"); } catch (err) { if (err.message === "auth") return; app.querySelector(".panel").textContent = err.message; return; }
+  document.querySelectorAll(".pub-btn .pub-n").forEach((el) => { el.outerHTML = pubBadge(); });
+  const main = app.querySelector("main"), p = pub;
+  const stateTxt = !p.last ? "" : p.state === "success" ? `<span class="pill live">Live</span>`
+    : p.state === "pending" ? `<span class="pill draft">Building…</span>`
+    : p.state === "failure" || p.state === "error" ? `<span class="pill err">Didn't go through</span>`
+    : `<span class="pill draft">Started</span>`;
+  const building = p.last && (p.state === "pending" || (!p.state && Date.now() - new Date(p.last.at) < 6 * 60000));
+  main.innerHTML = `<div class="list-head"><div><span class="label">Publish</span><h1>Put your changes on the site</h1></div>
+      <p class="hint" style="max-width:56ch;margin:0">Everything you save in the console is kept safely, but it only appears on the site when you press <b>Publish</b>. Make all your edits, then publish once: each publish counts as one of Vercel's 100 free deployments a day. New photos for scheduled Instagram posts are published automatically, and hidden Instagram posts change right away.</p>
+      <p class="status ${kind}" id="flash">${esc(flash)}</p></div>
+    <div class="texts">
+    ${p.hook ? `<fieldset><legend>Publish</legend>
+      <p style="margin:0;font-size:17px">${p.waiting == null ? "Your saved changes are ready to publish." : p.waiting ? `<b>${p.waiting}</b> saved change${p.waiting === 1 ? "" : "s"} waiting to go on the site.` : "The site is up to date with everything you saved."}</p>
+      ${p.last ? `<p class="hint" style="margin:0">Last published ${esc(ago(p.last.at))}${p.last.reason === "queue photos" ? " (automatically, for new Instagram photos)" : ""} ${stateTxt}${p.note && p.state !== "success" ? ` · ${esc(p.note)}` : ""}</p>` : ""}
+      ${building ? `<p class="hint" style="margin:0">Publishing takes about 1–2 minutes. This page updates by itself.</p>` : ""}
+      <div><button class="b primary" type="button" id="pub-go">${icon("send")}<span>Publish now</span></button></div>
+      ${p.changes?.length ? `<details><summary class="hint">What's waiting</summary><ul class="hint pub-list">${p.changes.map((c) => `<li>${esc(c.msg)} <span class="label">${esc(ago(c.at))}</span></li>`).join("")}</ul></details>` : ""}
+    </fieldset>` : ""}
+    <fieldset><legend>${p.hook ? "Connection to Vercel" : "Set up publishing (one time)"}</legend>
+      ${p.hook ? `<p class="hint" style="margin:0"><span class="pill live">Connected</span> The Publish button is connected to Vercel. You can replace the link below if you ever make a new one.</p>`
+      : `<ol class="hint" style="margin:0;padding-left:18px;line-height:1.8">
+          <li>Open <a href="https://vercel.com/dashboard" target="_blank" rel="noopener">Vercel</a> and click the <b>zazzimag</b> project.</li>
+          <li>Go to <b>Settings → Git</b> and scroll down to <b>Deploy Hooks</b>.</li>
+          <li>Name it <b>Publish</b>, type <b>main</b> as the branch, and click <b>Create Hook</b>.</li>
+          <li>Copy the link it shows (it starts with <code>https://api.vercel.com/v1/integrations/deploy/</code>) and paste it here.</li>
+        </ol><p class="hint" style="margin:0">Keep this link private: anyone who has it can make the site republish.</p>`}
+      <div class="f"><label for="hook">${p.hook ? "Replace the Deploy Hook link" : "Deploy Hook link"}</label><input id="hook" type="password" autocomplete="off" placeholder="https://api.vercel.com/v1/integrations/deploy/…"></div>
+      <div><button class="b ${p.hook ? "" : "primary"}" type="button" id="hook-save">${icon("save")}<span>Save link</span></button></div>
+    </fieldset></div>`;
+  main.querySelector("#hook-save").onclick = async () => {
+    const url = main.querySelector("#hook").value.trim();
+    if (!url) return renderPublish("Paste the Deploy Hook link first.", "err");
+    try { await api("saveDeployHook", { method: "POST", body: { url } }); renderPublish("Saved. The Publish button is ready."); }
+    catch (err) { if (err.message !== "auth") renderPublish(err.message, "err"); }
+  };
+  const go = main.querySelector("#pub-go");
+  if (go) go.onclick = async () => {
+    go.disabled = true;
+    try { await api("publish", { method: "POST" }); renderPublish("Publishing… your changes will be on the site in about 1–2 minutes."); }
+    catch (err) { if (err.message !== "auth") renderPublish(err.message, "err"); }
+  };
+  if (building) pubPoll = setTimeout(() => { if (tab === "publish") renderPublish(document.getElementById("flash")?.textContent || "", kind); }, 20000);
 }
 
 let tab = "articles";
@@ -424,6 +495,7 @@ function topBar(extra = "") {
       <button type="button" data-act="tab-hebrew" ${tab === "hebrew" ? 'aria-current="page"' : ""}>${icon("pencil")}<span>עברית</span></button>
     </nav>
     <div class="c-actions">${extra}
+      <button class="b primary pub-btn" type="button" data-act="tab-publish" ${tab === "publish" ? 'aria-current="page"' : ""}>${icon("send")}<span>Publish</span>${pubBadge()}</button>
       <a class="b" href="/preview/" target="_blank" rel="noopener">${icon("eye")}<span>View site</span></a>
       <button class="b" type="button" data-act="logout">${icon("log-out")}<span>Log out</span></button>
     </div></div></header>`;
@@ -446,7 +518,7 @@ function renderLogin(msg = nextPage ? "Log in to see the full site preview." : "
     e.preventDefault();
     const m = document.getElementById("lmsg");
     m.hidden = true;
-    try { await api("login", { method: "POST", body: { password: document.getElementById("pw").value } }); if (!goNext()) renderList(); }
+    try { await api("login", { method: "POST", body: { password: document.getElementById("pw").value } }); if (!goNext()) { renderList(); pubRefresh(); } }
     catch (err) { if (err.message !== "auth") { m.textContent = err.message; m.hidden = false; } }
   };
 }
@@ -1055,7 +1127,7 @@ async function save() {
     const r = await api("save", { method: "POST", body: { slug: ed.slug, isNew: ed.isNew, content: compose(d, body), images: used, renameFrom } });
     for (const { name } of used) recent.set(`/images/articles/${ed.slug}/${name}`, ed.pending.get(name).preview);
     const trMsg = d.draft || r.translateOff ? "" : (r.translateErrors || []).length ? ` Some translations didn't work: ${r.translateErrors.join("; ")}` : (r.translated || []).length ? " Translations are updated too." : "";
-    renderList((d.draft ? `Saved "${d.title}" as a draft.` : `Saved "${d.title}". It will be live on the site in about a minute.`) + trMsg);
+    renderList((d.draft ? `Saved "${d.title}" as a draft.` : `Saved "${d.title}". Press Publish to put it on the site.`) + trMsg);
   } catch (err) { if (err.message !== "auth") { status(err.message, "err"); btn.disabled = false; } }
 }
 
@@ -1137,7 +1209,7 @@ async function saveStore() {
   try {
     await api("saveProducts", { method: "POST", body: { products: store.products, images: used } });
     for (const { name } of used) recent.set(`/images/store/${name}`, store.pending.get(name).preview);
-    renderStore("Store saved. The site will update in about a minute.");
+    renderStore("Store saved. Press Publish to put it on the site.");
   } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
 }
 
@@ -1146,7 +1218,7 @@ let insta = null; // { posts, hidden: Set }
 async function renderInsta(flash = "") {
   tab = "insta";
   app.innerHTML = topBar() + `<main class="wrap c"><div class="list-head"><div><span class="label">Instagram</span><h1>Feed posts</h1></div>
-    <p class="hint" style="max-width:48ch;margin:0">Click a post to hide it from the website (it stays on Instagram). Changes show on the site within about 2 minutes.</p></div>
+    <p class="hint" style="max-width:48ch;margin:0">Click a post to hide it from the website (it stays on Instagram). Changes show on the site within about 2 minutes (no Publish needed).</p></div>
     <section class="panel ig-conn" id="ig-conn"><span class="label">Connection</span> <span id="ig-conn-st" class="hint">Checking…</span>
       <details><summary>Replace the Instagram token</summary>
         <form id="ig-token-f" class="ig-token" autocomplete="off"><label for="ig-token">New token <span class="hint">from the Meta dashboard → Generate token. It's saved privately and renewed automatically.</span>
@@ -1203,13 +1275,13 @@ function drawInsta() {
           const data = await resize(f, 1440);
           const r = await api("igSetCover", { method: "POST", body: { id, data } });
           insta.covers = r.covers; insta.previews.set(id, data); drawInsta();
-          status("Cover replaced. The site shows it in about a minute.", "ok");
+          status("Cover replaced. Press Publish to put it on the site.", "ok");
         } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
       };
       file.click();
     } else {
       const id = clr.dataset.uncover; status("Saving…");
-      try { const r = await api("igClearCover", { method: "POST", body: { id } }); insta.covers = r.covers; insta.previews.delete(id); drawInsta(); status("Back to Instagram's cover. The site updates in about a minute.", "ok"); }
+      try { const r = await api("igClearCover", { method: "POST", body: { id } }); insta.covers = r.covers; insta.previews.delete(id); drawInsta(); status("Back to Instagram's cover. Press Publish to put it on the site.", "ok"); }
       catch (err) { if (err.message !== "auth") status(err.message, "err"); }
     }
   };
@@ -1266,7 +1338,7 @@ async function renderVideo(flash = "") {
       try {
         await api("saveSettings", { method: "POST", body: { values } });
         saved.show = { ...(saved.show || {}), videoStrip: values["show.videoStrip"] };
-        st.className = "status ok"; st.textContent = cb.checked ? "Shown. The site updates in about a minute." : "Hidden. The site updates in about a minute.";
+        st.className = "status ok"; st.textContent = cb.checked ? "Shown. Press Publish to put it on the site." : "Hidden. Press Publish to put it on the site.";
       } catch (err) { if (err.message !== "auth") { cb.checked = !cb.checked; st.className = "status err"; st.textContent = err.message; } }
       cb.disabled = false;
     };
@@ -1380,7 +1452,7 @@ async function saveVideo() {
     }
     status("Saving…");
     await api("saveVideo", { method: "POST", body: { ...shas, start: r.start, length: r.len } });
-    renderVideo("Saved. The new video shows on the site in about a minute.");
+    renderVideo("Saved. Press Publish to put it on the site.");
   } catch (err) { if (err.message !== "auth") { status(err.message, "err"); btns.forEach((b) => (b.disabled = false)); } }
 }
 
@@ -1746,7 +1818,7 @@ async function qSave() {
     const r = await api("saveIgQueue", { method: "POST", body });
     for (const f of body.files) igq.files.delete(f.file); // those are on the site now
     if (r.logos) igq.logos = r.logos;
-    if (!igq.dirty) status(r.photosAdded ? "All changes saved. New photos reach the site in about a minute, then they can be posted." : "All changes saved.", "ok");
+    if (!igq.dirty) status(r.photosAdded ? (r.published ? "All changes saved. New photos are being published to the site; they can be posted in about 2 minutes." : "All changes saved. Press Publish so the new photos reach the site; then they can be posted.") : "All changes saved.", "ok");
   } catch (err) { igq.dirty = true; if (err.message !== "auth") status(`Couldn't save: ${err.message}`, "err"); }
   qSaving = false;
   if (qAgain || igq.dirty) { qAgain = false; if (igq.dirty) qTimer = setTimeout(qSave, 800); }
@@ -1930,7 +2002,7 @@ async function saveIssue() {
   try {
     await api("saveIssue", { method: "POST", body: { slug: iss.slug, isNew: iss.isNew, issue: d, images: used } });
     for (const { name } of used) recent.set(`/images/issues/${iss.slug}/${name}`, iss.pending.get(name).preview);
-    renderIssues(d.draft ? `Saved "${d.title}" as a draft.` : `Saved "${d.title}". It will be live on the site in about a minute.`);
+    renderIssues(d.draft ? `Saved "${d.title}" as a draft.` : `Saved "${d.title}". Press Publish to put it on the site.`);
   } catch (err) { if (err.message !== "auth") { status(err.message, "err"); btn.disabled = false; } }
 }
 
@@ -1966,7 +2038,7 @@ async function renderTexts() {
       <button type="button" class="def" data-def="${f.key}">Use original text</button></div>`;
   };
   app.querySelector("main").innerHTML = `<div class="list-head"><div><span class="label">Site texts</span><h1>Wording</h1></div>
-      <p class="hint" style="max-width:46ch;margin:0">Change any text on the site. In longer texts you can use **bold**, *italic* and [links](https://…). Changes go live about a minute after saving.</p></div>
+      <p class="hint" style="max-width:46ch;margin:0">Change any text on the site. In longer texts you can use **bold**, *italic* and [links](https://…). Changes go live when you press Publish.</p></div>
     <form id="texts" class="texts" autocomplete="off">${SCHEMA.filter((g) => !g.tab).map((g) => `<fieldset><legend>${esc(g.group)}</legend>${g.fields.map(fieldHtml).join("")}</fieldset>`).join("")}</form>
     <div class="texts-bar"><button class="b primary" type="submit" form="texts" id="tsave">${icon("save")}<span>Save texts</span></button><span class="status" id="st"></span></div>`;
   const form = document.getElementById("texts");
@@ -2015,7 +2087,7 @@ async function renderTexts() {
     const values = Object.fromEntries([...form.querySelectorAll("[data-key]")].map((el) => [el.dataset.key, el.type === "checkbox" ? (el.checked ? "on" : "off") : el.value]));
     const hidden = [...form.querySelectorAll("[data-show]")].filter((el) => !el.checked).map((el) => el.dataset.show);
     const btn = document.getElementById("tsave"); btn.disabled = true; status("Saving…");
-    try { const r = await api("saveSettings", { method: "POST", body: { values, hidden } }); status((r.translateErrors || []).length ? `Saved, but some translations didn't work: ${r.translateErrors.join("; ")}` : r.translated ? "Saved and translated. The site will update in about a minute." : "Saved. The site will update in about a minute.", (r.translateErrors || []).length ? "err" : "ok"); }
+    try { const r = await api("saveSettings", { method: "POST", body: { values, hidden } }); status((r.translateErrors || []).length ? `Saved, but some translations didn't work: ${r.translateErrors.join("; ")}` : r.translated ? "Saved and translated. Press Publish to put it on the site." : "Saved. Press Publish to put it on the site.", (r.translateErrors || []).length ? "err" : "ok"); }
     catch (err) { if (err.message !== "auth") status(err.message, "err"); }
     btn.disabled = false;
   };
@@ -2079,7 +2151,7 @@ async function renderFonts() {
     prepCustom();
     const main = app.querySelector("main");
     main.innerHTML = `<div class="list-head"><div><span class="label">Fonts</span><h1>Fonts</h1></div>
-        <p class="hint" style="max-width:52ch;margin:0">Choose the font for each kind of text on the site. The free fonts are from Google Fonts and are free for commercial use. You can also add your own fonts, including paid ones you have a licence for. Changes go live about a minute after saving.</p></div>
+        <p class="hint" style="max-width:52ch;margin:0">Choose the font for each kind of text on the site. The free fonts are from Google Fonts and are free for commercial use. You can also add your own fonts, including paid ones you have a licence for. Changes go live when you press Publish.</p></div>
       <div class="texts fonts">
         <fieldset><legend>Which font for which text</legend>
           ${FONT_ROLES.map((r) => `<div class="role"><div><label for="fr-${r.key}"><b>${esc(r.label)}</b></label><p class="hint" style="margin:4px 0 8px">${esc(r.hint)}</p>
@@ -2173,7 +2245,7 @@ async function renderFonts() {
         status("Saving…");
         await api("saveFonts", { method: "POST", body: { roles, custom, newFiles } });
         pending.clear();
-        status("Saved. The site will update in about a minute.", "ok");
+        status("Saved. Press Publish to put it on the site.", "ok");
       } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
       b.disabled = false;
     }
@@ -2236,7 +2308,7 @@ async function renderLangs(flash = "") {
       try { const r = await api("translate", { method: "POST", body: { slug, ...opts } }); if (r.errors?.length) errs.push(...r.errors); }
       catch (err) { if (err.message === "auth") return; errs.push(err.message); }
     }
-    renderLangs(errs.length ? `Done, with problems: ${[...new Set(errs)].join("; ")}` : "Translated. The translations will be on the site in about a minute.");
+    renderLangs(errs.length ? `Done, with problems: ${[...new Set(errs)].join("; ")}` : "Translated. Press Publish to put it on the site.");
   };
   main.querySelector("#dk-save").onclick = async () => {
     const key = main.querySelector("#dk").value.trim();
@@ -2259,7 +2331,7 @@ async function renderLangs(flash = "") {
   const cats = [...new Set(list.flatMap((a) => [].concat(a.category || [])).filter(Boolean))];
   const siteWords = async () => { status("Translating the site's words…"); const r = await api("translateSite", { method: "POST", body: { categories: cats } }); return r.errors || []; };
   main.querySelector("#tr-site").onclick = async () => {
-    try { const errs = await siteWords(); renderLangs(errs.length ? `Done, with problems: ${errs.join("; ")}` : "The site's words are translated. The site updates in about a minute."); }
+    try { const errs = await siteWords(); renderLangs(errs.length ? `Done, with problems: ${errs.join("; ")}` : "The site's words are translated. Press Publish to put it on the site."); }
     catch (err) { if (err.message !== "auth") status(err.message, "err"); }
   };
   main.querySelector("#tr-all").onclick = async () => {
@@ -2292,7 +2364,7 @@ async function renderLangs(flash = "") {
       dlg.querySelectorAll("[data-k]").forEach((el) => { if (el.value !== tr.strings[el.dataset.k]) strings[el.dataset.k] = el.value; });
       if (!Object.keys(strings).length) return dlg.close();
       x.disabled = true;
-      try { await api("siteTrSave", { method: "POST", body: { lang, strings } }); dlg.close(); renderLangs(`Your ${L.name} words are saved. The site updates in about a minute.`); }
+      try { await api("siteTrSave", { method: "POST", body: { lang, strings } }); dlg.close(); renderLangs(`Your ${L.name} words are saved. Press Publish to put it on the site.`); }
       catch (err) { x.disabled = false; if (err.message !== "auth") alert(err.message); }
     });
   });
@@ -2324,7 +2396,7 @@ async function renderLangs(flash = "") {
       try {
         if (b.dataset.te === "save") {
           await api("trSave", { method: "POST", body: { slug, lang, title: dlg.querySelector("#te-t").value, dek: dlg.querySelector("#te-d").value, body: dlg.querySelector("#te-b").value } });
-          dlg.close(); renderLangs(`Your ${L.name} version is saved. It will be on the site in about a minute.`);
+          dlg.close(); renderLangs(`Your ${L.name} version is saved. Press Publish to put it on the site.`);
         } else {
           await api("translate", { method: "POST", body: { slug, langs: [lang], force: true } });
           dlg.close(); renderLangs(`Translated again into ${L.name}.`);
@@ -2366,7 +2438,7 @@ async function renderHebrew(flash = "") {
     main.querySelectorAll(".pair-list [data-k]").forEach((el) => { if (el.value !== tr.strings[el.dataset.k]) strings[el.dataset.k] = el.value; });
     if (!Object.keys(strings).length) return status("Nothing changed.");
     btn.disabled = true; status("Saving…");
-    try { await api("siteTrSave", { method: "POST", body: { lang: "he", strings } }); renderHebrew("Saved. The Hebrew site updates in about a minute."); }
+    try { await api("siteTrSave", { method: "POST", body: { lang: "he", strings } }); renderHebrew("Saved. Press Publish to put it on the site."); }
     catch (err) { btn.disabled = false; if (err.message !== "auth") status(err.message, "err"); }
   };
   main.addEventListener("click", (e) => { const b = e.target.closest("[data-he-art]"); if (b) editTranslation(b.dataset.heArt, "he", () => renderHebrew()); });
@@ -2434,7 +2506,7 @@ async function editTranslation(slug, lang, back) {
     try {
       await api("trSave", { method: "POST", body: { slug, lang, title: main.querySelector("#te-t").value, dek: main.querySelector("#te-d").value, body: out,
         ...(main.querySelector("#te-cc") ? { coverCaption: main.querySelector("#te-cc").value } : {}), ...(main.querySelector("#te-ca") ? { coverAlt: main.querySelector("#te-ca").value } : {}) } });
-      status(`Saved. The ${L.name} page updates in about a minute.`, "ok");
+      status(`Saved. Press Publish to put it on the site.`, "ok");
     } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
     btn.disabled = false;
   };
@@ -2576,7 +2648,7 @@ async function renderStrip() {
       status("Saving…");
       await api("saveSettings", { method: "POST", body: { values: v, files } });
       pendingLogo = null;
-      status("Saved. The home page updates in about a minute.", "ok");
+      status("Saved. Press Publish to put it on the site.", "ok");
     } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
     btn.disabled = false;
   };
@@ -2596,6 +2668,7 @@ app.addEventListener("click", async (e) => {
   if (act === "tab-langs") renderLangs();
   if (act === "tab-strip") renderStrip();
   if (act === "tab-hebrew") renderHebrew();
+  if (act === "tab-publish") renderPublish();
   if (act === "tab-queue") renderQueue();
   if (act.startsWith("q-")) qClick(act, e);
   if (act === "vid-choose") document.getElementById("vid-file").click();
@@ -2605,7 +2678,7 @@ app.addEventListener("click", async (e) => {
   if (act === "vid-save") saveVideo();
   if (act === "vid-reset") {
     e.target.closest("[data-act]").disabled = true; status("Saving…");
-    try { await api("resetVideo", { method: "POST" }); renderVideo("Back to the original video. The site updates in about a minute."); }
+    try { await api("resetVideo", { method: "POST" }); renderVideo("Back to the original video. Press Publish to put it on the site."); }
     catch (err) { if (err.message !== "auth") status(err.message, "err"); }
   }
   if (act === "tab-store") renderStore();
@@ -2617,7 +2690,7 @@ app.addEventListener("click", async (e) => {
     try {
       await api("setVisibility", { method: "POST", body: { type: b.dataset.type, slug: b.dataset.slug, hidden: hide } });
       b.outerHTML = visBtn(b.dataset.type, b.dataset.slug, hide);
-      const f = document.getElementById("flash"); if (f) { f.className = "status ok"; f.textContent = `${hide ? "Hidden" : "Shown"}. The site updates in about a minute.`; }
+      const f = document.getElementById("flash"); if (f) { f.className = "status ok"; f.textContent = `${hide ? "Hidden" : "Shown"}. Press Publish to put it on the site.`; }
     } catch (err) { if (err.message !== "auth") { b.disabled = false; b.querySelector("span").textContent = "Try again"; const f = document.getElementById("flash"); if (f) { f.className = "status err"; f.textContent = err.message; } } }
   }
   if (act === "new-issue") openIssue();
@@ -2625,7 +2698,7 @@ app.addEventListener("click", async (e) => {
   if (act === "ask-del-issue") e.target.closest(".row-actions").innerHTML = `<span class="confirm">Delete this issue and its pages? <button class="b danger" type="button" data-act="del-issue">${icon("trash-2")}Delete</button><button class="b" type="button" data-act="tab-issues">Cancel</button></span>`;
   if (act === "del-issue") {
     const row = e.target.closest("[data-islug]"); row.querySelector(".row-actions").innerHTML = `<span class="status">Deleting…</span>`;
-    try { await api("deleteIssue", { method: "POST", body: { slug: row.dataset.islug } }); renderIssues("Deleted. The site updates in about a minute."); }
+    try { await api("deleteIssue", { method: "POST", body: { slug: row.dataset.islug } }); renderIssues("Deleted. Press Publish to put it on the site."); }
     catch (err) { if (err.message !== "auth") row.querySelector(".row-actions").innerHTML = `<span class="status err">${esc(err.message)}</span>`; }
   }
   const pg = e.target.closest(".page-card"), pgi = pg ? +pg.dataset.i : -1;
@@ -2647,13 +2720,13 @@ app.addEventListener("click", async (e) => {
   if (act === "cancel") renderList();
   if (act === "delete") {
     row.querySelector(".row-actions").innerHTML = `<span class="status">Deleting…</span>`;
-    try { await api("delete", { method: "POST", body: { slug } }); renderList("Deleted. The site updates in about a minute."); }
+    try { await api("delete", { method: "POST", body: { slug } }); renderList("Deleted. Press Publish to put it on the site."); }
     catch (err) { if (err.message !== "auth") row.querySelector(".row-actions").innerHTML = `<span class="status err">${esc(err.message)}</span>`; }
   }
 });
 
 // ---------- start ----------
-api("me").then((m) => (m.loggedIn ? (goNext() || renderList()) : renderLogin())).catch(() => renderLogin());
+api("me").then((m) => (m.loggedIn ? (goNext() || (renderList(), pubRefresh())) : renderLogin())).catch(() => renderLogin());
 </script>
 </body>
 </html>

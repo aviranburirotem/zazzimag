@@ -152,6 +152,43 @@ async function translateSite({ siteJson = null, cats = [], force = false } = {})
   await countUsed(out.used);
   return out;
 }
+// ---------- Publish: saves go to GitHub only; the site is rebuilt when the Publish button is pressed ----------
+// (vercel.json turns off Vercel's build-on-every-save; a Vercel "Deploy Hook" builds the newest saved version)
+const PUB = { hook: "deploy_hook", last: "publish_last" }; // Redis
+const HOOK_RE = /^https:\/\/api\.vercel\.com\/v1\/integrations\/deploy\/[A-Za-z0-9_]+\/[A-Za-z0-9_]+(\?.*)?$/;
+async function headSha() { return (await gh(repo(`/git/ref/heads/${BRANCH}`))).object.sha; }
+async function publishNow(reason) {
+  const hook = await getJSON(PUB.hook, "");
+  if (!hook) return { ok: false, error: "Publishing isn't set up yet." };
+  const sha = await headSha();
+  const r = await fetch(hook, { method: "POST" });
+  if (!r.ok) return { ok: false, error: `Vercel didn't accept the request (${r.status}).` };
+  const last = { sha, at: new Date().toISOString(), reason };
+  await setJSON(PUB.last, last);
+  return { ok: true, last };
+}
+async function publishStatus() {
+  const [hook, last] = await Promise.all([getJSON(PUB.hook, ""), getJSON(PUB.last, null)]);
+  const head = await headSha();
+  let waiting = null, changes = [];
+  if (last?.sha) {
+    try {
+      const c = await gh(repo(`/compare/${last.sha}...${head}`));
+      waiting = c.ahead_by || 0;
+      changes = (c.commits || []).slice(-30).reverse().map((x) => ({ msg: (x.commit.message || "").split("\n")[0], at: x.commit.author?.date }));
+    } catch {}
+  }
+  // what Vercel reported for the last published version (building / live / failed)
+  let state = "", note = "";
+  if (last?.sha) {
+    try {
+      const st = await gh(repo(`/commits/${last.sha}/statuses`));
+      const v = (st || []).find((x) => /vercel/i.test(x.context || ""));
+      if (v) { state = v.state; note = v.description || ""; }
+    } catch {}
+  }
+  return { hook: Boolean(hook), last, head, waiting, changes, state, note };
+}
 async function countUsed(used) { // characters sent this month, per service
   if (!hasStore() || !Object.keys(used).length) return;
   const month = new Date().toISOString().slice(0, 7), u = await getJSON(TRK.used, {});
@@ -295,7 +332,11 @@ export default async function handler(req, res) {
       if (adds.length || removes.length) await commit([...adds, ...removes], `Instagram queue: ${adds.length} file${adds.length === 1 ? "" : "s"} added`);
       await setJSON(IGK.queue, queue);
       await setJSON(IGK.schedule, schedule);
-      return res.json({ ok: true, queue, schedule, logos, photosAdded: adds.filter((a) => a.path.startsWith("public/ig-queue/")).length });
+      const photosAdded = adds.filter((a) => a.path.startsWith("public/ig-queue/")).length;
+      // Instagram fetches queued photos from the live site, so new photos are published right away
+      let published = false;
+      if (photosAdded) { try { published = (await publishNow("queue photos")).ok; } catch {} }
+      return res.json({ ok: true, queue, schedule, logos, photosAdded, published });
     }
     // ---- logo gallery: saved straight away, stays until you remove it ----
     if (action === "igLogoAdd" && req.method === "POST") {
@@ -361,6 +402,19 @@ export default async function handler(req, res) {
     }
 
     if (!process.env.GITHUB_TOKEN) return fail(500, "GITHUB_TOKEN is not set in Vercel, so the console can't save.");
+
+    if (action === "publishStatus") return res.json(await publishStatus());
+    if (action === "saveDeployHook" && req.method === "POST") {
+      const url = String(body.url || "").trim();
+      if (url && !HOOK_RE.test(url)) return fail(400, "That doesn't look like a Vercel Deploy Hook. It starts with https://api.vercel.com/v1/integrations/deploy/");
+      await setJSON(PUB.hook, url);
+      return res.json({ ok: true, hook: Boolean(url) });
+    }
+    if (action === "publish" && req.method === "POST") {
+      const r = await publishNow("button");
+      if (!r.ok) return fail(400, r.error);
+      return res.json(r);
+    }
 
     if (action === "list") return res.json({ articles: await listArticles() });
 
