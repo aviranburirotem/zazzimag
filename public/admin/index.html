@@ -37,6 +37,11 @@
   .texts textarea{min-height:90px}
   .texts .def{background:none;border:0;padding:0;font-size:12px;color:var(--muted);text-decoration:underline;justify-self:start}
   .texts .f{display:grid;gap:6px}
+  .color-pick{display:grid;gap:6px}
+  .color-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .color-row input[type=color]{width:44px!important;flex:none;height:32px;padding:2px;border:1px solid var(--line);border-radius:4px;background:none;cursor:pointer}
+  .color-note{font-size:12px;color:var(--muted)}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .fonts .role{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:8px 18px;align-items:start;padding:14px 0;border-top:1px solid var(--line)}
   .fonts .role:first-of-type{border-top:0;padding-top:4px}
   .fonts .role select{width:100%}
@@ -324,6 +329,7 @@
 import { markdown, frontmatter } from "./markdown.js";
 import { icon } from "./icons.js";
 import { SCHEMA } from "./site-schema.js";
+import { mainColor, palette } from "./colors.js";
 import { FREE as FREE_FONTS, ROLES as FONT_ROLES, googleUrl } from "./fonts.js";
 import { plan, nice, toMs, local, addDays } from "./ig-schedule.js";
 
@@ -331,7 +337,7 @@ const app = document.getElementById("app");
 const esc = (s = "") => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const slugify = (s) => s.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 70);
 const today = () => new Date().toISOString().slice(0, 10);
-const KNOWN = ["title", "dek", "date", "category", "cover", "coverPosition", "heroPosition", "heroShape", "coverAlt", "coverCaption", "author", "pinned", "draft"];
+const KNOWN = ["title", "dek", "date", "category", "cover", "color", "colorManual", "coverPosition", "heroPosition", "heroShape", "coverAlt", "coverCaption", "author", "pinned", "draft"];
 
 async function api(action, { method = "GET", body, query = "" } = {}) {
   const r = await fetch(`/api/admin?action=${action}${query}`, {
@@ -468,6 +474,10 @@ function renderEditor() {
             <div class="shape-pick" role="radiogroup" aria-label="Shape at the top of the article"><span class="hint">Shape at the top of the article</span>
               <label class="showbox"><input type="radio" name="f-heroShape" value="horizontal" ${d.heroShape === "vertical" ? "" : "checked"}> Horizontal</label>
               <label class="showbox"><input type="radio" name="f-heroShape" value="vertical" ${d.heroShape === "vertical" ? "checked" : ""}> Vertical</label></div>
+            <div class="color-pick"><span class="hint">Site colour when this article leads the home page <span class="sr">(buttons, hearts and the moving strip)</span></span>
+              <div class="color-row"><input type="color" id="f-color" value="#${esc(String(d.color || "e30613").replace("#", ""))}" aria-label="Site colour">
+              <span class="color-note" id="color-note">${d.colorManual ? "Picked by hand" : d.color ? "From the cover" : "Will come from the cover"}</span>
+              <button type="button" class="def" id="color-auto"${d.colorManual ? "" : " hidden"}>Use the cover's colour</button></div></div>
           </div>
         </div>
         <input type="file" id="cover-file" accept="image/*" hidden>
@@ -575,8 +585,28 @@ function renderEditor() {
     const f = e.target.files[0]; e.target.value = "";
     if (!f) return;
     const p = await addPhoto(f, "cover");
-    if (p) { ed.data.cover = p.url; ed.data.coverPosition = ""; ed.data.heroPosition = ""; $("cover-pick").style.backgroundImage = `url('${imgUrl(p.url)}')`; $("cover-pick").innerHTML = ""; if (!$("f-coverAlt").value) $("f-coverAlt").value = p.alt; drawPos(); preview(); }
+    if (p) { ed.data.cover = p.url; ed.data.coverPosition = ""; ed.data.heroPosition = ""; $("cover-pick").style.backgroundImage = `url('${imgUrl(p.url)}')`; $("cover-pick").innerHTML = ""; if (!$("f-coverAlt").value) $("f-coverAlt").value = p.alt; drawPos(); preview(); coverColor(); }
   };
+  // the site colour: worked out from the cover (most present strong colour), or picked by hand
+  const showColor = () => {
+    $("f-color").value = "#" + String(ed.data.color || "e30613").replace("#", "");
+    $("color-note").textContent = ed.data.colorManual ? "Picked by hand" : ed.data.color ? "From the cover" : "No clear colour in the cover: Zazzi red";
+    $("color-auto").hidden = !ed.data.colorManual;
+  };
+  async function coverColor(force = false) {
+    if (!ed.data.cover || (ed.data.colorManual && !force)) return;
+    try {
+      const img = new Image(); img.src = imgUrl(ed.data.cover); await img.decode();
+      const c = document.createElement("canvas"); c.width = c.height = 64;
+      const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, 64, 64);
+      ed.data.color = mainColor(x.getImageData(0, 0, 64, 64).data) || "";
+      delete ed.data.colorManual;
+      showColor();
+    } catch {}
+  }
+  $("f-color").oninput = (e) => { ed.data.color = e.target.value.replace("#", ""); ed.data.colorManual = true; showColor(); };
+  $("color-auto").onclick = () => coverColor(true);
+  if (ed.data.cover && !ed.data.color) coverColor();
 
   // ---- cover position: two separate positions ----
   // Home page (coverPosition): the box in this panel, with a small copy of the home page.
@@ -880,7 +910,7 @@ function collect() {
   const v = (id) => document.getElementById(id).value.trim().replace(/\s*\n\s*/g, " ");
   return {
     title: v("f-title"), dek: v("f-dek"), date: v("f-date"), category: (ed.cats || []).length > 1 ? [...ed.cats] : (ed.cats || [])[0] || "",
-    cover: ed.data.cover || "", coverPosition: ed.data.coverPosition || "", heroPosition: ed.data.heroPosition || "",
+    cover: ed.data.cover || "", color: ed.data.color ? String(ed.data.color).replace("#", "") : "", colorManual: ed.data.colorManual ? "true" : "", coverPosition: ed.data.coverPosition || "", heroPosition: ed.data.heroPosition || "",
     heroShape: document.querySelector("[name=f-heroShape]:checked")?.value === "vertical" ? "vertical" : "", coverAlt: v("f-coverAlt"), coverCaption: v("f-coverCaption"),
     author: v("f-author"), draft: !document.getElementById("f-draft").checked, pinned: document.getElementById("f-pinned")?.checked === true,
   };

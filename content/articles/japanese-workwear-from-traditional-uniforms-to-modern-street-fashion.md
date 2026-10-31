@@ -4,6 +4,7 @@ dek: Japanese workwear is making its mark on contemporary street fashion, with o
 date: 2026-10-30
 category: Trends
 cover: /images/articles/japanese-workwear-from-traditional-uniforms-to-modern-street-fashion/cover-workwear-article3.jpg
+color: ce977d
 coverPosition: 100% 31%
 heroPosition: 50% 32%
 heroShape: vertical

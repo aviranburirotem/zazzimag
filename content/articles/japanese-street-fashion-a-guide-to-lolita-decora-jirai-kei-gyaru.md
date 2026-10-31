@@ -4,6 +4,7 @@ dek: Discover Japanese street fashion through four distinctive styles, with a gu
 date: 2026-10-30
 category: Guide
 cover: /images/articles/japanese-street-fashion-a-guide-to-lolita-decora-jirai-kei-gyaru/cover-enhanced-24.jpg
+color: d54e8b
 coverPosition: 50% 0%
 heroPosition: 35% 24%
 coverAlt: Erunyan wearing a colorful Decora fashion outfit

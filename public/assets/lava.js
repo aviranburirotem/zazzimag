@@ -11,16 +11,19 @@
   const cv = box.querySelector("canvas"), btn = box.querySelector("[data-lava-pause]");
   const ctx = cv.getContext("2d", { alpha: false });
   const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  // colours: from the lead article's main colour (set by the build in data-colors), or a violet default
+  let C = {}; try { C = JSON.parse(box.dataset.colors || "{}"); } catch {}
+  const col = (k, d) => hex(/^#[0-9a-f]{6}$/i.test(C[k] || "") ? C[k] : d);
   // backdrop: left → right, and a little lighter towards the top
-  const BG_L = hex("#b768d8"), BG_R = hex("#7cb6ea"), HAZE = hex("#e9dcff");
+  const BG_L = col("bgL", "#b768d8"), BG_R = col("bgR", "#7cb6ea"), HAZE = col("haze", "#e9dcff");
   const norm = (v) => { const m = Math.hypot(...v); return v.map((x) => x / m); };
   const LIGHTS = [
-    { d: norm([0.85, -0.35, 0.5]), c: hex("#3fd2ff"), k: 0.9 },  // cyan, from the right
-    { d: norm([-0.85, -0.25, 0.5]), c: hex("#e24bd2"), k: 0.85 }, // magenta, from the left
-    { d: norm([0, -0.85, 0.55]), c: hex("#cfc4ff"), k: 0.22 },   // soft top light
-    { d: norm([0.2, 0.9, 0.4]), c: hex("#ffad85"), k: 0.4 },    // warm bounce from below
+    { d: norm([0.85, -0.35, 0.5]), c: col("key", "#3fd2ff"), k: 0.9 },   // main colour, from the right
+    { d: norm([-0.85, -0.25, 0.5]), c: col("side", "#e24bd2"), k: 0.85 }, // a neighbouring colour, from the left
+    { d: norm([0, -0.85, 0.55]), c: col("top", "#cfc4ff"), k: 0.22 },    // soft top light
+    { d: norm([0.2, 0.9, 0.4]), c: col("warm", "#ffad85"), k: 0.4 },     // bounce from below
   ];
-  const AMB = hex("#1a0c40"), HV = norm([0.3, -0.6, 1.4]);
+  const AMB = col("amb", "#1a0c40"), HV = norm([0.3, -0.6, 1.4]);
   const still = () => document.documentElement.classList.contains("a11y-still") || matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   let W = 0, H = 0, S = 0.4, img = null, blobs = [], bgx = null, bgy = null;

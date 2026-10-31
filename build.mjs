@@ -1,6 +1,7 @@
 // Builds the static site into /dist. Run: node build.mjs
 // Articles live in content/articles/*.md — add a file there and it appears on the site.
 import { fontSetup } from "./lib/fonts.js";
+import { palette, validHex } from "./lib/colors.js";
 import fs from "node:fs";
 import path from "node:path";
 import { markdown, frontmatter } from "./lib/markdown.js";
@@ -88,6 +89,11 @@ const issues = (fs.existsSync(idir) ? fs.readdirSync(idir) : []).filter((f) => f
 // Articles and issues together, newest first (home grid and the All articles page)
 // newest first, except items pinned in the console, which stay on top (newest pinned first)
 const stories = [...articles, ...issues].sort((a, b) => (Boolean(b.pinned) - Boolean(a.pinned)) || (a.date < b.date ? 1 : -1));
+// The site's colour comes from the lead article (pinned first, otherwise the newest): its cover's main
+// colour, worked out in the console when the cover is chosen (or picked there by hand).
+const LEAD = stories.find((s) => s.kind !== "issue");
+const PAL = palette(validHex(LEAD?.color) ? String(LEAD.color).replace("#", "") : "");
+const COLOR_CSS = `:root{--accent:${PAL.accent};--accent-fill:${PAL.accent};--on-accent:#ffffff}`;
 
 // ---------- templates ----------
 function layout({ title, description, active, body, image, type = "website", pathname = "/", scripts = [] }) {
@@ -108,13 +114,14 @@ function layout({ title, description, active, body, image, type = "website", pat
 <meta property="og:url" content="${SITE.url}${pathname}">
 <meta property="og:image" content="${abs(image || "/assets/logo-poster.png")}">${COMING_SOON ? '\n<meta name="robots" content="noindex">' : ""}
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#e30613">
+<meta name="theme-color" content="${PAL.accent}">
 <link rel="icon" type="image/png" href="/assets/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 ${FONTS.links.map((u) => `<link rel="stylesheet" href="${esc(u)}">`).join("\n")}
 <link rel="stylesheet" href="/assets/site.css?v=${V}">
-<style>${FONTS.css}</style>
+<style>${FONTS.css}
+${COLOR_CSS}</style>
 </head>
 <body data-handle="${esc(SITE.handle)}" data-follow="${tx("home.followTile")}" data-issue-label="${tx("issues.category")}">
 <a class="skip" href="#main">Skip to content</a>
@@ -231,7 +238,7 @@ function home() {
   return layout({
     active: "home", pathname: "/",
     description: `${SITE.name}. ${SITE.tagline}`,
-    body: `${lava ? `<div class="wrap lava-wrap"><section class="lava-band" data-lava style="--hs:${hlSize}">
+    body: `${lava ? `<div class="wrap lava-wrap"><section class="lava-band" data-lava data-colors="${esc(JSON.stringify(PAL.lava))}" style="--hs:${hlSize};background:linear-gradient(90deg,${PAL.lava.bgL},${PAL.lava.bgR})">
       <canvas aria-hidden="true"></canvas>${sw}
       ${T("home.headline") || T("home.intro") ? `<div class="lava-in pos-${hlPos} hl-${hlColor}" style="--is:${introSize}">${T("home.headline") ? `<h1>${br("home.headline")}</h1>` : ""}${T("home.intro") ? `<div class="lava-sub">${md("home.intro")}</div>` : ""}</div>` : ""}
       <button class="lava-pause" type="button" data-lava-pause aria-label="Pause the animation" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></section></div>` : ""}
@@ -634,10 +641,11 @@ fs.copyFileSync("lib/icons.js", path.join(OUT, "admin/icons.js"));
 fs.copyFileSync("lib/site-schema.js", path.join(OUT, "admin/site-schema.js"));
 fs.copyFileSync("lib/ig-schedule.js", path.join(OUT, "admin/ig-schedule.js"));
 fs.copyFileSync("lib/fonts.js", path.join(OUT, "admin/fonts.js"));
+fs.copyFileSync("lib/colors.js", path.join(OUT, "admin/colors.js"));
 { // the console always loads the newest helper files (no stale browser copies after a deploy)
-  const av = crypto.createHash("md5").update(fs.readFileSync("lib/markdown.js")).update(fs.readFileSync("lib/icons.js")).update(fs.readFileSync("lib/site-schema.js")).update(fs.readFileSync("lib/ig-schedule.js")).update(fs.readFileSync("lib/fonts.js")).digest("hex").slice(0, 8);
+  const av = crypto.createHash("md5").update(fs.readFileSync("lib/markdown.js")).update(fs.readFileSync("lib/icons.js")).update(fs.readFileSync("lib/site-schema.js")).update(fs.readFileSync("lib/ig-schedule.js")).update(fs.readFileSync("lib/fonts.js")).update(fs.readFileSync("lib/colors.js")).digest("hex").slice(0, 8);
   const f = path.join(OUT, "admin/index.html");
-  fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(/from "\.\/(markdown|icons|site-schema|ig-schedule|fonts)\.js"/g, `from "./$1.js?v=${av}"`));
+  fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(/from "\.\/(markdown|icons|site-schema|ig-schedule|fonts|colors)\.js"/g, `from "./$1.js?v=${av}"`));
 }
 
 if (COMING_SOON) {

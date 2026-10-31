@@ -4,6 +4,7 @@ dek: Discover Shimokitazawa, Tokyo, through its second-hand treasures, designer 
 date: 2026-10-29
 category: Guide
 cover: /images/articles/shimokitazawa-tokyo-guide/cover-shimokitazawa-2-2.jpg
+color: b46e1f
 coverPosition: 0% 100%
 heroPosition: 50% 58%
 coverAlt: Three Japanese girls smiling together in Shimokitazawa, Tokyo, a neighbourhood known for its vintage shops, independent boutiques and creative street culture
