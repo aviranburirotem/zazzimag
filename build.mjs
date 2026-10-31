@@ -228,10 +228,10 @@ function home() {
   return layout({
     active: "home", pathname: "/",
     description: `${SITE.name}. ${SITE.tagline}`,
-    body: `${lava ? `<section class="lava-band" data-lava style="--hs:${hlSize}">
+    body: `${lava ? `<div class="wrap lava-wrap"><section class="lava-band" data-lava style="--hs:${hlSize}">
       <canvas aria-hidden="true"></canvas>${sw}
-      ${T("home.headline") ? `<div class="wrap lava-in pos-${hlPos}"><h1 class="hl-${hlColor}">${br("home.headline")}</h1></div>` : ""}
-      <button class="lava-pause" type="button" data-lava-pause aria-label="Pause the animation" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></section>` : ""}
+      ${T("home.headline") ? `<div class="lava-in pos-${hlPos}"><h1 class="hl-${hlColor}">${br("home.headline")}</h1></div>` : ""}
+      <button class="lava-pause" type="button" data-lava-pause aria-label="Pause the animation" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></section></div>` : ""}
     <section class="wrap intro${lava ? " after-lava" : ""} align-${introAlign}" style="--hs:${hlSize};--is:${introSize}">${lava && !T("home.headline") ? `<h1 class="visually-hidden">${esc(SITE.name)}</h1>` : ""}
       ${lava ? "" : sw}
       <div>${lava || !T("home.headline") ? "" : `<h1>${br("home.headline")}</h1>`}
