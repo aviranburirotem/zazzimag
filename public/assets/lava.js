@@ -1,6 +1,7 @@
-// Lava lamp strip at the top of the home page: glossy coloured blobs that rise, sink, merge and split
-// in a dark liquid. The headline sits on top as normal page text (size, place and colour are set in
-// the console → Site texts → Home page).
+// Lava strip at the top of the home page: soft, matte 3D blobs heaped along the bottom, bubbling up,
+// merging and splitting, with small spheres floating in the air, on a violet-to-sky-blue backdrop.
+// The blobs are lit by a cyan light from the right, a magenta light from the left and a warm light
+// from below, like a studio shot. The headline (if any) sits on top as normal page text.
 // Drawn on a small canvas and scaled up, so it stays light on phones. Stops when off screen, when the
 // tab is hidden, with the pause button, or with "Stop animations" / reduced motion (then a still frame
 // is shown).
@@ -10,68 +11,86 @@
   const cv = box.querySelector("canvas"), btn = box.querySelector("[data-lava-pause]");
   const ctx = cv.getContext("2d", { alpha: false });
   const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-  const COLORS = ["#ff2e88", "#ff7a1a", "#ffd23f", "#8a4dff", "#22c7e8", "#ff3b3b", "#7ee05a", "#ff5bd6"].map(hex);
-  const TOP = hex("#1c0830"), BOT = hex("#3d0a24"); // the liquid: deep violet into wine
+  // backdrop: left → right, and a little lighter towards the top
+  const BG_L = hex("#b768d8"), BG_R = hex("#7cb6ea"), HAZE = hex("#e9dcff");
+  const norm = (v) => { const m = Math.hypot(...v); return v.map((x) => x / m); };
+  const LIGHTS = [
+    { d: norm([0.85, -0.35, 0.5]), c: hex("#3fd2ff"), k: 0.9 },  // cyan, from the right
+    { d: norm([-0.85, -0.25, 0.5]), c: hex("#e24bd2"), k: 0.85 }, // magenta, from the left
+    { d: norm([0, -0.85, 0.55]), c: hex("#cfc4ff"), k: 0.22 },   // soft top light
+    { d: norm([0.2, 0.9, 0.4]), c: hex("#ffad85"), k: 0.4 },    // warm bounce from below
+  ];
+  const AMB = hex("#1a0c40"), HV = norm([0.3, -0.6, 1.4]);
   const still = () => document.documentElement.classList.contains("a11y-still") || matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  let W = 0, H = 0, S = 1 / 3, img = null, blobs = [], bg = null;
+  let W = 0, H = 0, S = 0.4, img = null, blobs = [], bgx = null, bgy = null;
   const rnd = (a, b) => a + Math.random() * (b - a);
   function make() {
-    const n = Math.max(5, Math.min(11, Math.round(W / 130))), base = Math.max(22, Math.min(H * 0.28, W * 0.075));
-    blobs = Array.from({ length: n }, (_, i) => ({
-      x: (i + 0.5) / n + rnd(-0.03, 0.03), ax: rnd(0.015, 0.05), wx: rnd(0.08, 0.2), px: rnd(0, 6.3),
-      ay: rnd(0.32, 0.5), wy: rnd(0.1, 0.24), py: rnd(0, 6.3),
-      r: base * rnd(0.6, 1.2), ar: rnd(0.08, 0.2), wr: rnd(0.2, 0.45), pr: rnd(0, 6.3),
-      c: COLORS[i % COLORS.length],
-    }));
+    const big = Math.max(4, Math.min(10, Math.round(W / 150))), mid = Math.max(3, Math.round(big * 0.7)), dust = Math.max(6, Math.round(W / 80));
+    const u = Math.min(H, W * 0.35);
+    blobs = [
+      // the heap along the bottom: big, slow, bobbing
+      ...Array.from({ length: big }, (_, i) => ({ x: (i + 0.5) / big + rnd(-0.04, 0.04), ax: rnd(0.01, 0.04), wx: rnd(0.05, 0.12), px: rnd(0, 6.3),
+        y: rnd(1.0, 1.15), ay: rnd(0.04, 0.1), wy: rnd(0.12, 0.25), py: rnd(0, 6.3), r: u * rnd(0.22, 0.38), ar: rnd(0.05, 0.12), wr: rnd(0.15, 0.3), pr: rnd(0, 6.3) })),
+      // bubbles that rise out of the heap and sink back into it
+      ...Array.from({ length: mid }, () => ({ x: rnd(0.03, 0.97), ax: rnd(0.01, 0.03), wx: rnd(0.05, 0.12), px: rnd(0, 6.3),
+        y: rnd(0.62, 0.75), ay: rnd(0.18, 0.32), wy: rnd(0.08, 0.16), py: rnd(0, 6.3), r: u * rnd(0.1, 0.2), ar: rnd(0.04, 0.1), wr: rnd(0.2, 0.4), pr: rnd(0, 6.3) })),
+      // small spheres floating in the air
+      ...Array.from({ length: dust }, () => ({ x: rnd(0, 1), ax: rnd(0.005, 0.02), wx: rnd(0.08, 0.2), px: rnd(0, 6.3),
+        y: rnd(0.1, 0.85), ay: rnd(0.04, 0.12), wy: rnd(0.1, 0.25), py: rnd(0, 6.3), r: u * rnd(0.025, 0.06), ar: 0, wr: 0, pr: 0 })),
+    ];
   }
   function size() {
     const r = box.getBoundingClientRect();
     if (Math.abs(r.width - W) < 1 && Math.abs(r.height - H) < 1) return;
-    W = r.width; H = r.height; S = W < 600 ? 0.5 : 0.4;
+    W = r.width; H = r.height; S = W < 600 ? 0.6 : 0.42;
     cv.width = Math.max(40, Math.round(W * S)); cv.height = Math.max(20, Math.round(H * S));
     img = ctx.createImageData(cv.width, cv.height);
-    bg = new Float32Array(cv.height * 3);
-    for (let y = 0; y < cv.height; y++) { const k = y / (cv.height - 1 || 1); for (let c = 0; c < 3; c++) bg[y * 3 + c] = TOP[c] + (BOT[c] - TOP[c]) * k; }
+    bgx = new Float32Array(cv.width * 3); bgy = new Float32Array(cv.height);
+    for (let x = 0; x < cv.width; x++) { const k = x / (cv.width - 1 || 1); for (let c = 0; c < 3; c++) bgx[x * 3 + c] = BG_L[c] + (BG_R[c] - BG_L[c]) * k; }
+    for (let y = 0; y < cv.height; y++) bgy[y] = 0.32 * (1 - y / (cv.height - 1 || 1)) ** 2; // haze amount
     make();
   }
 
-  const norm = (v) => { const m = Math.hypot(...v); return v.map((x) => x / m); };
-  const L = norm([-0.45, -0.6, 0.66]), HV = norm([L[0], L[1], L[2] + 1]);
-
   function draw(t) {
     const w = cv.width, h = cv.height, d = img.data;
-    const B = blobs.map((b) => ({
-      x: (b.x + b.ax * Math.sin(t * b.wx + b.px)) * w,
-      y: (0.5 + b.ay * Math.sin(t * b.wy + b.py)) * h,
-      r2: (b.r * S * (1 + b.ar * Math.sin(t * b.wr + b.pr))) ** 2,
-      c: b.c,
-    }));
-    const tilt = 0.8 * (blobs[0]?.r || 40) * S;
+    const B = blobs.map((b) => {
+      const r = b.r * S * (1 + b.ar * Math.sin(t * b.wr + b.pr));
+      return { x: (b.x + b.ax * Math.sin(t * b.wx + b.px)) * w, y: (b.y + b.ay * Math.sin(t * b.wy + b.py)) * h, r, r2: r * r };
+    });
+    const n = B.length, K = Math.max(1.2, 0.09 * Math.min(h, w * 0.35)), far = 7 * K;
     let o = 0;
     for (let y = 0; y < h; y++) {
-      const lr = bg[y * 3], lg = bg[y * 3 + 1], lb = bg[y * 3 + 2];
+      const hz = bgy[y];
       for (let x = 0; x < w; x++, o += 4) {
-        let F = 0, gx = 0, gy = 0, cr = 0, cg = 0, cb = 0;
-        for (let i = 0; i < B.length; i++) {
-          const b = B[i], dx = x - b.x, dy = y - b.y, q = dx * dx + dy * dy + 0.01, f = b.r2 / q;
-          F += f; cr += f * b.c[0]; cg += f * b.c[1]; cb += f * b.c[2];
-          const g = (2 * f) / q; gx -= g * dx; gy -= g * dy;
+        // smooth union of circles: distance to the blob edge (D, negative inside), its direction and
+        // the local blob size, blended where blobs meet so they melt into each other
+        let sw = 0, gx = 0, gy = 0, rr = 0;
+        for (let i = 0; i < n; i++) {
+          const b = B[i], dx = x - b.x, dy = y - b.y, dist = Math.sqrt(dx * dx + dy * dy) + 1e-4, di = dist - b.r;
+          if (di > far) continue;
+          const e = Math.exp(-di / K);
+          sw += e; gx += e * dx / dist; gy += e * dy / dist; rr += e * b.r;
         }
-        let R = lr, G = lg, Bl = lb;
-        // a soft glow in the liquid around each blob
-        const glow = Math.min(0.2, F * 0.12), inv = 1 / F;
-        R += (cr * inv - R) * glow; G += (cg * inv - G) * glow; Bl += (cb * inv - Bl) * glow;
-        const a = F <= 0.94 ? 0 : F >= 1.06 ? 1 : (F - 0.94) / 0.12;
-        if (a > 0) {
-          let nx = -gx * tilt / F, ny = -gy * tilt / F, nz = 1;
-          const m = Math.hypot(nx, ny, nz); nx /= m; ny /= m; nz /= m;
-          const diff = Math.max(0, nx * L[0] + ny * L[1] + nz * L[2]);
-          const spec = Math.pow(Math.max(0, nx * HV[0] + ny * HV[1] + nz * HV[2]), 36) * 210;
-          const lit = 0.6 + 0.55 * diff;
-          R += (Math.min(255, cr * inv * lit + spec) - R) * a;
-          G += (Math.min(255, cg * inv * lit + spec) - G) * a;
-          Bl += (Math.min(255, cb * inv * lit + spec) - Bl) * a;
+        let R = bgx[x * 3], G = bgx[x * 3 + 1], Bl = bgx[x * 3 + 2];
+        R += (HAZE[0] - R) * hz; G += (HAZE[1] - G) * hz; Bl += (HAZE[2] - Bl) * hz;
+        if (sw > 0) {
+          const D = -K * Math.log(sw), a = Math.min(1, Math.max(0, 0.5 - D / 1.1));
+          if (a > 0) {
+            gx /= sw; gy /= sw; rr /= sw;
+            const gm = Math.hypot(gx, gy) || 1, depth = Math.max(0, -D) / Math.max(1, rr);
+            // like a sphere: the surface faces sideways at the edge and straight out at the middle
+            const side = Math.max(0, 1 - depth) ** 1.15, nx = (gx / gm) * side, ny = (gy / gm) * side, nz = Math.sqrt(Math.max(0, 1 - side * side));
+            let cr = AMB[0], cg = AMB[1], cb = AMB[2];
+            for (let j = 0; j < LIGHTS.length; j++) {
+              const L = LIGHTS[j], dd = Math.max(0, nx * L.d[0] + ny * L.d[1] + nz * L.d[2]) * L.k;
+              cr += L.c[0] * dd; cg += L.c[1] * dd; cb += L.c[2] * dd;
+            }
+            const sp = Math.pow(Math.max(0, nx * HV[0] + ny * HV[1] + nz * HV[2]), 18) * 55; // soft satin sheen
+            R += (Math.min(255, cr * 0.74 + sp) - R) * a;
+            G += (Math.min(255, cg * 0.74 + sp) - G) * a;
+            Bl += (Math.min(255, cb * 0.74 + sp) - Bl) * a;
+          }
         }
         d[o] = R; d[o + 1] = G; d[o + 2] = Bl; d[o + 3] = 255;
       }
