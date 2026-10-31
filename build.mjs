@@ -133,7 +133,7 @@ const PAL = palette(validHex(LEAD?.color) ? String(LEAD.color).replace("#", "") 
 // the heart logo in the matching colour (red is the original)
 const LOGO_V = logoVariant(validHex(LEAD?.color) ? String(LEAD.color).replace("#", "") : "");
 const LOGO_SFX = LOGO_V === "red" ? "" : `-${LOGO_V}`;
-const COLOR_CSS = `:root{--accent:${PAL.accent};--accent-fill:${PAL.accent};--on-accent:#ffffff}`;
+const COLOR_CSS = `:root{--accent:${PAL.accent};--accent-fill:${PAL.fill || PAL.accent};--on-accent:${PAL.onAccent || "#ffffff"}}`; // yellow: yellow buttons with dark text
 
 // ---------- templates ----------
 // The same address in another language (English has no prefix)
