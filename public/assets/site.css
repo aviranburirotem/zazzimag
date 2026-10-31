@@ -3,6 +3,7 @@
   --bg:#ffffff; --fg:#111214; --muted:#6b6e76; --line:#e4e5e9; --soft:#f3f4f6;
   --accent:#e30613; --accent-fill:#e30613; --on-accent:#ffffff;
   --display:"Archivo",system-ui,sans-serif;
+  --head:var(--display); /* big headlines; fonts are set in the console (Fonts tab) */
   --serif:"Newsreader",Georgia,"Times New Roman",serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
   --text:"Archivo",system-ui,-apple-system,"Segoe UI",Arial,sans-serif; /* page intros & descriptions (same face as the home intro) */
@@ -46,7 +47,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 @media (max-width:640px){.site-nav{gap:14px}.logo-vid{width:48px;height:48px}}
 
 /* heavy italic display, echoing the logo */
-.heavy,.intro h1,.lava-in h1,.article-head h1,.page h1,.band h2,.feat h3{font-style:italic;font-weight:900}
+.heavy,.intro h1,.lava-in h1,.article-head h1,.page h1,.band h2,.feat h3{font-family:var(--head);font-style:italic;font-weight:900}
 
 .intro{position:relative;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding-block:40px 24px}
 .intro h1,.lava-in h1{margin:0;font-stretch:70%;font-size:calc(clamp(40px,7vw,88px) * var(--hs,1));line-height:.92;letter-spacing:-.02em;text-wrap:balance;text-transform:uppercase}
@@ -107,7 +108,7 @@ figcaption{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:
 .body{font-family:var(--serif);font-size:19px;line-height:1.65;max-width:65ch;margin:32px auto 0}
 .body p{margin:0 0 1.1em}
 .body a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
-.body h2,.body h3{font-family:var(--display);font-stretch:80%;font-weight:800;text-transform:uppercase;margin:1.6em 0 .5em;line-height:1.1}
+.body h2,.body h3{font-family:var(--head);font-stretch:80%;font-weight:800;text-transform:uppercase;margin:1.6em 0 .5em;line-height:1.1}
 .body h2{font-size:24px}.body h3{font-size:19px}
 .body blockquote{margin:1.4em 0;padding-left:18px;border-left:3px solid var(--accent);font-style:italic;font-size:22px}
 .body ul{padding-left:1.2em}
@@ -118,7 +119,7 @@ figcaption{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:
 .gallery img{aspect-ratio:3/4;object-fit:cover;width:100%}
 .section-h{display:flex;justify-content:space-between;align-items:baseline;margin:48px 0 16px;gap:12px}
 .section-h .with-ic .ic{width:14px;height:14px}
-.section-h h2{margin:0;font-size:22px;font-stretch:75%;font-weight:800;font-style:italic;text-transform:uppercase}
+.section-h h2{font-family:var(--head);margin:0;font-size:22px;font-stretch:75%;font-weight:800;font-style:italic;text-transform:uppercase}
 .strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
 .strip .ph{aspect-ratio:4/5} /* Instagram post shape, like the home grid */
 @media (max-width:640px){.strip{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}}

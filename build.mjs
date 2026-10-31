@@ -1,5 +1,6 @@
 // Builds the static site into /dist. Run: node build.mjs
 // Articles live in content/articles/*.md — add a file there and it appears on the site.
+import { fontSetup } from "./lib/fonts.js";
 import fs from "node:fs";
 import path from "node:path";
 import { markdown, frontmatter } from "./lib/markdown.js";
@@ -9,6 +10,8 @@ import { texts } from "./lib/site-schema.js";
 
 // Site wording, editable in the console (content/site.json)
 const T = texts(JSON.parse(fs.readFileSync("content/site.json", "utf8")));
+// Fonts chosen in the console (content/fonts.json); the site always stays in its light look for now
+const FONTS = fontSetup(fs.existsSync("content/fonts.json") ? JSON.parse(fs.readFileSync("content/fonts.json", "utf8")) : {});
 
 const SITE = {
   name: T("brand.name"),
@@ -109,9 +112,9 @@ function layout({ title, description, active, body, image, type = "website", pat
 <link rel="icon" type="image/png" href="/assets/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,400..900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<script>try{if(localStorage.getItem("zz-theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}</script>
+${FONTS.links.map((u) => `<link rel="stylesheet" href="${esc(u)}">`).join("\n")}
 <link rel="stylesheet" href="/assets/site.css?v=${V}">
+<style>${FONTS.css}</style>
 </head>
 <body data-handle="${esc(SITE.handle)}" data-follow="${tx("home.followTile")}" data-issue-label="${tx("issues.category")}">
 <a class="skip" href="#main">Skip to content</a>
@@ -223,7 +226,7 @@ function home() {
   const hlColor = ["white", "pink", "yellow", "black"].includes(T("home.headlineColor")) ? T("home.headlineColor") : "white";
   const introSize = Math.min(3, Math.max(0.6, (parseFloat(T("home.introSize")) || 100) / 100));
   const introAlign = ["left", "center", "right"].includes(T("home.introAlign")) ? T("home.introAlign") : "left";
-  const lava = on("show.lava"), sw = on("show.lightSwitch") ? `<button class="lightswitch" type="button" id="light-switch" aria-pressed="false" aria-label="Turn off the light" data-tip="Turn off the light"><span class="plate"><span class="screw"></span><span class="slot"><span class="lever"></span></span><span class="screw"></span></span></button>` : "";
+  const lava = on("show.lava"), sw = ""; // the light switch is off until it gets a new place
 
   return layout({
     active: "home", pathname: "/",
@@ -630,10 +633,11 @@ fs.copyFileSync("lib/markdown.js", path.join(OUT, "admin/markdown.js"));
 fs.copyFileSync("lib/icons.js", path.join(OUT, "admin/icons.js"));
 fs.copyFileSync("lib/site-schema.js", path.join(OUT, "admin/site-schema.js"));
 fs.copyFileSync("lib/ig-schedule.js", path.join(OUT, "admin/ig-schedule.js"));
+fs.copyFileSync("lib/fonts.js", path.join(OUT, "admin/fonts.js"));
 { // the console always loads the newest helper files (no stale browser copies after a deploy)
-  const av = crypto.createHash("md5").update(fs.readFileSync("lib/markdown.js")).update(fs.readFileSync("lib/icons.js")).update(fs.readFileSync("lib/site-schema.js")).update(fs.readFileSync("lib/ig-schedule.js")).digest("hex").slice(0, 8);
+  const av = crypto.createHash("md5").update(fs.readFileSync("lib/markdown.js")).update(fs.readFileSync("lib/icons.js")).update(fs.readFileSync("lib/site-schema.js")).update(fs.readFileSync("lib/ig-schedule.js")).update(fs.readFileSync("lib/fonts.js")).digest("hex").slice(0, 8);
   const f = path.join(OUT, "admin/index.html");
-  fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(/from "\.\/(markdown|icons|site-schema|ig-schedule)\.js"/g, `from "./$1.js?v=${av}"`));
+  fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(/from "\.\/(markdown|icons|site-schema|ig-schedule|fonts)\.js"/g, `from "./$1.js?v=${av}"`));
 }
 
 if (COMING_SOON) {

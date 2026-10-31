@@ -9,6 +9,7 @@
 import crypto from "node:crypto";
 import { frontmatter } from "../lib/markdown.js";
 import { SCHEMA } from "../lib/site-schema.js";
+import { FREE as FREE_FONTS, ROLES as FONT_ROLES } from "../lib/fonts.js";
 import { getToken, saveToken, getHiddenPosts, setHiddenPosts, hasStore, getJSON, setJSON } from "../lib/token.js";
 import { run as runIgQueue, KEYS as IGK, DEFAULT_SCHEDULE } from "../lib/ig-publish.js";
 import { fetchPosts } from "./instagram.js";
@@ -378,6 +379,52 @@ export default async function handler(req, res) {
     }
 
     // Store products (content/products.json)
+    // Fonts (content/fonts.json, uploaded font files in public/fonts/)
+    if (action === "fonts") {
+      const text = await gh(repo(`/contents/content/fonts.json?ref=${BRANCH}`), { raw: true }).catch(() => "");
+      let data = {};
+      try { data = JSON.parse(text || "{}"); } catch {}
+      return res.json({ roles: data.roles || {}, custom: data.custom || [] });
+    }
+    // one font file: stored as a blob now, added to the site with the next "saveFonts"
+    if (action === "fontFile" && req.method === "POST") {
+      const file = String(body.file || ""), data = String(body.data || "").replace(/^data:[^,]*,/, "");
+      if (!/^[a-z0-9][a-z0-9-]{0,70}\.(woff2|woff|ttf|otf)$/.test(file) || !data) return fail(400, "That font file couldn't be read. Use a .woff2, .woff, .ttf or .otf file.");
+      if (data.length > 4_000_000) return fail(413, "That font file is too large (up to about 3 MB).");
+      const blob = await gh(repo("/git/blobs"), { method: "POST", body: { content: data, encoding: "base64" } });
+      return res.json({ ok: true, file: `/fonts/${file}`, sha: blob.sha });
+    }
+    if (action === "saveFonts" && req.method === "POST") {
+      const clean = (v, max) => String(v ?? "").replace(/[^\p{L}\p{N} .&'-]/gu, "").replace(/\s+/g, " ").trim().slice(0, max);
+      const custom = [];
+      for (const c of (Array.isArray(body.custom) ? body.custom : []).slice(0, 30)) {
+        const name = clean(c.name, 60);
+        if (!name) return fail(400, "Every custom font needs a name.");
+        if (FREE_FONTS.some((f) => f.name.toLowerCase() === name.toLowerCase())) return fail(400, `"${name}" is already in the free fonts list.`);
+        if (custom.some((x) => x.name.toLowerCase() === name.toLowerCase())) return fail(400, `There are two custom fonts called "${name}".`);
+        const fallback = ["sans-serif", "serif", "monospace"].includes(c.fallback) ? c.fallback : "sans-serif";
+        if (c.kind === "link") {
+          const url = String(c.url || "").trim();
+          if (!/^https:\/\/[^\s"'<>]+$/.test(url)) return fail(400, `The stylesheet link for "${name}" must start with https://`);
+          custom.push({ name, kind: "link", url, fallback });
+        } else {
+          const files = (Array.isArray(c.files) ? c.files : []).filter((f) => /^\/fonts\/[a-z0-9][a-z0-9-]{0,70}\.(woff2|woff|ttf|otf)$/.test(f.file || ""))
+            .slice(0, 12).map((f) => ({ file: f.file, weight: Math.min(900, Math.max(100, Math.round((Number(f.weight) || 400) / 100) * 100)), italic: !!f.italic }));
+          if (!files.length) return fail(400, `Add at least one font file for "${name}".`);
+          custom.push({ name, kind: "files", files, fallback });
+        }
+      }
+      const names = new Set([...FREE_FONTS.map((f) => f.name), ...custom.map((c) => c.name)]);
+      const roles = {};
+      for (const r of FONT_ROLES) { const v = String(body.roles?.[r.key] || ""); roles[r.key] = names.has(v) ? v : r.default; }
+      const entries = [{ path: "content/fonts.json", content: JSON.stringify({ roles, custom }, null, 2) + "\n" }];
+      for (const f of Array.isArray(body.newFiles) ? body.newFiles : []) {
+        if (/^\/fonts\/[a-z0-9][a-z0-9-]{0,70}\.(woff2|woff|ttf|otf)$/.test(f.file || "") && /^[0-9a-f]{40}$/.test(f.sha || "")) entries.push({ path: "public" + f.file, sha: f.sha });
+      }
+      await commit(entries, "Update fonts");
+      return res.json({ ok: true, roles, custom });
+    }
+
     if (action === "products") {
       const text = await gh(repo(`/contents/content/products.json?ref=${BRANCH}`), { raw: true });
       let data = { products: [] };
