@@ -3,13 +3,15 @@ title: Japanese Avant-Garde Fashion: The Crow Tribe (Karasu-zoku)
 dek: An introduction to Karasu-zoku, the Japanese fashion subculture known as the Crow Tribe, where all-black dressing became a bold expression of avant-garde style
 date: 2026-10-31
 category: [Trends, History, Guide]
-cover: /images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cover-pure-violet.jpg
-color: 7f00ff
+cover: /images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cover-shibuya-2-61.jpg
+color: d0926e
+coverPosition: 50% 87%
+heroPosition: 50% 74%
 heroShape: vertical
 coverAlt: An all-black Comme des Garçons total look. Ready-to-wear styling meets subtle avant-garde details.
 coverCaption: Comme des Garçons total look. Ready-to-wear at first glance, avant-garde on closer inspection | Photo by Netta Meisles
 author: Netta Meisles
-cropOriginals: {"nakano-2-34-5-crop-2.jpg":"/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/nakano-2-34-5.jpg","cat-street-2-21-crop-2.jpg":"/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cat-street-2-21.jpg","cat-street-2-32-crop.jpg":"/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cat-street-2-32.jpg"}
+cropOriginals: {"cat-street-2-21-crop-2.jpg":"/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cat-street-2-21.jpg","cat-street-2-32-crop.jpg":"/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cat-street-2-32.jpg"}
 ---
 In Tokyo, the crow is part of the city's soundtrack. Its unmistakable *kaa-kaa* call echoes across rooftops, train stations and busy streets. Its dark silhouette is a familiar sight above the crowds. It's easy to see why the bird became the namesake for **Karasu-zoku (カラス族), or the Crow Tribe**, a Japanese fashion subculture known for its almost entirely black wardrobe and avant-garde sensibility.
 
@@ -41,8 +43,9 @@ Black, volume and deconstruction define the Karasu-zoku look. Long coats, wide t
 Karasu-zoku challenged conventional ideas of beauty and dress. Similar concepts appear in the work of Western designers such as **Alexander McQueen, Rick Owens, Demna and Matières Fécales**, each exploring dark aesthetics and unconventional forms of dress in their own way. Once considered radical, anti-fashion has earned commercial success and a respected place within the fashion industry.
 
 
-![Two young Japanese individuals wearing casual avant-garde outfits. Their looks combine different textiles, unconventional cuts and contrasting materials.](/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/nakano-2-34-5-crop-2.jpg "Playing with materials and form  | Photo by Netta Meisles")
-![A Japanese individual wearing a relaxed, all-black Rick Owens look. The outfit reflects the designer's distinctive approach to avant-garde fashion.](/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/article8-3.jpg "Rick Owens total look. An effortless take on avant-garde fashion  | Photo by Netta Meisles")
+
+![A woman wearing an avant-garde, all-black outfit inspired by Karasu-zoku, or the Crow Tribe, in Aoyama, Tokyo.](/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/omotesando-2-30.jpg "A modern Karasu-zoku look spotted on the streets of Aoyama, Tokyo  | Photo by Netta Meisles")
+
 
 
 ## Designers & Labels to Explore
