@@ -2,7 +2,7 @@
   "roles": {
     "head": "Archivo",
     "main": "Archivo",
-    "article": "Newsreader",
+    "article": "Archivo",
     "desc": "Archivo",
     "label": "IBM Plex Mono"
   },
