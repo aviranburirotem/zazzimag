@@ -3,10 +3,8 @@ title: Japanese Avant-Garde Fashion: The Crow Tribe (Karasu-zoku)
 dek: An introduction to Karasu-zoku, the Japanese fashion subculture known as the Crow Tribe, where all-black dressing became a bold expression of avant-garde style
 date: 2026-10-31
 category: [Trends, History, Guide]
-cover: /images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cover-shibuya-edited-82.jpg
-color: e8d0bc
-coverPosition: 50% 87%
-heroPosition: 50% 82%
+cover: /images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cover-cat-street-2-21.jpg
+color: 476226
 heroShape: vertical
 coverAlt: An all-black Comme des Garçons total look. Ready-to-wear styling meets subtle avant-garde details.
 coverCaption: Comme des Garçons total look. Ready-to-wear at first glance, avant-garde on closer inspection | Photo by Netta Meisles
