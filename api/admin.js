@@ -102,12 +102,12 @@ const trPath = (slug, lang) => `content/translations/${slug}/${lang}.json`;
 async function readTr(slug, lang) {
   try { const t = await gh(repo(`/contents/${trPath(slug, lang)}?ref=${BRANCH}`), { raw: true }); return t ? JSON.parse(t) : null; } catch { return null; }
 }
-const fmOf = (content) => { const { data, body } = frontmatter(content); return { title: String(data.title || ""), dek: String(data.dek || ""), body: body.replace(/^\n+/, "") }; };
+const fmOf = (content) => { const { data, body } = frontmatter(content); return { title: String(data.title || ""), dek: String(data.dek || ""), body: body.replace(/^\n+/, ""), coverCaption: String(data.coverCaption || ""), coverAlt: String(data.coverAlt || "") }; };
 // Translate an article into every language (or the ones given). Returns { entries, done, errors, index }.
 async function translateAll(slug, content, { langs = null, force = false } = {}) {
   const keys = await trKeys();
   if (!keys.deepl && !keys.google) return { entries: [], done: [], errors: [], skipped: true };
-  const src = fmOf(content), en = sourceOf(src.title, src.dek, src.body);
+  const src = fmOf(content), en = sourceOf(src.title, src.dek, src.body, [src.coverCaption, src.coverAlt].filter(Boolean).join("\n"));
   const index = await getJSON(TRK.index, {});
   const entry = (index[slug] = { en, langs: { ...(index[slug]?.langs || {}) } });
   const out = { entries: [], done: [], errors: [], used: {} };

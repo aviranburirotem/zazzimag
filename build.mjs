@@ -25,6 +25,7 @@ const T = (k) => { const v = LANG !== "en" && TR_KEYS.has(k) ? SITE_TR[LANG]?.[k
 const LOCALE = { en: "en-US", de: "de-DE", es: "es-ES", fr: "fr-FR", he: "he-IL", ja: "ja-JP", ko: "ko-KR" };
 const H = (p) => (LANG === "en" || !String(p).startsWith("/") ? p : `/${LANG}${p}`); // a link inside the language being built
 const DIR = () => langOf(LANG)?.dir || "ltr";
+const EN = () => (LANG === "en" ? "" : ' lang="en"'); // words that stay in English on every language's pages
 const catName = (c) => (c === T_EN("issues.category") ? T("issues.category") : (LANG !== "en" && SITE_TR[LANG]?.["cat:" + c]) || c);
 const minRead = (a) => T("ui.minRead").replace(/\{n\}/g, a.minutes);
 // Fonts chosen in the console (content/fonts.json); the site always stays in its light look for now
@@ -93,7 +94,7 @@ for (const a of articles) {
     if (!fs.existsSync(f)) continue;
     try {
       const t = JSON.parse(fs.readFileSync(f, "utf8"));
-      if (t.body) a.tr[l.code] = { title: t.title || a.title, dek: t.dek || "", html: markdown(t.body), edited: !!t.edited };
+      if (t.body) a.tr[l.code] = { title: t.title || a.title, dek: t.dek || "", html: markdown(t.body), edited: !!t.edited, coverCaption: t.coverCaption || "", coverAlt: t.coverAlt || "" };
     } catch {}
   }
 }
@@ -223,7 +224,7 @@ const artTile = (a, feat = false) => a.kind === "issue" ? issueTile(a, feat) : `
 const pagesLabel = (i) => T("issues.pages").replace(/\{n\}/g, i.pages.length);
 const issueTile = (a, feat = false) => `<a class="tile art issue${feat ? " feat" : ""}" href="${H(a.url)}" data-issue="${esc(a.slug)}" data-cat="${catAttr(a)}">
   <div class="ph"><div class="mag"${(() => { const d = a.cover && a.cover.startsWith("/") && imgDims(a.cover); return d ? ` style="aspect-ratio:${d.w}/${d.h}"` : ""; })()}><img src="${esc(fbPage({ image: a.cover }).imageM || a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"></div></div>
-  <span class="label issue-label">${icon("book-open")}${tx("issues.category")} · ${esc(pagesLabel(a))}</span><h3 lang="en" dir="ltr">${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap" lang="en" dir="ltr">${esc(a.dek)}</p>` : ""}</a>`;
+  <span class="label issue-label">${icon("book-open")}<span${EN()}>${tx("issues.category")} · ${esc(pagesLabel(a))}</span></span><h3 lang="en" dir="ltr">${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap" lang="en" dir="ltr">${esc(a.dek)}</p>` : ""}</a>`;
 const igSlot = () => `<div class="tile ig ig-slot" aria-hidden="true"><div class="ph"></div></div>`;
 
 // Animated heart logo (looping video, falls back to the still logo)
@@ -259,7 +260,7 @@ function home() {
 
   // a carousel: header with arrows and pause, then a row of tiles that scrolls sideways
   const car = (title, tiles, extra = "", foot = "") => `<div class="half carousel" data-carousel>
-      <div class="section-h"><h2>${title}</h2><div class="car-ctl">${extra}
+      <div class="section-h"><h2${EN()}>${title}</h2><div class="car-ctl">${extra}
         <button class="car-btn" type="button" data-car="prev" aria-label="${tx("ui.previous")}">${icon("arrow-left")}</button>
         <button class="car-btn" type="button" data-car="next" aria-label="${tx("ui.next")}">${icon("arrow-right")}</button>
         <button class="car-btn" type="button" data-car="pause" aria-label="${tx("ui.pauseCarousel")}" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></div></div>
@@ -272,7 +273,7 @@ function home() {
   if (halves.length) sections.push(`<section class="wrap home-sec sec-car${halves.length === 1 ? " solo" : ""}">${halves.join("")}</section>`);
 
   const moreIssues = iss.slice(1, 5);
-  if (moreIssues.length) sections.push(`<section class="wrap home-sec sec-issues"><div class="section-h"><h2>${tx("home.secIssues")}</h2></div><div class="row4">${moreIssues.map((x) => artTile(x)).join("")}</div></section>`);
+  if (moreIssues.length) sections.push(`<section class="wrap home-sec sec-issues"><div class="section-h"><h2${EN()}>${tx("home.secIssues")}</h2></div><div class="row4">${moreIssues.map((x) => artTile(x)).join("")}</div></section>`);
   const grid = sections.filter(Boolean).join("\n");
   // headline on the lava strip: size (% of normal), place (tl…br) and colour, from the console
   const hlSize = Math.min(2, Math.max(0.4, (parseFloat(T("home.headlineSize")) || 100) / 100));
@@ -287,7 +288,7 @@ function home() {
     description: `${SITE.name}. ${SITE.tagline}`,
     body: `${lava ? `<div class="wrap lava-wrap"><section class="lava-band" data-lava data-colors="${esc(JSON.stringify(PAL.lava))}" style="--hs:${hlSize};background:linear-gradient(90deg,${PAL.lava.bgL},${PAL.lava.bgR})">
       <canvas aria-hidden="true"></canvas>${sw}
-      ${T("home.headline") || T("home.intro") ? `<div class="lava-in pos-${hlPos} hl-${hlColor}" style="--is:${introSize}">${T("home.headline") ? `<h1 class="brand-hl">${br("home.headline")}</h1>` : ""}${T("home.intro") ? `<div class="lava-sub">${md("home.intro")}</div>` : ""}</div>` : ""}
+      ${T("home.headline") || T("home.intro") ? `<div class="lava-in pos-${hlPos} hl-${hlColor}" style="--is:${introSize}"${LANG === "en" ? "" : ' lang="en" dir="ltr"'}>${T("home.headline") ? `<h1 class="brand-hl">${br("home.headline")}</h1>` : ""}${T("home.intro") ? `<div class="lava-sub">${md("home.intro")}</div>` : ""}</div>` : ""}
       <button class="lava-pause" type="button" data-lava-pause aria-label="${tx("ui.pauseAnimation")}" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></section></div>` : ""}
     <section class="wrap intro${lava ? " after-lava" : ""} align-${introAlign}" style="--hs:${hlSize};--is:${introSize}">${lava && !T("home.headline") ? `<h1 class="visually-hidden">${esc(SITE.name)}</h1>` : ""}
       ${lava ? "" : sw}
@@ -330,12 +331,12 @@ function articlePage(a) {
     <header class="wrap"><div class="article-head">
       <div class="crumbs label"><a href="${H("/articles/")}">${tx("articles.heading")}</a><span>/</span><span>${a.categories.map((c) => esc(catName(c))).join(" · ")}</span></div>
       <h1${content}>${esc(title)}</h1>${dek ? `<p class="dek"${content}>${esc(dek)}</p>` : ""}
-      <div class="meta label"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${esc(minRead(a))}</span>${byline ? `<span>${tx("articles.byline")} <bdi>${esc(byline)}</bdi></span>` : ""}</div>
+      <div class="meta label"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${esc(minRead(a))}</span>${byline ? `<span${LANG === "en" ? "" : ' lang="en" dir="ltr"'}>${tx("articles.byline")} ${esc(byline)}</span>` : ""}</div>
       ${t ? `<p class="tr-note">${icon("globe")}<span>${esc(NOTE[LANG][t.edited ? 1 : 0])} · <a href="${a.url}" data-lang-pick="en" lang="en" dir="ltr">${esc(NOTE[LANG][2])}</a></span></p>` : en ? `<p class="tr-note">${icon("globe")}<span>${tx("ui.notTranslated")}</span></p>` : ""}</div></header>
-    <figure class="wrap hero${a.heroShape === "vertical" ? " vertical" : ""}"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}"${coverPos(a, "heroPosition")}></div>${a.coverCaption ? `<figcaption><bdi>${esc(a.coverCaption)}</bdi></figcaption>` : ""}</figure>
+    <figure class="wrap hero${a.heroShape === "vertical" ? " vertical" : ""}"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(t?.coverAlt || a.coverAlt || title)}"${coverPos(a, "heroPosition")}></div>${a.coverCaption ? `<figcaption${t?.coverCaption ? "" : content}>${esc(t?.coverCaption || a.coverCaption)}</figcaption>` : ""}</figure>
     <div class="wrap"><div class="body"${content}>${html}</div>
       ${more.length && on("show.readNext") ? `<div class="section-h"><h2>${tx("articles.readNext")}</h2><a class="label with-ic" href="${H("/articles/")}">${tx("articles.allLink")} ${icon("arrow-right")}</a></div><div class="grid">${more.map((x) => artTile(x)).join("")}</div>` : ""}
-      ${on("show.feedStrip") ? `<section data-ig-section><div class="section-h"><h2>${tx("articles.feedHeading")}</h2><a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}<bdi>@${SITE.handle}</bdi></a></div>
+      ${on("show.feedStrip") ? `<section data-ig-section><div class="section-h"><h2${EN()}>${tx("articles.feedHeading")}</h2><a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}<bdi>@${SITE.handle}</bdi></a></div>
       <div class="strip" data-ig-strip>${'<div class="tile ig-slot" aria-hidden="true"><div class="ph"></div></div>'.repeat(6)}</div></section>` : ""}
     </div></article>`,
   });

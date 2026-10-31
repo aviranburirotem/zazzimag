@@ -63,7 +63,7 @@
   function igTile(p, i) {
     return `<button class="tile ig" type="button" data-ig="${i}" aria-label="${esc(ui("ui.openPost", "Open Instagram post"))}">
       <div class="ph"><img src="${esc(p.image)}" alt="${esc(firstLine(p.caption).slice(0, 120) || "Instagram post by @" + HANDLE)}" loading="lazy">${p.type === "VIDEO" ? `<span class="play" aria-hidden="true">${IC.play}</span>` : ""}</div>
-      <span class="ig-cap"><span class="label issue-label ig-label">${IC.instagram}${esc(ui("ui.post", "Post"))}</span>${firstLine(p.caption) ? `<span class="cap ig-text" dir="auto">${esc(firstLine(p.caption))}</span>` : ""}</span></button>`;
+      <span class="ig-cap"><span class="label issue-label ig-label">${IC.instagram}<span lang="en">${esc(ui("ui.post", "Post"))}</span></span>${firstLine(p.caption) ? `<span class="cap ig-text" dir="auto">${esc(firstLine(p.caption))}</span>` : ""}</span></button>`;
   }
 
   // Posts made with a white frame keep it (the logo sits near its edge), but the text under the tile is

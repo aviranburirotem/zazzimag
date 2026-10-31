@@ -553,3 +553,4 @@ html[dir="rtl"] .flipbook{direction:ltr}
 
 html[dir="rtl"] .label,html[dir="rtl"] .badge,html[dir="rtl"] .p-badge{letter-spacing:0}
 .ng{unicode-bidi:isolate;direction:ltr}
+html[dir="rtl"] .tile .ig-text,html[dir="rtl"] .tile [dir="ltr"]{text-align:right}
