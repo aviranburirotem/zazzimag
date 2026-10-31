@@ -9,6 +9,7 @@ coverPosition: 50% 0%
 coverAlt: Erunyan wearing a colorful Decora fashion outfit
 coverCaption: @Erunyan wearing a colorful Decora outfit | Photo by Netta Meisles
 author: Netta Meisles
+pinned: true
 ---
 Harajuku is known for its street fashion and independent boutiques. Its backstreets, known as Ura-Harajuku, became a hub for independent designers in the late 1980s, helping shape the area’s experimental style. Today, this spirit can be seen in fashion subcultures such as Lolita, with its Victorian-inspired dresses, and Decora, known for colorful outfits and playful accessories.
 
