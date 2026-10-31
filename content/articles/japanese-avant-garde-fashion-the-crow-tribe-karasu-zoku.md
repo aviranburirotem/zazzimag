@@ -4,7 +4,7 @@ dek: An introduction to Karasu-zoku, the Japanese fashion subculture known as th
 date: 2026-10-31
 category: [Trends, History, Guide]
 cover: /images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cover-shibuya-2-61.jpg
-color: ff0000
+color: ff3d8b
 colorManual: true
 coverPosition: 50% 83%
 heroPosition: 50% 73%
