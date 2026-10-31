@@ -82,7 +82,8 @@
   "ui.backHome": "Retour à la page d'accueil",
   "ui.notTranslated": "Cet article n'a pas encore été traduit.",
   "cat:Trends": "Tendances",
-  "cat:Guide": "Guide"
+  "cat:Guide": "Guide",
+  "cat:History": "Histoire"
  },
  "cache": {
   "11yek0p6": "Tendances",
@@ -168,7 +169,8 @@
   "usq0q5o": "Cette page n'existe pas.",
   "1tj3b6qc": "Retour à la page d'accueil",
   "1ragzugy": "Cet article n'a pas encore été traduit.",
-  "jue0h75": "Guide"
+  "jue0h75": "Guide",
+  "yugfpb7": "Histoire"
  },
  "edited": {},
  "engine": "deepl",
