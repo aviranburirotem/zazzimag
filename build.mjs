@@ -217,15 +217,24 @@ function home() {
   const moreIssues = iss.slice(1, 5);
   if (moreIssues.length) sections.push(`<section class="wrap home-sec sec-issues"><div class="section-h"><h2>${tx("home.secIssues")}</h2></div><div class="row4">${moreIssues.map((x) => artTile(x)).join("")}</div></section>`);
   const grid = sections.filter(Boolean).join("\n");
+  // headline on the lava strip: size (% of normal), place (tl…br) and colour, from the console
+  const hlSize = Math.min(2, Math.max(0.4, (parseFloat(T("home.headlineSize")) || 100) / 100));
+  const hlPos = ["tl", "tc", "tr", "ml", "mc", "mr", "bl", "bc", "br"].includes(T("home.headlinePos")) ? T("home.headlinePos") : "bl";
+  const hlColor = ["white", "pink", "yellow", "black"].includes(T("home.headlineColor")) ? T("home.headlineColor") : "white";
+  const introSize = Math.min(3, Math.max(0.6, (parseFloat(T("home.introSize")) || 100) / 100));
+  const introAlign = ["left", "center", "right"].includes(T("home.introAlign")) ? T("home.introAlign") : "left";
+  const lava = on("show.lava"), sw = on("show.lightSwitch") ? `<button class="lightswitch" type="button" id="light-switch" aria-pressed="false" aria-label="Turn off the light" data-tip="Turn off the light"><span class="plate"><span class="screw"></span><span class="slot"><span class="lever"></span></span><span class="screw"></span></span></button>` : "";
 
   return layout({
     active: "home", pathname: "/",
     description: `${SITE.name}. ${SITE.tagline}`,
-    body: `<section class="wrap intro">
-      ${on("show.lightSwitch") ? `<button class="lightswitch" type="button" id="light-switch" aria-pressed="false" aria-label="Turn off the light" data-tip="Turn off the light"><span class="plate"><span class="screw"></span><span class="slot"><span class="lever"></span></span><span class="screw"></span></span></button>` : ""}
-      <div>
-      ${on("show.lava") ? `<div class="lava" data-lava><canvas aria-hidden="true"></canvas><h1>${br("home.headline")}</h1>
-        <button class="lava-pause" type="button" data-lava-pause aria-label="Pause the animation" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></div>` : `<h1>${br("home.headline")}</h1>`}
+    body: `${lava ? `<section class="lava-band" data-lava style="--hs:${hlSize}">
+      <canvas aria-hidden="true"></canvas>${sw}
+      ${T("home.headline") ? `<div class="wrap lava-in pos-${hlPos}"><h1 class="hl-${hlColor}">${br("home.headline")}</h1></div>` : ""}
+      <button class="lava-pause" type="button" data-lava-pause aria-label="Pause the animation" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></section>` : ""}
+    <section class="wrap intro${lava ? " after-lava" : ""} align-${introAlign}" style="--hs:${hlSize};--is:${introSize}">${lava && !T("home.headline") ? `<h1 class="visually-hidden">${esc(SITE.name)}</h1>` : ""}
+      ${lava ? "" : sw}
+      <div>${lava || !T("home.headline") ? "" : `<h1>${br("home.headline")}</h1>`}
       ${md("home.intro")}</div>
       ${on("show.igButton") ? `<a class="handle" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}${icon("arrow-up-right")}</a>` : ""}</section>
     <div class="home-sections">${grid}</div>

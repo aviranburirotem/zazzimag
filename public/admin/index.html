@@ -37,6 +37,31 @@
   .texts textarea{min-height:90px}
   .texts .def{background:none;border:0;padding:0;font-size:12px;color:var(--muted);text-decoration:underline;justify-self:start}
   .texts .f{display:grid;gap:6px}
+  .texts .flabel{font-size:12px;font-weight:600}
+  .range-row{display:flex;align-items:center;gap:12px}
+  .range-row input{flex:1;accent-color:var(--accent)}
+  .range-row output{min-width:48px;font-variant-numeric:tabular-nums;font-weight:600}
+  .texts select{width:100%;max-width:260px}
+  .pos-pick{display:grid;grid-template-columns:repeat(3,36px);gap:4px;width:max-content}
+  .pos-pick button{width:36px;height:30px;padding:0;border:1px solid var(--line);border-radius:4px;background:var(--bg);display:grid;place-items:center;cursor:pointer}
+  .pos-pick button span{width:12px;height:4px;border-radius:2px;background:var(--line)}
+  .pos-pick button[aria-checked="true"]{border-color:var(--fg);background:var(--fg)}
+  .pos-pick button[aria-checked="true"] span{background:var(--bg)}
+  .pos-pick button:focus-visible{outline:3px solid #2b6cff;outline-offset:2px}
+  .hl-prev{container-type:inline-size;position:relative;margin-top:8px;aspect-ratio:1280/440;border-radius:6px;overflow:hidden;
+    background:radial-gradient(circle at 18% 70%,#ff2e88 0 9%,transparent 9.5%),radial-gradient(circle at 34% 30%,#ffd23f 0 7%,transparent 7.5%),radial-gradient(circle at 55% 62%,#8a4dff 0 11%,transparent 11.5%),radial-gradient(circle at 74% 28%,#22c7e8 0 8%,transparent 8.5%),radial-gradient(circle at 88% 74%,#ff7a1a 0 9%,transparent 9.5%),linear-gradient(#1c0830,#3d0a24)}
+  .hl-prev-in{position:absolute;inset:0;display:flex;flex-direction:column;padding:4.5cqw 1.6cqw}
+  .hl-prev b{display:block;font-style:italic;font-weight:900;font-stretch:70%;line-height:.92;letter-spacing:-.02em;text-transform:uppercase}
+  .hl-prev b.hl-white{color:#fff;text-shadow:0 1px 10px rgba(0,0,0,.45)}
+  .hl-prev b.hl-black{color:#111214}
+  .hl-prev b.hl-pink{color:#ff5bb0;text-shadow:0 1px 10px rgba(0,0,0,.5)}
+  .hl-prev b.hl-yellow{color:#ffe14d;text-shadow:0 1px 10px rgba(0,0,0,.5)}
+  .hl-prev .pos-tl,.hl-prev .pos-tc,.hl-prev .pos-tr{justify-content:flex-start}
+  .hl-prev .pos-ml,.hl-prev .pos-mc,.hl-prev .pos-mr{justify-content:center}
+  .hl-prev .pos-bl,.hl-prev .pos-bc,.hl-prev .pos-br{justify-content:flex-end}
+  .hl-prev .pos-tl,.hl-prev .pos-ml,.hl-prev .pos-bl{align-items:flex-start;text-align:left}
+  .hl-prev .pos-tc,.hl-prev .pos-mc,.hl-prev .pos-bc{align-items:center;text-align:center}
+  .hl-prev .pos-tr,.hl-prev .pos-mr,.hl-prev .pos-br{align-items:flex-end;text-align:right}
   .texts-bar{position:sticky;bottom:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:var(--bg);border:1px solid var(--line);border-radius:6px;max-width:820px;margin-top:16px}
   .prods{display:grid;gap:12px;max-width:900px}
   .prod{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:16px;padding:14px;background:var(--bg);border:1px solid var(--line);border-radius:6px;align-items:start}
@@ -1806,6 +1831,19 @@ async function renderTexts() {
   const fieldHtml = (f) => {
     const v = get(f.key) ?? f.default, id = "t-" + f.key.replace(".", "-");
     if (f.type === "toggle") return `<div class="f"><label class="showbox" for="${id}"><input type="checkbox" id="${id}" data-key="${f.key}" ${v === "off" ? "" : "checked"}> ${esc(f.label)}</label></div>`;
+    const defBtn = `<button type="button" class="def" data-def="${f.key}">Use original</button>`;
+    if (f.type === "range") return `<div class="f"><label for="${id}">${esc(f.label)}${f.hint ? ` <span class="hint">${esc(f.hint)}</span>` : ""}</label>
+      <div class="range-row"><input type="range" id="${id}" data-key="${f.key}" min="${f.min}" max="${f.max}" step="${f.step || 1}" value="${esc(v)}"><output for="${id}">${esc(v)}${f.unit || ""}</output></div>${defBtn}</div>`;
+    if (f.type === "choice") return `<div class="f"><label for="${id}">${esc(f.label)}</label>
+      <select id="${id}" data-key="${f.key}">${f.options.map(([val, lab]) => `<option value="${val}"${val === v ? " selected" : ""}>${esc(lab)}</option>`).join("")}</select>${defBtn}</div>`;
+    if (f.type === "pos") {
+      const P = [["tl", "Top left"], ["tc", "Top centre"], ["tr", "Top right"], ["ml", "Middle left"], ["mc", "Centre"], ["mr", "Middle right"], ["bl", "Bottom left"], ["bc", "Bottom centre"], ["br", "Bottom right"]];
+      return `<div class="f"><span class="flabel" id="${id}-l">${esc(f.label)}</span>
+        <div class="pos-pick" role="radiogroup" aria-labelledby="${id}-l"><input type="hidden" data-key="${f.key}" value="${esc(v)}">
+        ${P.map(([k, lab]) => `<button type="button" role="radio" aria-checked="${k === v}" aria-label="${lab}" title="${lab}" data-pos="${k}"><span></span></button>`).join("")}</div>
+        <div class="hl-prev" aria-hidden="true"><div class="hl-prev-in"><b></b></div></div>
+        <p class="hint" style="margin:6px 0 0">Preview. On the site the lava moves behind the headline.</p>${defBtn}</div>`;
+    }
     const control = f.type === "text"
       ? `<input id="${id}" data-key="${f.key}" value="${esc(v)}">`
       : `<textarea id="${id}" data-key="${f.key}" rows="${f.type === "list" ? 4 : 3}">${esc(v)}</textarea>`;
@@ -1817,12 +1855,39 @@ async function renderTexts() {
     <form id="texts" class="texts" autocomplete="off">${SCHEMA.map((g) => `<fieldset><legend>${esc(g.group)}</legend>${g.fields.map(fieldHtml).join("")}</fieldset>`).join("")}</form>
     <div class="texts-bar"><button class="b primary" type="submit" form="texts" id="tsave">${icon("save")}<span>Save texts</span></button><span class="status" id="st"></span></div>`;
   const form = document.getElementById("texts");
+  // headline preview: size, place and colour on a still lava picture
+  const val = (k) => form.querySelector(`[data-key="${k}"]`)?.value;
+  const prev = () => {
+    const box = form.querySelector(".hl-prev"); if (!box) return;
+    const pos = val("home.headlinePos") || "bl", size = (parseFloat(val("home.headlineSize")) || 100) / 100;
+    const inner = box.querySelector(".hl-prev-in"), b = inner.querySelector("b");
+    inner.className = "hl-prev-in pos-" + pos;
+    b.className = "hl-" + (val("home.headlineColor") || "white");
+    b.innerHTML = esc(val("home.headline") || "").replace(/\n/g, "<br>");
+    box.querySelector(".hl-prev-in").hidden = !(val("home.headline") || "").trim();
+    b.style.fontSize = `calc(7cqw * ${size})`;
+    form.querySelectorAll(".pos-pick [data-pos]").forEach((x) => x.setAttribute("aria-checked", String(x.dataset.pos === pos)));
+    form.querySelectorAll('input[type="range"]').forEach((r) => { const o = r.parentElement.querySelector("output"); const f = SCHEMA.flatMap((g) => g.fields).find((x) => x.key === r.dataset.key); if (o) o.textContent = r.value + (f?.unit || ""); });
+  };
+  form.addEventListener("input", prev);
+  form.addEventListener("change", prev);
   form.addEventListener("click", (e) => {
+    const pb = e.target.closest("[data-pos]");
+    if (pb) { form.querySelector('[data-key="home.headlinePos"]').value = pb.dataset.pos; prev(); return; }
     const key = e.target.closest("[data-def]")?.dataset.def; if (!key) return;
     const f = SCHEMA.flatMap((g) => g.fields).find((x) => x.key === key);
     form.querySelector(`[data-key="${key}"]`).value = f.default;
+    prev();
     status("Original text restored. Save to apply.");
   });
+  form.addEventListener("keydown", (e) => { // arrow keys move around the place picker
+    const pb = e.target.closest?.("[data-pos]"); if (!pb) return;
+    const all = [...form.querySelectorAll("[data-pos]")], i = all.indexOf(pb);
+    const j = { ArrowLeft: i - 1, ArrowRight: i + 1, ArrowUp: i - 3, ArrowDown: i + 3 }[e.key];
+    if (j === undefined || !all[j]) return;
+    e.preventDefault(); all[j].focus(); all[j].click();
+  });
+  prev();
   form.onsubmit = async (e) => {
     e.preventDefault();
     const values = Object.fromEntries([...form.querySelectorAll("[data-key]")].map((el) => [el.dataset.key, el.type === "checkbox" ? (el.checked ? "on" : "off") : el.value]));
