@@ -62,6 +62,9 @@
   .color-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .color-row input[type=color]{width:44px!important;flex:none;height:32px;padding:2px;border:1px solid var(--line);border-radius:4px;background:none;cursor:pointer}
   .color-note{font-size:12px;color:var(--muted)}
+  .swatches{display:inline-flex;gap:5px}
+  .sw{width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.15);padding:0;cursor:pointer}
+  .sw:focus-visible{outline:3px solid #2b6cff;outline-offset:2px}
   .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .fonts .role{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:8px 18px;align-items:start;padding:14px 0;border-top:1px solid var(--line)}
   .fonts .role:first-of-type{border-top:0;padding-top:4px}
@@ -94,7 +97,7 @@
   .hl-prev{container-type:inline-size;position:relative;margin-top:8px;aspect-ratio:1280/220;border-radius:6px;overflow:hidden;
     background:radial-gradient(circle at 12% 120%,#9a7ff0 0 34%,transparent 34.5%),radial-gradient(circle at 34% 115%,#6fb0ee 0 26%,transparent 26.5%),radial-gradient(circle at 62% 125%,#b46be0 0 30%,transparent 30.5%),radial-gradient(circle at 86% 118%,#73b8ee 0 28%,transparent 28.5%),radial-gradient(circle at 70% 30%,#c58ae8 0 2.5%,transparent 3%),linear-gradient(90deg,#b768d8,#7cb6ea)}
   .hl-prev-in{position:absolute;inset:0;display:flex;flex-direction:column;padding:4.5cqw 1.6cqw}
-  .hl-prev b{display:block;font-style:italic;font-weight:900;font-stretch:70%;line-height:.92;letter-spacing:-.02em;text-transform:uppercase}
+  .hl-prev b{display:block;font-style:normal;font-weight:900;font-stretch:70%;line-height:.92;letter-spacing:-.02em;text-transform:uppercase}
   .hl-prev b.hl-white{color:#fff;text-shadow:0 1px 10px rgba(0,0,0,.45)}
   .hl-prev b.hl-black,.hl-prev .sub.hl-black{color:#111214}
   .hl-prev .sub{display:block;font-style:normal;font-weight:600;line-height:1.3;margin-top:.8cqw;max-width:60%}
@@ -498,7 +501,7 @@ function renderEditor() {
               <label class="showbox"><input type="radio" name="f-heroShape" value="horizontal" ${d.heroShape === "vertical" ? "" : "checked"}> Horizontal</label>
               <label class="showbox"><input type="radio" name="f-heroShape" value="vertical" ${d.heroShape === "vertical" ? "checked" : ""}> Vertical</label></div>
             <div class="color-pick"><span class="hint">Site colour when this article leads the home page <span class="sr">(buttons, hearts and the moving strip)</span></span>
-              <div class="color-row"><input type="color" id="f-color" value="#${esc(String(d.color || "e30613").replace("#", ""))}" aria-label="Site colour">
+              <div class="color-row"><span class="swatches" role="group" aria-label="Quick colours">${[["ff0000", "Red"], ["ff3d8b", "Pink"], ["7f00ff", "Purple"], ["ff7a1a", "Orange"], ["16a34a", "Green"], ["1e5bff", "Blue"], ["141414", "Black"]].map(([c, n]) => `<button type="button" class="sw" data-sw-color="${c}" style="background:#${c}" title="${n}" aria-label="${n}"></button>`).join("")}</span><input type="color" id="f-color" value="#${esc(String(d.color || "e30613").replace("#", ""))}" aria-label="Site colour">
               <span class="color-note" id="color-note">${d.colorManual ? "Picked by hand" : d.color ? "From the cover" : "Will come from the cover"}</span>
               <button type="button" class="def" id="color-auto"${d.colorManual ? "" : " hidden"}>Use the cover's colour</button></div></div>
           </div>
@@ -629,6 +632,7 @@ function renderEditor() {
   }
   $("f-color").oninput = (e) => { ed.data.color = e.target.value.replace("#", ""); ed.data.colorManual = true; showColor(); };
   $("color-auto").onclick = () => coverColor(true);
+  document.querySelectorAll("[data-sw-color]").forEach((b) => (b.onclick = () => { ed.data.color = b.dataset.swColor; ed.data.colorManual = true; showColor(); }));
   if (ed.data.cover && !ed.data.color) coverColor();
 
   // ---- cover position: two separate positions ----
@@ -1945,6 +1949,7 @@ async function renderTexts() {
     const sub = inner.querySelector(".sub"), is = (parseFloat(val("home.introSize")) || 100) / 100;
     sub.textContent = (val("home.intro") || "").replace(/[*_\[\]]|\(https?:[^)]*\)/g, "");
     sub.style.fontSize = `calc(1.65cqw * ${is})`;
+    const gap = parseFloat(val("home.headlineGap")); sub.style.marginTop = `calc(${Number.isFinite(gap) ? gap : 4}px * 0.38)`; // the preview is about 38% of the real size
     sub.className = "sub hl-" + (val("home.headlineColor") || "white");
     b.hidden = !(val("home.headline") || "").trim();
     inner.hidden = b.hidden && !sub.textContent.trim();

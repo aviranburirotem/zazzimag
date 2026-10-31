@@ -290,6 +290,7 @@ function home() {
   const hlPos = ["tl", "tc", "tr", "ml", "mc", "mr", "bl", "bc", "br"].includes(T("home.headlinePos")) ? T("home.headlinePos") : "bl";
   const hlColor = ["white", "pink", "yellow", "black"].includes(T("home.headlineColor")) ? T("home.headlineColor") : "white";
   const introSize = Math.min(3, Math.max(0.6, (parseFloat(T("home.introSize")) || 100) / 100));
+  const hlGap = Math.min(60, Math.max(-40, Number.isFinite(parseFloat(T_EN("home.headlineGap"))) ? parseFloat(T_EN("home.headlineGap")) : 4));
   const introAlign = ["left", "center", "right"].includes(T("home.introAlign")) ? T("home.introAlign") : "left";
   const lava = on("show.lava"), sw = ""; // the light switch is off until it gets a new place
 
@@ -298,7 +299,7 @@ function home() {
     description: `${SITE.name}. ${SITE.tagline}`,
     body: `${lava ? `<div class="wrap lava-wrap"><section class="lava-band" data-lava data-colors="${esc(JSON.stringify(PAL.lava))}" style="--hs:${hlSize};background:linear-gradient(90deg,${PAL.lava.bgL},${PAL.lava.bgR})">
       <canvas aria-hidden="true"></canvas>${sw}
-      ${T("home.headline") || T("home.intro") ? `<div class="lava-in pos-${hlPos} hl-${hlColor}" style="--is:${introSize}"${LANG === "en" ? "" : ' lang="en" dir="ltr"'}>${T("home.headline") ? `<h1 class="brand-hl">${br("home.headline")}</h1>` : ""}${T("home.intro") ? `<div class="lava-sub">${md("home.intro")}</div>` : ""}</div>` : ""}
+      ${T("home.headline") || T("home.intro") ? `<div class="lava-in pos-${hlPos} hl-${hlColor}" style="--is:${introSize};--hg:${hlGap}px"${LANG === "en" ? "" : ' lang="en" dir="ltr"'}>${T("home.headline") ? `<h1 class="brand-hl">${br("home.headline")}</h1>` : ""}${T("home.intro") ? `<div class="lava-sub">${md("home.intro")}</div>` : ""}</div>` : ""}
       <button class="lava-pause" type="button" data-lava-pause aria-label="${tx("ui.pauseAnimation")}" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></section></div>` : ""}
     <section class="wrap intro${lava ? " after-lava" : ""} align-${introAlign}" style="--hs:${hlSize};--is:${introSize}">${lava && !T("home.headline") ? `<h1 class="visually-hidden">${esc(SITE.name)}</h1>` : ""}
       ${lava ? "" : sw}

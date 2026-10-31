@@ -592,3 +592,7 @@ html[dir="rtl"] .tile.issue:hover .mag{transform:translateY(-6px) rotate(2.5deg)
 .intro.after-lava .handle{margin-top:0;justify-self:auto}
 @media (max-width:720px){.intro.after-lava{padding-top:20px}}
 h1:empty,h2:empty,h3:empty,p:empty,.label:empty{display:none}
+
+/* the strip's headlines: upright (no italics), with the space between them set in the console */
+.lava-in h1{font-style:normal}
+.lava-sub p:first-child{margin-top:var(--hg,4px)}
