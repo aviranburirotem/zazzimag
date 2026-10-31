@@ -488,10 +488,10 @@ html.a11y-still .car-track{scroll-behavior:auto}
 .carousel.car-off .car-btn{display:none}
 @media (max-width:760px){.car-ctl .label{display:none}.car-btn{width:32px;height:32px}.carousel .section-h h2{white-space:nowrap}}
 /* lava lamp strip at the top of the home page (public/assets/lava.js); headline size, place and colour come from the console */
-.lava-band{position:relative;min-height:clamp(300px,34vw,480px);display:flex;background:linear-gradient(#1c0830,#3d0a24);overflow:hidden}
+.lava-band{position:relative;min-height:clamp(150px,17vw,240px);display:flex;background:linear-gradient(#1c0830,#3d0a24);overflow:hidden}
 .lava-band canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .lava-wrap{padding-top:16px}
-.lava-in{position:relative;flex:1;display:flex;flex-direction:column;padding:44px clamp(16px,3vw,36px);width:100%;box-sizing:border-box}
+.lava-in{position:relative;flex:1;display:flex;flex-direction:column;padding:28px clamp(16px,3vw,36px);width:100%;box-sizing:border-box}
 .lava-in h1{max-width:100%}
 .lava-in h1.hl-white{color:#fff;text-shadow:0 2px 28px rgba(0,0,0,.45)}
 .lava-in h1.hl-pink{color:#ff5bb0;text-shadow:0 2px 28px rgba(0,0,0,.5)}
@@ -511,7 +511,7 @@ html.a11y-still .car-track{scroll-behavior:auto}
 .intro.align-right>div{text-align:right}.intro.align-right p{margin-left:auto}
 .intro.align-center,.intro.align-right{grid-template-columns:1fr}
 .intro.align-center .handle{justify-self:center}.intro.align-right .handle{justify-self:end}
-@media (max-width:720px){.lava-band{min-height:280px}.lava-in{padding-block:56px 40px}.lava-wrap{padding-top:12px}}
+@media (max-width:720px){.lava-band{min-height:140px}.lava-in{padding-block:28px}.lava-wrap{padding-top:12px}}
 .lava-pause{position:absolute;right:14px;bottom:14px;display:none;width:30px;height:30px;place-items:center;padding:0;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(0,0,0,.35);color:#fff;cursor:pointer;opacity:.75}
 .lava-band.on .lava-pause{display:grid}
 .lava-pause:hover,.lava-pause:focus-visible{opacity:1}

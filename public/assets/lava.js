@@ -17,7 +17,7 @@
   let W = 0, H = 0, S = 1 / 3, img = null, blobs = [], bg = null;
   const rnd = (a, b) => a + Math.random() * (b - a);
   function make() {
-    const n = Math.max(5, Math.min(11, Math.round(W / 130))), base = Math.max(26, Math.min(H * 0.15, W * 0.075));
+    const n = Math.max(5, Math.min(11, Math.round(W / 130))), base = Math.max(22, Math.min(H * 0.28, W * 0.075));
     blobs = Array.from({ length: n }, (_, i) => ({
       x: (i + 0.5) / n + rnd(-0.03, 0.03), ax: rnd(0.015, 0.05), wx: rnd(0.08, 0.2), px: rnd(0, 6.3),
       ay: rnd(0.32, 0.5), wy: rnd(0.1, 0.24), py: rnd(0, 6.3),
