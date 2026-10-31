@@ -2,13 +2,29 @@
 title: Japanese Avant-Garde Fashion: The Crow Tribe (Karasu-zoku)
 dek: An introduction to Karasu-zoku, the Japanese fashion subculture known as the Crow Tribe, where all-black dressing became a bold expression of avant-garde style
 date: 2026-10-31
-category: Trends
+category: [Trends, History, Guide]
+cover: /images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cover-shibuya-edited-82.jpg
+color: e8d0bc
+coverPosition: 50% 87%
+heroPosition: 50% 82%
+heroShape: vertical
+coverAlt: cat street grid page 10 2
 author: Netta Meisles
 draft: true
+cropOriginals: {"nakano-2-34-5-crop-2.jpg":"/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/nakano-2-34-5.jpg","cat-street-2-21-crop-2.jpg":"/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cat-street-2-21.jpg","cat-street-2-32-crop.jpg":"/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cat-street-2-32.jpg"}
 ---
 In Tokyo, the crow is part of the city's soundtrack. Its unmistakable *kaa-kaa* call echoes across rooftops, train stations and busy streets. Its dark silhouette is a familiar sight above the crowds. It's easy to see why the bird became the namesake for **Karasu-zoku (カラス族), or the Crow Tribe**, a Japanese fashion subculture known for its almost entirely black wardrobe and avant-garde sensibility.
 
 Emerging in the early 1980s, Karasu-zoku followers embraced Japanese designer labels, wearing oversized black clothing that challenged mainstream fashion. Understated in colour but bold in form, the look became a defining image of Tokyo's fashion scene.
+
+
+
+
+![cat street 2 32](/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cat-street-2-32-crop.jpg "")
+![cat street 2 21](/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cat-street-2-21-crop-2.jpg "")
+
+
+
 
 ## 1981: A New Chapter in Japanese Fashion
 
@@ -16,11 +32,20 @@ In 1981, **Rei Kawakubo of Comme des Garçons** and **Yohji Yamamoto** made thei
 
 Kawakubo, founder of Comme des Garçons, challenged the structure of clothing through conceptual, experimental designs. Yamamoto explored fluid tailoring, movement and the expressive qualities of fabric. Their collections introduced a new perspective on Japanese fashion to an international audience.
 
+![shibuya edited 83](/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/shibuya-edited-83-2.jpg "")
+
+
+
 ## The Crow Tribe Aesthetic
 
 Black, volume and deconstruction define the Karasu-zoku look. Long coats, wide trousers, layered fabrics and raw finishes create silhouettes that conceal rather than accentuate the body. Texture and construction give monochrome outfits their depth.
 
 Karasu-zoku challenged conventional ideas of beauty and dress. Similar concepts appear in the work of Western designers such as **Alexander McQueen, Rick Owens, Demna and Matières Fécales**, each exploring dark aesthetics and unconventional forms of dress in their own way. Once considered radical, anti-fashion has earned commercial success and a respected place within the fashion industry.
+
+
+![nakano 2 34](/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/nakano-2-34-5-crop-2.jpg "")
+![article8](/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/article8-3.jpg "")
+
 
 ## Designers & Labels to Explore
 
@@ -34,6 +59,14 @@ Karasu-zoku challenged conventional ideas of beauty and dress. Similar concepts 
 - **Comme des Garçons:** Rei Kawakubo's experimental fashion house, known for conceptual design and deconstruction.
 - **Rick Owens:** American designer known for sculptural silhouettes, dark palettes and dramatic draping.
 
+
+
+![cat street 2 31](/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cat-street-2-31.jpg "")
+
+
 ## Making the Look Your Own
 
 You don't need a wardrobe full of designer labels to explore the Crow Tribe aesthetic. Start with a silhouette, a particular cut or a fabric that catches your eye. An oversized jacket, wide trousers or an asymmetrical top can be enough. Experiment with proportions and textures, adapting the look to your own wardrobe. The idea is to take inspiration from Karasu-zoku, not to reproduce a uniform.
+
+
+![cat street 2 36](/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cat-street-2-36.jpg "")
