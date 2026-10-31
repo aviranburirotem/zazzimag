@@ -198,7 +198,7 @@ ${body}
   </video>
   <button class="vstrip-btn" type="button" aria-label="${tx("ui.pauseVideo")}" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button>
 </div>` : ""}<div class="wrap">
-  <a class="logo" href="${H(COMING_SOON ? "/preview/" : "/")}" aria-label="${tx("ui.homeLink")}"><img src="/assets/logo${LOGO_SFX}.png?v=${V}" alt="" width="56" height="56"></a>
+  <a class="logo" href="${H(COMING_SOON ? "/preview/" : "/")}" aria-label="${tx("ui.homeLink")}"><img src="/assets/logo.png" alt="" width="56" height="56"></a>
   <nav aria-label="Footer" class="label"><a href="${H("/articles/")}">${tx("ui.footerArticles")}</a><a href="${H("/about/")}">${tx("ui.footerInfo")}</a>${on("show.storeNav") ? `<a href="${H("/store/")}">${tx("ui.footerStore")}</a>` : ""}<a href="${H("/accessibility/")}">${tx("ui.footerA11y")}</a><a href="${H("/privacy/")}">${tx("ui.footerPrivacy")}</a>${PIXEL_ON ? `<a href="${H("/privacy/")}#cookies" data-consent-open>${tx("ui.cookieSettings")}</a>` : ""}</nav>
   <div class="social"><a class="icon-btn" href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram @${SITE.handle}">${icon("instagram")}</a><a class="icon-btn" href="mailto:${SITE.email}" aria-label="Email ${SITE.email}">${icon("mail")}</a></div>
   <p class="legal" lang="en" dir="ltr">${LEGAL}</p>
