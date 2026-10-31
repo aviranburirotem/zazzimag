@@ -2,6 +2,7 @@
 // Articles live in content/articles/*.md — add a file there and it appears on the site.
 import { fontSetup } from "./lib/fonts.js";
 import { palette, validHex } from "./lib/colors.js";
+import { LANGS, TARGETS, NOTE, REGION, langOf } from "./lib/i18n.js";
 import fs from "node:fs";
 import path from "node:path";
 import { markdown, frontmatter } from "./lib/markdown.js";
@@ -69,6 +70,19 @@ for (const a of articles) {
   for (const k of ["title", "date", "category", "cover"]) if (!a[k]) throw new Error(`Article "${a.slug}" is missing "${k}" in its frontmatter`);
 }
 
+// Translations of each article (console → Languages; content/translations/<slug>/<lang>.json)
+for (const a of articles) {
+  a.tr = {};
+  for (const l of TARGETS) {
+    const f = `content/translations/${a.slug}/${l.code}.json`;
+    if (!fs.existsSync(f)) continue;
+    try {
+      const t = JSON.parse(fs.readFileSync(f, "utf8"));
+      if (t.body) a.tr[l.code] = { title: t.title || a.title, dek: t.dek || "", html: markdown(t.body), edited: !!t.edited, url: `/${l.code}/articles/${a.slug}/` };
+    } catch {}
+  }
+}
+
 // Copyright notice shown in every footer
 const LEGAL = esc(T("footer.copyright").replace(/\{year\}/g, new Date().getFullYear())).replace(/\n/g, "<br>");
 
@@ -96,7 +110,7 @@ const PAL = palette(validHex(LEAD?.color) ? String(LEAD.color).replace("#", "") 
 const COLOR_CSS = `:root{--accent:${PAL.accent};--accent-fill:${PAL.accent};--on-accent:#ffffff}`;
 
 // ---------- templates ----------
-function layout({ title, description, active, body, image, type = "website", pathname = "/", scripts = [] }) {
+function layout({ title, description, active, body, image, type = "website", pathname = "/", scripts = [], head = "", bodyAttrs = "" }) {
   const full = title ? `${title} · ${SITE.name}` : SITE.name;
   const nav = (href, label, key, cls = "") => `<a href="${href}"${cls ? ` class="${cls}"` : ""}${active === key ? ' aria-current="page"' : ""}>${label}</a>`;
   return `<!doctype html>
@@ -121,14 +135,15 @@ function layout({ title, description, active, body, image, type = "website", pat
 ${FONTS.links.map((u) => `<link rel="stylesheet" href="${esc(u)}">`).join("\n")}
 <link rel="stylesheet" href="/assets/site.css?v=${V}">
 <style>${FONTS.css}
-${COLOR_CSS}</style>
+${COLOR_CSS}</style>${head}
 </head>
-<body data-handle="${esc(SITE.handle)}" data-follow="${tx("home.followTile")}" data-issue-label="${tx("issues.category")}">
+<body${bodyAttrs} data-handle="${esc(SITE.handle)}" data-follow="${tx("home.followTile")}" data-issue-label="${tx("issues.category")}">
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="wrap bar">
   <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home">${logoVideo(56)}</a>
   ${on("show.ticker") ? ticker() : `<div class="ticker-space"></div>`}
   <nav class="site-nav" aria-label="Main">
+    ${langMenu()}
     ${nav("/about/", tx("nav.info"), "about")}
     ${on("show.storeNav") ? nav("/store/", tx("nav.store"), "store") : ""}
     ${nav("/articles/", `${tx("nav.articles")} ${icon("arrow-right")}`, "articles", "cta")}
@@ -169,7 +184,7 @@ ${body}
 // coverPosition = home tiles, heroPosition = top of the article (each set separately in the console)
 const coverPos = (a, key = "coverPosition") => (/^\d{1,3}(\.\d+)?% \d{1,3}(\.\d+)?%$/.test(String(a[key] || "").trim()) ? ` style="object-position:${String(a[key]).trim()}"` : "");
 const catAttr = (a) => esc((a.categories || [a.category]).join("|")); // for the category filters
-const artTile = (a, feat = false) => a.kind === "issue" ? issueTile(a, feat) : `<a class="tile art${feat ? " feat" : ""}" href="${a.url}" data-cat="${catAttr(a)}">
+const artTile = (a, feat = false) => a.kind === "issue" ? issueTile(a, feat) : `<a class="tile art${feat ? " feat" : ""}" href="${a.url}" data-cat="${catAttr(a)}" data-slug="${esc(a.slug)}">
   <div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"${coverPos(a)}>${a.categories.length ? `<span class="badges">${a.categories.map((c) => `<span class="badge a">${esc(c)}</span>`).join("")}</span>` : ""}</div>
   <span class="label">${fmtDate(a.date)} · ${a.readTime} read</span><h3>${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap">${esc(a.dek)}</p>` : ""}</a>`;
 // Issues look like a printed magazine: the cover sits on a little stack of pages.
@@ -265,22 +280,36 @@ function articlesIndex() {
   });
 }
 
-function articlePage(a) {
+// Language menu in the header: the article languages, by their own names (decorative until site.js runs)
+const langMenu = () => `<div class="lang" data-lang-menu>
+  <button class="lang-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Language: English">${icon("globe")}<span class="lang-code">EN</span></button>
+  <ul class="lang-list" role="menu" hidden>${LANGS.map((l) => `<li role="none"><button type="button" role="menuitemradio" aria-checked="${l.code === "en"}" data-lang="${l.code}" lang="${l.code}">${esc(l.native)}</button></li>`).join("")}</ul></div>`;
+
+function articlePage(a, lang = "") {
   const more = articles.filter((x) => x.slug !== a.slug).slice(0, 4);
   const byline = (a.author || "").trim();
+  const t = lang ? a.tr[lang] : null, L = lang ? langOf(lang) : null;
+  const title = t ? t.title : a.title, dek = t ? t.dek : a.dek, html = t ? t.html : a.html;
+  const avail = Object.keys(a.tr);
+  // every language version of this article, for search engines
+  const alt = avail.length ? [`<link rel="alternate" hreflang="en" href="${SITE.url}${a.url}">`, `<link rel="alternate" hreflang="x-default" href="${SITE.url}${a.url}">`,
+    ...avail.map((c) => `<link rel="alternate" hreflang="${c}" href="${SITE.url}${a.tr[c].url}">`)].join("\n") : "";
   return layout({
-    title: a.title, description: a.dek, active: "articles", pathname: a.url, image: a.cover, type: "article",
-    body: `<article>
+    title, description: dek, active: "articles", pathname: t ? t.url : a.url, image: a.cover, type: "article",
+    head: (alt ? "\n" + alt : "") + (lang === "he" ? `\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400..900&family=Frank+Ruhl+Libre:wght@400..700&display=swap">` : ""), bodyAttrs: ` data-article="${esc(a.slug)}" data-page-lang="${lang || "en"}" data-langs="${avail.join(",")}"`,
+    body: `<article${L ? ` lang="${L.code}" dir="${L.dir}" class="translated"` : ""}>
     <header class="wrap"><div class="article-head">
-      <div class="crumbs label"><a href="/articles/">Articles</a><span>/</span><span>${a.categories.map(esc).join(" · ")}</span></div>
-      <h1>${esc(a.title)}</h1>${a.dek ? `<p class="dek">${esc(a.dek)}</p>` : ""}
-      <div class="meta label"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${a.readTime} read</span>${byline ? `<span>${tx("articles.byline")} ${esc(byline)}</span>` : ""}</div></div></header>
-    <figure class="wrap hero${a.heroShape === "vertical" ? " vertical" : ""}"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}"${coverPos(a, "heroPosition")}></div>${a.coverCaption ? `<figcaption>${esc(a.coverCaption)}</figcaption>` : ""}</figure>
-    <div class="wrap"><div class="body">${a.html}</div>
+      <div class="crumbs label" lang="en" dir="ltr"><a href="/articles/">Articles</a><span>/</span><span>${a.categories.map(esc).join(" · ")}</span></div>
+      <h1>${esc(title)}</h1>${dek ? `<p class="dek">${esc(dek)}</p>` : ""}
+      <div class="meta label" lang="en" dir="ltr"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${a.readTime} read</span>${byline ? `<span>${tx("articles.byline")} ${esc(byline)}</span>` : ""}</div>
+      ${t ? `<p class="tr-note">${icon("globe")}<span>${esc(NOTE[lang][t.edited ? 1 : 0])} · <a href="${a.url}" data-lang-pick="en" lang="en">${esc(NOTE[lang][2])}</a></span></p>` : ""}</div></header>
+    <figure class="wrap hero${a.heroShape === "vertical" ? " vertical" : ""}"${L ? ' lang="en" dir="ltr"' : ""}><div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}"${coverPos(a, "heroPosition")}></div>${a.coverCaption ? `<figcaption>${esc(a.coverCaption)}</figcaption>` : ""}</figure>
+    <div class="wrap"><div class="body">${html}</div>
+      <div${L ? ' lang="en" dir="ltr"' : ""}>
       ${more.length && on("show.readNext") ? `<div class="section-h"><h2>${tx("articles.readNext")}</h2><a class="label with-ic" href="/articles/">${tx("articles.allLink")} ${icon("arrow-right")}</a></div><div class="grid">${more.map((x) => artTile(x)).join("")}</div>` : ""}
       ${on("show.feedStrip") ? `<section data-ig-section><div class="section-h"><h2>${tx("articles.feedHeading")}</h2><a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a></div>
       <div class="strip" data-ig-strip>${'<div class="tile ig-slot" aria-hidden="true"><div class="ph"></div></div>'.repeat(6)}</div></section>` : ""}
-    </div></article>`,
+    </div></div></article>`,
   });
 }
 
@@ -626,7 +655,13 @@ for (const [from, to] of Object.entries(REDIRECTS)) {
 write("preview/index.html", home()); // private preview, always password-protected
 if (!COMING_SOON) write("index.html", home());
 write("articles/index.html", articlesIndex());
-for (const a of articles) write(`articles/${a.slug}/index.html`, articlePage(a));
+for (const a of articles) {
+  write(`articles/${a.slug}/index.html`, articlePage(a));
+  for (const c of Object.keys(a.tr)) write(`${c}/articles/${a.slug}/index.html`, articlePage(a, c));
+}
+// for the browser: translated titles of every article, per language (home and article lists swap them in)
+for (const l of TARGETS) write(`i18n/${l.code}.json`, JSON.stringify(Object.fromEntries(articles.filter((a) => a.tr[l.code]).map((a) => [a.slug, { t: a.tr[l.code].title, d: a.tr[l.code].dek, u: a.tr[l.code].url }]))));
+write("i18n/langs.json", JSON.stringify({ langs: LANGS.map(({ code, native, dir }) => ({ code, native, dir })), region: REGION }));
 for (const i of issues) write(`issues/${i.slug}/index.html`, issuePage(i));
 write("issues/data.json", JSON.stringify(Object.fromEntries(issues.map((i) => [i.slug, { title: i.title, dek: i.dek || "", pagesLabel: i.readTime, pages: i.pages.map(fbPage) }]))));
 write("about/index.html", about());
@@ -642,10 +677,11 @@ fs.copyFileSync("lib/site-schema.js", path.join(OUT, "admin/site-schema.js"));
 fs.copyFileSync("lib/ig-schedule.js", path.join(OUT, "admin/ig-schedule.js"));
 fs.copyFileSync("lib/fonts.js", path.join(OUT, "admin/fonts.js"));
 fs.copyFileSync("lib/colors.js", path.join(OUT, "admin/colors.js"));
+fs.copyFileSync("lib/i18n.js", path.join(OUT, "admin/i18n.js"));
 { // the console always loads the newest helper files (no stale browser copies after a deploy)
-  const av = crypto.createHash("md5").update(fs.readFileSync("lib/markdown.js")).update(fs.readFileSync("lib/icons.js")).update(fs.readFileSync("lib/site-schema.js")).update(fs.readFileSync("lib/ig-schedule.js")).update(fs.readFileSync("lib/fonts.js")).update(fs.readFileSync("lib/colors.js")).digest("hex").slice(0, 8);
+  const av = crypto.createHash("md5").update(fs.readFileSync("lib/markdown.js")).update(fs.readFileSync("lib/icons.js")).update(fs.readFileSync("lib/site-schema.js")).update(fs.readFileSync("lib/ig-schedule.js")).update(fs.readFileSync("lib/fonts.js")).update(fs.readFileSync("lib/colors.js")).update(fs.readFileSync("lib/i18n.js")).digest("hex").slice(0, 8);
   const f = path.join(OUT, "admin/index.html");
-  fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(/from "\.\/(markdown|icons|site-schema|ig-schedule|fonts|colors)\.js"/g, `from "./$1.js?v=${av}"`));
+  fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(/from "\.\/(markdown|icons|site-schema|ig-schedule|fonts|colors|i18n)\.js"/g, `from "./$1.js?v=${av}"`));
 }
 
 if (COMING_SOON) {
@@ -655,7 +691,7 @@ if (COMING_SOON) {
   write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /preview/\nDisallow: /articles/\nDisallow: /about/\nDisallow: /store/\nDisallow: /issues/\nDisallow: /admin/\nDisallow: /ig-queue/\n`);
 } else {
   write("404.html", notFound());
-  write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${["/", "/articles/", "/about/", "/store/", "/accessibility/", "/privacy/", ...articles.map((a) => a.url), ...issues.map((i) => i.url), ...PRODUCTS.map((p) => p.url)].map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
+  write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${["/", "/articles/", "/about/", "/store/", "/accessibility/", "/privacy/", ...articles.flatMap((a) => [a.url, ...Object.values(a.tr).map((t) => t.url)]), ...issues.map((i) => i.url), ...PRODUCTS.map((p) => p.url)].map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
   write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /preview/\nDisallow: /ig-queue/\nSitemap: ${SITE.url}/sitemap.xml\n`);
 }
 

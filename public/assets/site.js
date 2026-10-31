@@ -416,3 +416,100 @@
     if (still()) { paused = true; pauseBtn?.setAttribute("aria-pressed", "true"); pauseBtn?.setAttribute("aria-label", "Play the carousel"); }
   });
 })();
+
+// ---- languages: articles can be read in other languages (menus and buttons stay in English) ----
+// The language: the visitor's own choice (remembered) → the browser's language → the country → English.
+(() => {
+  const menu = document.querySelector("[data-lang-menu]");
+  const KEY = "zz-lang";
+  const get = (k, s = localStorage) => { try { return s.getItem(k); } catch { return null; } };
+  const set = (k, v, s = localStorage) => { try { s.setItem(k, v); } catch {} };
+  let info = null; // { langs: [{ code, native, dir }], region: { IL: "he", … } }
+  const load = () => info ? Promise.resolve(info) : fetch("/i18n/langs.json").then((r) => r.json()).then((d) => (info = d)).catch(() => (info = { langs: [{ code: "en", native: "English", dir: "ltr" }], region: {} }));
+  const has = (c) => info.langs.some((l) => l.code === c);
+  async function country() {
+    const cached = get("zz-geo", sessionStorage);
+    if (cached) { try { return JSON.parse(cached).country || ""; } catch {} }
+    try { const g = await fetch("/api/geo").then((r) => r.json()); set("zz-geo", JSON.stringify(g), sessionStorage); return g.country || ""; } catch { return ""; }
+  }
+  async function pick() {
+    await load();
+    const chosen = get(KEY);
+    if (chosen && has(chosen)) return { lang: chosen, chosen: true };
+    const browser = (navigator.languages || [navigator.language || ""]).map((x) => String(x).toLowerCase().split("-")[0]);
+    const fromBrowser = browser.find((c) => c !== "en" && has(c));
+    if (fromBrowser) return { lang: fromBrowser };
+    const byRegion = info.region[(await country()).toUpperCase()];
+    if (byRegion && has(byRegion)) return { lang: byRegion };
+    return { lang: "en" };
+  }
+
+  // header menu
+  const btn = menu?.querySelector(".lang-btn"), list = menu?.querySelector(".lang-list");
+  const close = () => { if (list && !list.hidden) { list.hidden = true; btn.setAttribute("aria-expanded", "false"); } };
+  const show = (lang) => {
+    if (!menu) return;
+    const l = info?.langs.find((x) => x.code === lang);
+    menu.querySelector(".lang-code").textContent = lang.toUpperCase();
+    btn.setAttribute("aria-label", `Language: ${l ? l.native : "English"}`);
+    list.querySelectorAll("[data-lang]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.lang === lang)));
+  };
+  btn?.addEventListener("click", () => {
+    const open = list.hidden; list.hidden = !open; btn.setAttribute("aria-expanded", String(open));
+    if (open) (list.querySelector('[aria-checked="true"]') || list.querySelector("button")).focus();
+  });
+  menu?.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { close(); btn.focus(); }
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      const items = [...list.querySelectorAll("button")], i = items.indexOf(document.activeElement);
+      if (i < 0) return; e.preventDefault(); items[(i + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length].focus();
+    }
+  });
+  document.addEventListener("click", (e) => { if (menu && !menu.contains(e.target)) close(); });
+
+  const body = document.body, slug = body.dataset.article, pageLang = body.dataset.pageLang || "en";
+  const avail = (body.dataset.langs || "").split(",").filter(Boolean);
+  const articleUrl = (lang) => (lang === "en" || !avail.includes(lang) ? `/articles/${slug}/` : `/${lang}/articles/${slug}/`);
+
+  // choosing a language: remember it, then go to that version of this article (or update the tiles)
+  async function choose(lang) {
+    set(KEY, lang); close();
+    if (slug) { const to = articleUrl(lang); if (to !== location.pathname) { location.href = to; return; } }
+    show(lang); swapTiles(lang);
+  }
+  menu?.addEventListener("click", (e) => { const b = e.target.closest("[data-lang]"); if (b) choose(b.dataset.lang); });
+  document.addEventListener("click", (e) => { const a = e.target.closest("[data-lang-pick]"); if (a) set(KEY, a.dataset.langPick); });
+
+  // tiles on the home page and lists: translated titles, and links to the translated article
+  const tileState = new Map();
+  async function swapTiles(lang) {
+    const tiles = document.querySelectorAll(".tile.art[data-slug]");
+    if (!tiles.length) return;
+    let map = {};
+    if (lang !== "en") { try { map = await fetch(`/i18n/${lang}.json`).then((r) => r.json()); } catch {} }
+    const dir = info?.langs.find((l) => l.code === lang)?.dir || "ltr";
+    if (lang === "he") font();
+    tiles.forEach((t) => {
+      const h = t.querySelector("h3"), p = t.querySelector(".cap");
+      if (!tileState.has(t)) tileState.set(t, { href: t.getAttribute("href"), h: h?.textContent, p: p?.textContent });
+      const o = tileState.get(t), tr = map[t.dataset.slug];
+      t.setAttribute("href", tr ? tr.u : o.href);
+      if (h) { h.textContent = tr ? tr.t : o.h; tr ? (h.lang = lang, h.dir = dir) : (h.removeAttribute("lang"), h.removeAttribute("dir")); }
+      if (p) { p.textContent = tr && tr.d ? tr.d : o.p; tr && tr.d ? (p.lang = lang, p.dir = dir) : (p.removeAttribute("lang"), p.removeAttribute("dir")); }
+    });
+  }
+  let fontDone = false;
+  function font() { // Hebrew letters for tile titles
+    if (fontDone) return; fontDone = true;
+    const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Heebo:wght@400..900&display=swap"; document.head.append(l);
+  }
+
+  pick().then(({ lang, chosen }) => {
+    // an English article and a reader of another language: open their version (unless they picked English)
+    if (slug && pageLang === "en" && lang !== "en" && avail.includes(lang)) { location.replace(articleUrl(lang) + location.hash); return; }
+    // a translated article opened from a link: show its language in the menu without changing the visitor's choice
+    show(slug && pageLang !== "en" ? pageLang : lang);
+    if (!slug) swapTiles(lang);
+    else swapTiles(chosen || pageLang === "en" ? lang : pageLang);
+  });
+})();

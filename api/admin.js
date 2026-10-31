@@ -10,6 +10,7 @@ import crypto from "node:crypto";
 import { frontmatter } from "../lib/markdown.js";
 import { SCHEMA } from "../lib/site-schema.js";
 import { FREE as FREE_FONTS, ROLES as FONT_ROLES } from "../lib/fonts.js";
+import { TARGETS, translateArticle, deeplUsage, sourceOf } from "../lib/i18n.js";
 import { getToken, saveToken, getHiddenPosts, setHiddenPosts, hasStore, getJSON, setJSON } from "../lib/token.js";
 import { run as runIgQueue, KEYS as IGK, DEFAULT_SCHEDULE } from "../lib/ig-publish.js";
 import { fetchPosts } from "./instagram.js";
@@ -90,6 +91,34 @@ async function listArticles() {
 }
 
 // One commit containing every change. Entries: {path, content} | {path, sha} | {path, remove: true}
+// ---- article translations (see lib/i18n.js) ----
+const TRK = { key: "deepl_key", index: "tr_index" }; // Redis: the DeepL key, and a summary of every translation
+const trPath = (slug, lang) => `content/translations/${slug}/${lang}.json`;
+async function readTr(slug, lang) {
+  try { const t = await gh(repo(`/contents/${trPath(slug, lang)}?ref=${BRANCH}`), { raw: true }); return t ? JSON.parse(t) : null; } catch { return null; }
+}
+const fmOf = (content) => { const { data, body } = frontmatter(content); return { title: String(data.title || ""), dek: String(data.dek || ""), body: body.replace(/^\n+/, "") }; };
+// Translate an article into every language (or the ones given). Returns { entries, done, errors, index }.
+async function translateAll(slug, content, { langs = null, force = false } = {}) {
+  const key = hasStore() ? await getJSON(TRK.key, "") : "";
+  if (!key) return { entries: [], done: [], errors: [], skipped: true };
+  const src = fmOf(content), en = sourceOf(src.title, src.dek, src.body);
+  const index = await getJSON(TRK.index, {});
+  const entry = (index[slug] = { en, langs: { ...(index[slug]?.langs || {}) } });
+  const out = { entries: [], done: [], errors: [] };
+  await Promise.all(TARGETS.filter((l) => !langs || langs.includes(l.code)).map(async (l) => {
+    try {
+      const prev = await readTr(slug, l.code);
+      const t = await translateArticle(src, l.code, prev, key, { force });
+      if (!prev || JSON.stringify(prev) !== JSON.stringify(t)) out.entries.push({ path: trPath(slug, l.code), content: JSON.stringify(t, null, 1) + "\n" });
+      entry.langs[l.code] = { src: t.src, edited: !!t.edited, outdated: !!t.outdated, at: t.at };
+      out.done.push(l.code);
+    } catch (err) { out.errors.push(`${l.name}: ${err.message}`); }
+  }));
+  out.index = index;
+  return out;
+}
+
 async function commit(entries, message) {
   for (let attempt = 0; attempt < 2; attempt++) {
     const ref = await gh(repo(`/git/ref/heads/${BRANCH}`));
@@ -350,9 +379,28 @@ export default async function handler(req, res) {
         if (!IMG_NAME.test(name) || !/^[a-f0-9]{40}$/.test(img.sha)) return fail(400, `Invalid photo: ${name}`);
         entries.push({ path: `public/images/articles/${slug}/${name}`, sha: img.sha });
       }
+      // translations move with a renamed article
+      if (from && from !== slug && !body.isNew) {
+        const ref = await gh(repo(`/git/ref/heads/${BRANCH}`));
+        const parent = await gh(repo(`/git/commits/${ref.object.sha}`));
+        const tree = await gh(repo(`/git/trees/${parent.tree.sha}?recursive=1`));
+        for (const t of tree.tree || []) if (t.type === "blob" && t.path.startsWith(`content/translations/${from}/`)) {
+          entries.push({ path: `content/translations/${slug}/${t.path.slice(`content/translations/${from}/`.length)}`, sha: t.sha }, { path: t.path, remove: true });
+        }
+        if (hasStore()) { const ix = await getJSON(TRK.index, {}); if (ix[from]) { ix[slug] = ix[from]; delete ix[from]; await setJSON(TRK.index, ix); } }
+      }
+      // translate (only what changed); a translation problem never stops the article from saving
+      let tr = { done: [], errors: [] };
+      if (!/\ndraft:\s*true/.test(content2)) {
+        try {
+          tr = await translateAll(slug, content2);
+          entries.push(...tr.entries.filter((e) => !entries.some((x) => x.path === e.path && !x.remove)));
+        } catch (err) { tr.errors = [err.message]; }
+      }
       const title = (content.match(/\ntitle:\s*(.+)/) || [])[1] || slug;
       const sha = await commit(entries, `${body.isNew ? "Add" : from && from !== slug ? "Rename" : "Update"} article: ${title.slice(0, 70)}`);
-      return res.json({ ok: true, commit: sha });
+      if (tr.index) await setJSON(TRK.index, tr.index);
+      return res.json({ ok: true, commit: sha, translated: tr.done, translateErrors: tr.errors, translateOff: !!tr.skipped });
     }
 
     // Site texts (content/site.json)
@@ -379,6 +427,54 @@ export default async function handler(req, res) {
     }
 
     // Store products (content/products.json)
+    // Languages: the DeepL key, the state of every translation, translating and editing
+    if (action === "trStatus") {
+      const key = hasStore() ? await getJSON(TRK.key, "") : "";
+      let usage = null, keyError = "";
+      if (key) { try { usage = await deeplUsage(key); } catch (err) { keyError = err.message; } }
+      const index = hasStore() ? await getJSON(TRK.index, {}) : {};
+      return res.json({ hasKey: !!key, keyEnd: key ? key.slice(-6) : "", usage, keyError, index, store: hasStore() });
+    }
+    if (action === "saveDeeplKey" && req.method === "POST") {
+      if (!hasStore()) return fail(500, "The store (Redis) isn't connected.");
+      const key = String(body.key || "").trim();
+      if (!key) { await setJSON(TRK.key, ""); return res.json({ ok: true, removed: true }); }
+      if (!/^[\w-]{20,}(:fx)?$/.test(key)) return fail(400, "That doesn't look like a DeepL key.");
+      let usage;
+      try { usage = await deeplUsage(key); } catch (err) { return fail(400, err.message); }
+      await setJSON(TRK.key, key);
+      return res.json({ ok: true, usage });
+    }
+    if (action === "translate" && req.method === "POST") {
+      const slug = String(body.slug || "");
+      if (!SLUG.test(slug)) return fail(400, "Invalid article address.");
+      const content = await gh(repo(`/contents/content/articles/${slug}.md?ref=${BRANCH}`), { raw: true });
+      if (!content) return fail(404, "That article isn't on the site yet. Save it first.");
+      const langs = Array.isArray(body.langs) ? body.langs.map(String) : null;
+      const tr = await translateAll(slug, content, { langs, force: !!body.force });
+      if (tr.skipped) return fail(400, "Add your DeepL key first (Languages tab).");
+      if (tr.entries.length) await commit(tr.entries, `Translate article: ${slug}`);
+      await setJSON(TRK.index, tr.index);
+      return res.json({ ok: !tr.errors.length, done: tr.done, errors: tr.errors, changed: tr.entries.length, index: tr.index[slug] });
+    }
+    if (action === "trGet") {
+      const slug = String(req.query.slug || ""), lang = String(req.query.lang || "");
+      if (!SLUG.test(slug) || !TARGETS.some((l) => l.code === lang)) return fail(400, "Invalid request.");
+      const t = await readTr(slug, lang);
+      return res.json({ translation: t ? { title: t.title, dek: t.dek, body: t.body, edited: !!t.edited, outdated: !!t.outdated, at: t.at } : null });
+    }
+    if (action === "trSave" && req.method === "POST") {
+      const slug = String(body.slug || ""), lang = String(body.lang || "");
+      if (!SLUG.test(slug) || !TARGETS.some((l) => l.code === lang)) return fail(400, "Invalid request.");
+      const prev = await readTr(slug, lang);
+      if (!prev) return fail(404, "There's no translation to edit yet.");
+      const one = (v, max) => String(v ?? "").replace(/\s*\n\s*/g, " ").trim().slice(0, max);
+      const t = { ...prev, title: one(body.title, 300), dek: one(body.dek, 600), body: String(body.body || "").replace(/\r/g, "").slice(0, 200000), edited: true, outdated: false, at: new Date().toISOString().slice(0, 10) };
+      await commit([{ path: trPath(slug, lang), content: JSON.stringify(t, null, 1) + "\n" }], `Edit ${lang} translation: ${slug}`);
+      if (hasStore()) { const ix = await getJSON(TRK.index, {}); ix[slug] = ix[slug] || { en: prev.src, langs: {} }; ix[slug].langs[lang] = { src: t.src, edited: true, outdated: false, at: t.at }; await setJSON(TRK.index, ix); }
+      return res.json({ ok: true });
+    }
+
     // Fonts (content/fonts.json, uploaded font files in public/fonts/)
     if (action === "fonts") {
       const text = await gh(repo(`/contents/content/fonts.json?ref=${BRANCH}`), { raw: true }).catch(() => "");
@@ -593,7 +689,9 @@ export default async function handler(req, res) {
       if (!SLUG.test(slug)) return fail(400, "Invalid article address.");
       const imgs = await imagePaths(slug);
       const entries = [{ path: `content/articles/${slug}.md`, remove: true }, ...imgs.map((p) => ({ path: p, remove: true }))];
+      for (const l of TARGETS) if (await readTr(slug, l.code)) entries.push({ path: trPath(slug, l.code), remove: true });
       await commit(entries, `Delete article: ${slug}`);
+      if (hasStore()) { const ix = await getJSON(TRK.index, {}); delete ix[slug]; await setJSON(TRK.index, ix); }
       return res.json({ ok: true });
     }
 

@@ -37,6 +37,20 @@
   .texts textarea{min-height:90px}
   .texts .def{background:none;border:0;padding:0;font-size:12px;color:var(--muted);text-decoration:underline;justify-self:start}
   .texts .f{display:grid;gap:6px}
+  .texts .def[disabled]{opacity:.4;cursor:default}
+  .tr-table{width:100%;border-collapse:collapse;font-size:13px}
+  .tr-table th,.tr-table td{padding:10px 8px;border-top:1px solid var(--line);text-align:left;vertical-align:middle}
+  .tr-table th{font-weight:600;font-size:12px;color:var(--muted)}
+  .tr-table td.t{min-width:200px;font-weight:600}
+  .tr-wrap{overflow-x:auto}
+  .tr-cell{border:1px solid var(--line);background:none;border-radius:999px;padding:4px 10px;font:inherit;font-size:11px;white-space:nowrap;cursor:pointer}
+  .tr-cell.ok{border-color:#1f8a4c;color:#1f8a4c}.tr-cell.edit{border-color:#2b6cff;color:#2b6cff}.tr-cell.old{border-color:#c77700;color:#a55f00}.tr-cell.none{color:var(--muted);cursor:default}
+  .usage{height:8px;border-radius:999px;background:var(--soft,#eee);overflow:hidden;max-width:420px}.usage i{display:block;height:100%;background:var(--accent)}
+  .tr-dlg{border:1px solid var(--line);border-radius:8px;padding:0;width:min(860px,94vw);max-height:90vh}
+  .tr-dlg form{display:grid;gap:12px;padding:20px}
+  .tr-dlg input{width:100%}
+  .tr-dlg textarea{min-height:46vh;width:100%;font:15px/1.6 system-ui,sans-serif}
+  .tr-dlg::backdrop{background:rgba(0,0,0,.35)}
   .color-pick{display:grid;gap:6px}
   .color-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .color-row input[type=color]{width:44px!important;flex:none;height:32px;padding:2px;border:1px solid var(--line);border-radius:4px;background:none;cursor:pointer}
@@ -331,6 +345,7 @@ import { icon } from "./icons.js";
 import { SCHEMA } from "./site-schema.js";
 import { mainColor, palette } from "./colors.js";
 import { FREE as FREE_FONTS, ROLES as FONT_ROLES, googleUrl } from "./fonts.js";
+import { TARGETS as TR_LANGS } from "./i18n.js";
 import { plan, nice, toMs, local, addDays } from "./ig-schedule.js";
 
 const app = document.getElementById("app");
@@ -366,6 +381,7 @@ function topBar(extra = "") {
       <button type="button" data-act="tab-video" ${tab === "video" ? 'aria-current="page"' : ""}>${icon("film")}<span>Video</span></button>
       <button type="button" data-act="tab-texts" ${tab === "texts" ? 'aria-current="page"' : ""}>${icon("pencil")}<span>Site texts</span></button>
       <button type="button" data-act="tab-fonts" ${tab === "fonts" ? 'aria-current="page"' : ""}>${icon("type")}<span>Fonts</span></button>
+      <button type="button" data-act="tab-langs" ${tab === "langs" ? 'aria-current="page"' : ""}>${icon("globe")}<span>Languages</span></button>
     </nav>
     <div class="c-actions">${extra}
       <a class="b" href="/preview/" target="_blank" rel="noopener">${icon("eye")}<span>View site</span></a>
@@ -991,9 +1007,11 @@ async function save() {
   try {
     { const map = cropMap(); for (const k of Object.keys(map)) if (!body.includes("/" + k)) delete map[k]; setCropMap(map); } // forget crops no longer in the text
     const renameFrom = !ed.isNew && ed.origSlug && ed.origSlug !== ed.slug ? ed.origSlug : undefined;
-    await api("save", { method: "POST", body: { slug: ed.slug, isNew: ed.isNew, content: compose(d, body), images: used, renameFrom } });
+    status(d.draft ? "Saving…" : "Saving and translating…");
+    const r = await api("save", { method: "POST", body: { slug: ed.slug, isNew: ed.isNew, content: compose(d, body), images: used, renameFrom } });
     for (const { name } of used) recent.set(`/images/articles/${ed.slug}/${name}`, ed.pending.get(name).preview);
-    renderList(d.draft ? `Saved "${d.title}" as a draft.` : `Saved "${d.title}". It will be live on the site in about a minute.`);
+    const trMsg = d.draft || r.translateOff ? "" : (r.translateErrors || []).length ? ` Some translations didn't work: ${r.translateErrors.join("; ")}` : (r.translated || []).length ? " Translations are updated too." : "";
+    renderList((d.draft ? `Saved "${d.title}" as a draft.` : `Saved "${d.title}". It will be live on the site in about a minute.`) + trMsg);
   } catch (err) { if (err.message !== "auth") { status(err.message, "err"); btn.disabled = false; } }
 }
 
@@ -2113,6 +2131,100 @@ async function renderFonts() {
   });
 }
 
+// ---------- languages (article translations) ----------
+async function renderLangs(flash = "") {
+  tab = "langs";
+  app.innerHTML = topBar() + `<main class="wrap c"><div class="list-head"><div><span class="label">Languages</span><h1>Translations</h1></div><p class="status ok" id="flash">${esc(flash)}</p></div><div class="panel empty">Loading…</div></main>`;
+  let st, list;
+  try { [st, { articles: list }] = await Promise.all([api("trStatus"), api("list")]); } catch (err) { if (err.message === "auth") return; app.querySelector(".panel").textContent = err.message; return; }
+  const main = app.querySelector("main");
+  const u = st.usage, pct = u ? Math.min(100, (u.character_count / u.character_limit) * 100) : 0;
+  const stateOf = (a, l) => {
+    const e = st.index?.[a.slug], t = e?.langs?.[l];
+    if (a.draft) return ["none", "Draft"];
+    if (!t) return ["none", "Not yet"];
+    if (t.outdated || (!t.edited && e.en && t.src !== e.en)) return ["old", "English changed"];
+    if (t.edited) return ["edit", "Edited by you"];
+    return ["ok", "Up to date"];
+  };
+  main.innerHTML = `<div class="list-head"><div><span class="label">Languages</span><h1>Translations</h1></div>
+      <p class="hint" style="max-width:56ch;margin:0">Articles are translated into ${TR_LANGS.map((l) => l.name).join(", ")} when you save them (only new or changed paragraphs). Visitors get their language automatically (their browser's language, otherwise their country), can switch in the header, and English is the default. Menus, buttons and captions stay in English.</p>
+      <p class="status ok" id="flash">${esc(flash)}</p></div>
+    <div class="texts">
+      <fieldset><legend>DeepL connection</legend>
+        ${st.hasKey ? `<p style="margin:0"><b>Connected</b> <span class="hint">(key ending …${esc(st.keyEnd)})</span>${st.keyError ? ` <span class="status err">${esc(st.keyError)}</span>` : ""}</p>
+          ${u ? `<div class="usage" aria-hidden="true"><i style="width:${pct.toFixed(1)}%"></i></div><p class="hint" style="margin:0">${u.character_count.toLocaleString("en")} of ${u.character_limit.toLocaleString("en")} free characters used this month. A typical article uses about ${(6 * 9000).toLocaleString("en")} for all six languages; edits only send the changed paragraphs.</p>` : ""}`
+        : `<p style="margin:0">Not connected yet. Translations start once you add a free DeepL API key:</p>
+          <ol class="hint" style="margin:0;padding-left:18px;line-height:1.7"><li>Go to <a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener">deepl.com/pro-api</a> and sign up for <b>DeepL API Free</b> (500,000 characters a month, free).</li><li>In your DeepL account, open <b>API Keys</b> and copy the key (it ends with <code>:fx</code>).</li><li>Paste it below and save. Then click <b>Translate all articles</b>.</li></ol>`}
+        <div class="f"><label for="dk">${st.hasKey ? "Replace the key" : "DeepL API key"}</label><input id="dk" type="password" autocomplete="off" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx"></div>
+        <div><button class="b primary" type="button" id="dk-save">${icon("save")}<span>Save key</span></button>${st.hasKey ? ` <button class="b" type="button" id="dk-del">Remove key</button>` : ""}</div>
+      </fieldset>
+      <fieldset><legend>Articles</legend>
+        <div><button class="b primary" type="button" id="tr-all"${st.hasKey ? "" : " disabled"}>${icon("globe")}<span>Translate all articles</span></button> <span class="hint">Translates what's missing or out of date. Your own edits are kept.</span></div>
+        <div class="tr-wrap"><table class="tr-table"><thead><tr><th>Article</th>${TR_LANGS.map((l) => `<th>${esc(l.name)}</th>`).join("")}</tr></thead><tbody>
+        ${list.map((a) => `<tr data-slug="${esc(a.slug)}"><td class="t">${esc(a.title)}${a.draft ? "" : `<br><button class="def" type="button" data-tr-go${st.hasKey ? "" : " disabled"} style="margin-top:4px">Translate now</button>`}</td>${TR_LANGS.map((l) => { const [k, txt] = stateOf(a, l.code); return `<td><button type="button" class="tr-cell ${k}" ${k === "none" ? "disabled" : `data-tr-edit="${l.code}"`} title="${k === "none" ? "" : "Read or edit"}">${txt}</button></td>`; }).join("")}
+</tr>`).join("")}
+        </tbody></table></div>
+      </fieldset>
+    </div>
+    <div class="texts-bar"><span class="status" id="st"></span></div>`;
+
+  const run = async (slugs, opts = {}) => {
+    let n = 0, errs = [];
+    for (const slug of slugs) {
+      status(`Translating ${++n} of ${slugs.length}…`);
+      try { const r = await api("translate", { method: "POST", body: { slug, ...opts } }); if (r.errors?.length) errs.push(...r.errors); }
+      catch (err) { if (err.message === "auth") return; errs.push(err.message); }
+    }
+    renderLangs(errs.length ? `Done, with problems: ${[...new Set(errs)].join("; ")}` : "Translated. The translations will be on the site in about a minute.");
+  };
+  main.querySelector("#dk-save").onclick = async () => {
+    const key = main.querySelector("#dk").value.trim();
+    if (!key) return status("Paste the key first.", "err");
+    status("Checking the key…");
+    try { await api("saveDeeplKey", { method: "POST", body: { key } }); renderLangs("Key saved. DeepL is connected."); } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+  };
+  main.querySelector("#dk-del")?.addEventListener("click", async () => {
+    try { await api("saveDeeplKey", { method: "POST", body: { key: "" } }); renderLangs("Key removed. Saved translations stay on the site."); } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+  });
+  main.querySelector("#tr-all").onclick = () => run(list.filter((a) => !a.draft).map((a) => a.slug));
+  main.addEventListener("click", async (e) => {
+    const go = e.target.closest("[data-tr-go]"); if (go) return run([go.closest("tr").dataset.slug]);
+    const cell = e.target.closest("[data-tr-edit]"); if (!cell) return;
+    const slug = cell.closest("tr").dataset.slug, lang = cell.dataset.trEdit, L = TR_LANGS.find((l) => l.code === lang);
+    let t;
+    try { ({ translation: t } = await api("trGet", { query: `&slug=${encodeURIComponent(slug)}&lang=${lang}` })); } catch (err) { if (err.message !== "auth") status(err.message, "err"); return; }
+    if (!t) return status("There's no translation yet.", "err");
+    const dlg = document.createElement("dialog"); dlg.className = "tr-dlg";
+    dlg.innerHTML = `<form method="dialog"><div class="list-head" style="margin:0"><div><span class="label">${esc(L.name)} translation</span><h2 style="margin:4px 0 0">${esc(list.find((a) => a.slug === slug)?.title || slug)}</h2></div></div>
+      ${t.outdated ? `<p class="status err" style="margin:0">The English changed since you edited this. Translate again to update it, or keep your version.</p>` : ""}
+      <div class="f"><label for="te-t">Title</label><input id="te-t" dir="${L.dir}" lang="${lang}" value="${esc(t.title)}"></div>
+      <div class="f"><label for="te-d">Short description</label><input id="te-d" dir="${L.dir}" lang="${lang}" value="${esc(t.dek)}"></div>
+      <div class="f"><label for="te-b">Article text</label><textarea id="te-b" dir="${L.dir}" lang="${lang}">${esc(t.body)}</textarea></div>
+      <p class="hint" style="margin:0">Keep the photo lines and links as they are. Saving your version keeps it even when the English changes (you'll see "English changed" here).</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="b primary" type="button" data-te="save">${icon("save")}<span>Save my version</span></button>
+        <button class="b" type="button" data-te="again">Translate again from English</button>
+        <a class="b" href="/${lang}/articles/${esc(slug)}/" target="_blank" rel="noopener">${icon("eye")}<span>Open on the site</span></a>
+        <button class="b" type="button" data-te="close" style="margin-left:auto">Close</button></div></form>`;
+    document.body.append(dlg); dlg.showModal();
+    dlg.addEventListener("close", () => dlg.remove());
+    dlg.addEventListener("click", async (ev) => {
+      const b = ev.target.closest("[data-te]"); if (!b) return;
+      if (b.dataset.te === "close") return dlg.close();
+      b.disabled = true;
+      try {
+        if (b.dataset.te === "save") {
+          await api("trSave", { method: "POST", body: { slug, lang, title: dlg.querySelector("#te-t").value, dek: dlg.querySelector("#te-d").value, body: dlg.querySelector("#te-b").value } });
+          dlg.close(); renderLangs(`Your ${L.name} version is saved. It will be on the site in about a minute.`);
+        } else {
+          await api("translate", { method: "POST", body: { slug, langs: [lang], force: true } });
+          dlg.close(); renderLangs(`Translated again into ${L.name}.`);
+        }
+      } catch (err) { b.disabled = false; if (err.message !== "auth") alert(err.message); }
+    });
+  });
+}
+
 // ---------- global clicks ----------
 app.addEventListener("click", async (e) => {
   const act = e.target.closest("[data-act]")?.dataset.act;
@@ -2124,6 +2236,7 @@ app.addEventListener("click", async (e) => {
   if (act === "tab-texts") renderTexts();
   if (act === "tab-video") renderVideo();
   if (act === "tab-fonts") renderFonts();
+  if (act === "tab-langs") renderLangs();
   if (act === "tab-queue") renderQueue();
   if (act.startsWith("q-")) qClick(act, e);
   if (act === "vid-choose") document.getElementById("vid-file").click();

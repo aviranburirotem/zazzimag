@@ -457,7 +457,7 @@ html.a11y-contrast .tile.issue:hover h3,html.a11y-contrast .tile.ig:hover .ig-te
 .sec-hero .feat{grid-column:span 2;grid-row:span 2}
 /* 2. carousels: two halves, two tiles showing in each (four across when only one is shown) */
 .sec-car{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 14px}
-.sec-car.solo{grid-template-columns:1fr}
+.sec-car.solo{grid-template-columns:minmax(0,1fr)}
 .half{display:flex;flex-direction:column;min-width:0}
 .car-ctl{display:flex;align-items:center;gap:6px;margin-left:auto}
 .car-ctl .label{margin-right:8px}
@@ -467,7 +467,7 @@ html.a11y-contrast .tile.issue:hover h3,html.a11y-contrast .tile.ig:hover .ig-te
 .car-btn svg{width:16px;height:16px}
 .car-btn .i-play,.car-btn[aria-pressed="true"] .i-pause{display:none}
 .car-btn[aria-pressed="true"] .i-play{display:inline-grid}
-.car-track{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 14px) / 2);gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;overscroll-behavior-x:contain;align-items:start}
+.car-track{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 14px) / 2);gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;overscroll-behavior-x:contain;align-items:start}
 .car-track::-webkit-scrollbar{display:none}
 .car-track>*{scroll-snap-align:start;min-width:0}
 .car-track:focus-visible{outline:3px solid #2b6cff;outline-offset:4px}
@@ -480,7 +480,7 @@ html.a11y-still .car-track{scroll-behavior:auto}
 .row4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 14px}
 @media (max-width:760px){
   .home-sec{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 10px}
-  .sec-car{grid-template-columns:1fr}
+  .sec-car{grid-template-columns:minmax(0,1fr)}
   .car-track,.solo .car-track{grid-auto-columns:calc((100% - 10px) / 2);gap:10px}
   .row4{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 10px}
   .home-sec .section-h{margin:32px 0 12px}
@@ -527,3 +527,24 @@ html.a11y-still .car-track{scroll-behavior:auto}
 .lava-pause svg{width:13px;height:13px}
 .lava-pause .i-play,.lava-pause[aria-pressed="true"] .i-pause{display:none}
 .lava-pause[aria-pressed="true"] .i-play{display:inline-grid}
+/* ---- languages: header menu, translated articles ---- */
+.lang{position:relative}
+.lang-btn{display:inline-flex;align-items:center;gap:5px;background:none;border:0;padding:6px 4px;font:inherit;font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--fg);cursor:pointer}
+.lang-btn svg{width:16px;height:16px}
+.lang-btn:hover{color:var(--accent)}
+.lang-list{position:absolute;z-index:30;top:calc(100% + 8px);right:0;min-width:150px;margin:0;padding:6px;list-style:none;background:var(--bg);border:1px solid var(--line);border-radius:6px;box-shadow:0 12px 32px rgba(0,0,0,.12)}
+.lang-list button{display:block;width:100%;text-align:start;padding:9px 12px;border:0;background:none;border-radius:4px;font:inherit;font-size:14px;color:var(--fg);cursor:pointer}
+.lang-list button:hover,.lang-list button:focus-visible{background:var(--soft)}
+.lang-list button[aria-checked="true"]{color:var(--accent);font-weight:700}
+.lang-list button[aria-checked="true"]::after{content:" ✓"}
+@media (max-width:520px){.lang-code{display:none}}
+.tr-note{display:flex;align-items:center;gap:8px;margin:14px 0 0;font-size:13px;color:var(--muted)}
+.tr-note svg{width:15px;height:15px;flex:none}
+.tr-note a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+article[dir="rtl"] .body blockquote{border-left:0;border-right:3px solid var(--accent);padding-left:0;padding-right:18px}
+article[dir="rtl"] .body ul,article[dir="rtl"] .body ol{padding-left:0;padding-right:1.4em}
+/* scripts without italics: headlines stand upright */
+article:lang(he) h1,article:lang(ja) h1,article:lang(ko) h1,.tile [lang="he"],.tile [lang="ja"],.tile [lang="ko"]{font-style:normal}
+article:lang(he) h1,article:lang(he) .dek,article:lang(he) .body h2,article:lang(he) .body h3,.tile h3[lang="he"]{font-family:"Heebo",var(--head)}
+article:lang(he) .body{font-family:"Frank Ruhl Libre",var(--serif);font-size:20px}
+article:lang(ja) .body,article:lang(ko) .body{font-family:var(--text);font-size:17px;line-height:1.85}
