@@ -150,7 +150,7 @@
   "hidden": [],
   "strip": {
     "showHeadline": "off",
-    "showSub": "off",
+    "showSub": "on",
     "showLogo": "on",
     "logo": "/strip/logo-mvwl8xy5.png",
     "layout": "above",
