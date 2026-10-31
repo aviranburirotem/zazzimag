@@ -5,6 +5,7 @@ date: 2026-10-30
 category: Guide
 cover: /images/articles/japanese-street-fashion-a-guide-to-lolita-decora-jirai-kei-gyaru/cover-shibuya-2-64.jpg
 color: c20b0b
+coverPosition: 50% 53%
 heroShape: vertical
 coverAlt: Erunyan wearing a colorful Decora fashion outfit
 coverCaption: @Erunyan wearing a colorful Decora outfit | Photo by Netta Meisles
