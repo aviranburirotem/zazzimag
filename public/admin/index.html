@@ -49,6 +49,8 @@
   .tr-dlg{border:1px solid var(--line);border-radius:8px;padding:0;width:min(860px,94vw);max-height:90vh}
   .tr-dlg form{display:grid;gap:12px;padding:20px}
   .tr-dlg input{width:100%}
+  .svc{display:grid;gap:10px;padding:14px 0;border-top:1px solid var(--line)}
+  .svc h3{margin:0;display:flex;align-items:center;gap:8px;font-size:16px}
   .tr-dlg textarea{min-height:46vh;width:100%;font:15px/1.6 system-ui,sans-serif}
   .tr-dlg::backdrop{background:rgba(0,0,0,.35)}
   .color-pick{display:grid;gap:6px}
@@ -345,7 +347,7 @@ import { icon } from "./icons.js";
 import { SCHEMA } from "./site-schema.js";
 import { mainColor, palette } from "./colors.js";
 import { FREE as FREE_FONTS, ROLES as FONT_ROLES, googleUrl } from "./fonts.js";
-import { TARGETS as TR_LANGS } from "./i18n.js";
+import { TARGETS as TR_LANGS, ENGINE_NAMES } from "./i18n.js";
 import { plan, nice, toMs, local, addDays } from "./ig-schedule.js";
 
 const app = document.getElementById("app");
@@ -2151,18 +2153,24 @@ async function renderLangs(flash = "") {
       <p class="hint" style="max-width:56ch;margin:0">Articles are translated into ${TR_LANGS.map((l) => l.name).join(", ")} when you save them (only new or changed paragraphs). Visitors get their language automatically (their browser's language, otherwise their country), can switch in the header, and English is the default. Menus, buttons and captions stay in English.</p>
       <p class="status ok" id="flash">${esc(flash)}</p></div>
     <div class="texts">
-      <fieldset><legend>DeepL connection</legend>
-        ${st.hasKey ? `<p style="margin:0"><b>Connected</b> <span class="hint">(key ending …${esc(st.keyEnd)})</span>${st.keyError ? ` <span class="status err">${esc(st.keyError)}</span>` : ""}</p>
-          ${u ? `<div class="usage" aria-hidden="true"><i style="width:${pct.toFixed(1)}%"></i></div><p class="hint" style="margin:0">${u.character_count.toLocaleString("en")} of ${u.character_limit.toLocaleString("en")} free characters used this month. A typical article uses about ${(6 * 9000).toLocaleString("en")} for all six languages; edits only send the changed paragraphs.</p>` : ""}`
-        : `<p style="margin:0">Not connected yet. Translations start once you add a free DeepL API key:</p>
-          <ol class="hint" style="margin:0;padding-left:18px;line-height:1.7"><li>Go to <a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener">deepl.com/pro-api</a> and sign up for <b>DeepL API Free</b> (500,000 characters a month, free).</li><li>In your DeepL account, open <b>API Keys</b> and copy the key (it ends with <code>:fx</code>).</li><li>Paste it below and save. Then click <b>Translate all articles</b>.</li></ol>`}
-        <div class="f"><label for="dk">${st.hasKey ? "Replace the key" : "DeepL API key"}</label><input id="dk" type="password" autocomplete="off" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx"></div>
-        <div><button class="b primary" type="button" id="dk-save">${icon("save")}<span>Save key</span></button>${st.hasKey ? ` <button class="b" type="button" id="dk-del">Remove key</button>` : ""}</div>
+      <fieldset><legend>Translation services</legend>
+        <p class="hint" style="margin:0">Each language uses the service that translates it best: <b>DeepL</b> for ${TR_LANGS.filter((l) => l.engine === "deepl").map((l) => l.name).join(", ")}, <b>Google</b> for ${TR_LANGS.filter((l) => l.engine === "google").map((l) => l.name).join(", ")}. If one isn't connected or runs out of free characters, the other steps in. Each gives 500,000 free characters a month.</p>
+        <div class="svc"><h3>DeepL ${st.hasKey ? `<span class="pill live">Connected</span>` : `<span class="pill draft">Not connected</span>`}</h3>
+          ${st.hasKey ? `<p class="hint" style="margin:0">Key ending …${esc(st.keyEnd)}${st.keyError ? ` · <span class="status err">${esc(st.keyError)}</span>` : ""}</p>
+            ${u ? `<div class="usage" aria-hidden="true"><i style="width:${pct.toFixed(1)}%"></i></div><p class="hint" style="margin:0">${u.character_count.toLocaleString("en")} of ${u.character_limit.toLocaleString("en")} free characters used this month (DeepL stops at the limit and never charges).</p>` : ""}`
+          : `<ol class="hint" style="margin:0;padding-left:18px;line-height:1.7"><li>Sign up for <b>DeepL API Free</b> at <a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener">deepl.com/pro-api</a>.</li><li>In your DeepL account open <b>API Keys</b> and copy the key (it ends with <code>:fx</code>).</li></ol>`}
+          <div class="f"><label for="dk">${st.hasKey ? "Replace the DeepL key" : "DeepL API key"}</label><input id="dk" type="password" autocomplete="off" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx"></div>
+          <div><button class="b primary" type="button" id="dk-save">${icon("save")}<span>Save DeepL key</span></button>${st.hasKey ? ` <button class="b" type="button" id="dk-del">Remove</button>` : ""}</div></div>
+        <div class="svc"><h3>Google ${st.hasGoogle ? `<span class="pill live">Connected</span>` : `<span class="pill draft">Not connected</span>`}</h3>
+          ${st.hasGoogle ? `<p class="hint" style="margin:0">Key ending …${esc(st.googleEnd)} · ${(st.used?.google || 0).toLocaleString("en")} characters sent this month (free up to 500,000).</p>`
+          : `<ol class="hint" style="margin:0;padding-left:18px;line-height:1.7"><li>Open <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud</a>, create a project and turn on billing (needed even for the free part).</li><li>Turn on the <b>Cloud Translation API</b> for the project.</li><li>Under <b>APIs &amp; Services → Credentials</b> create an <b>API key</b>, restrict it to the Cloud Translation API, and copy it (it starts with <code>AIza</code>).</li><li>So it can never charge you: in <b>Quotas</b> for the Cloud Translation API, set "characters per day" to <b>16,000</b> (about 500,000 a month).</li></ol>`}
+          <div class="f"><label for="gk">${st.hasGoogle ? "Replace the Google key" : "Google API key"}</label><input id="gk" type="password" autocomplete="off" placeholder="AIza…"></div>
+          <div><button class="b primary" type="button" id="gk-save">${icon("save")}<span>Save Google key</span></button>${st.hasGoogle ? ` <button class="b" type="button" id="gk-del">Remove</button>` : ""}</div></div>
       </fieldset>
       <fieldset><legend>Articles</legend>
-        <div><button class="b primary" type="button" id="tr-all"${st.hasKey ? "" : " disabled"}>${icon("globe")}<span>Translate all articles</span></button> <span class="hint">Translates what's missing or out of date. Your own edits are kept.</span></div>
-        <div class="tr-wrap"><table class="tr-table"><thead><tr><th>Article</th>${TR_LANGS.map((l) => `<th>${esc(l.name)}</th>`).join("")}</tr></thead><tbody>
-        ${list.map((a) => `<tr data-slug="${esc(a.slug)}"><td class="t">${esc(a.title)}${a.draft ? "" : `<br><button class="def" type="button" data-tr-go${st.hasKey ? "" : " disabled"} style="margin-top:4px">Translate now</button>`}</td>${TR_LANGS.map((l) => { const [k, txt] = stateOf(a, l.code); return `<td><button type="button" class="tr-cell ${k}" ${k === "none" ? "disabled" : `data-tr-edit="${l.code}"`} title="${k === "none" ? "" : "Read or edit"}">${txt}</button></td>`; }).join("")}
+        <div><button class="b primary" type="button" id="tr-all"${st.hasKey || st.hasGoogle ? "" : " disabled"}>${icon("globe")}<span>Translate all articles</span></button> <span class="hint">Translates what's missing or out of date. Your own edits are kept.</span></div>
+        <div class="tr-wrap"><table class="tr-table"><thead><tr><th>Article</th>${TR_LANGS.map((l) => `<th>${esc(l.name)}<br><span class="hint" style="font-weight:400">${ENGINE_NAMES[l.engine]}</span></th>`).join("")}</tr></thead><tbody>
+        ${list.map((a) => `<tr data-slug="${esc(a.slug)}"><td class="t">${esc(a.title)}${a.draft ? "" : `<br><button class="def" type="button" data-tr-go${st.hasKey || st.hasGoogle ? "" : " disabled"} style="margin-top:4px">Translate now</button>`}</td>${TR_LANGS.map((l) => { const [k, txt] = stateOf(a, l.code); return `<td><button type="button" class="tr-cell ${k}" ${k === "none" ? "disabled" : `data-tr-edit="${l.code}"`} title="${k === "none" ? "" : "Read or edit"}">${txt}</button></td>`; }).join("")}
 </tr>`).join("")}
         </tbody></table></div>
       </fieldset>
@@ -2186,6 +2194,15 @@ async function renderLangs(flash = "") {
   };
   main.querySelector("#dk-del")?.addEventListener("click", async () => {
     try { await api("saveDeeplKey", { method: "POST", body: { key: "" } }); renderLangs("Key removed. Saved translations stay on the site."); } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+  });
+  main.querySelector("#gk-save").onclick = async () => {
+    const key = main.querySelector("#gk").value.trim();
+    if (!key) return status("Paste the key first.", "err");
+    status("Checking the key…");
+    try { await api("saveGoogleKey", { method: "POST", body: { key } }); renderLangs("Google key saved. Google is connected."); } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+  };
+  main.querySelector("#gk-del")?.addEventListener("click", async () => {
+    try { await api("saveGoogleKey", { method: "POST", body: { key: "" } }); renderLangs("Google key removed. Saved translations stay on the site."); } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
   });
   main.querySelector("#tr-all").onclick = () => run(list.filter((a) => !a.draft).map((a) => a.slug));
   main.addEventListener("click", async (e) => {

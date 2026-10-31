@@ -10,7 +10,7 @@ import crypto from "node:crypto";
 import { frontmatter } from "../lib/markdown.js";
 import { SCHEMA } from "../lib/site-schema.js";
 import { FREE as FREE_FONTS, ROLES as FONT_ROLES } from "../lib/fonts.js";
-import { TARGETS, translateArticle, deeplUsage, sourceOf } from "../lib/i18n.js";
+import { TARGETS, translateArticle, deeplUsage, googleCheck, sourceOf } from "../lib/i18n.js";
 import { getToken, saveToken, getHiddenPosts, setHiddenPosts, hasStore, getJSON, setJSON } from "../lib/token.js";
 import { run as runIgQueue, KEYS as IGK, DEFAULT_SCHEDULE } from "../lib/ig-publish.js";
 import { fetchPosts } from "./instagram.js";
@@ -92,7 +92,12 @@ async function listArticles() {
 
 // One commit containing every change. Entries: {path, content} | {path, sha} | {path, remove: true}
 // ---- article translations (see lib/i18n.js) ----
-const TRK = { key: "deepl_key", index: "tr_index" }; // Redis: the DeepL key, and a summary of every translation
+const TRK = { key: "deepl_key", google: "google_tr_key", index: "tr_index", used: "tr_used" }; // Redis: the keys, a summary of every translation, characters sent per month
+async function trKeys() {
+  if (!hasStore()) return {};
+  const [deepl, google] = await Promise.all([getJSON(TRK.key, ""), getJSON(TRK.google, "")]);
+  return { ...(deepl ? { deepl } : {}), ...(google ? { google } : {}) };
+}
 const trPath = (slug, lang) => `content/translations/${slug}/${lang}.json`;
 async function readTr(slug, lang) {
   try { const t = await gh(repo(`/contents/${trPath(slug, lang)}?ref=${BRANCH}`), { raw: true }); return t ? JSON.parse(t) : null; } catch { return null; }
@@ -100,22 +105,30 @@ async function readTr(slug, lang) {
 const fmOf = (content) => { const { data, body } = frontmatter(content); return { title: String(data.title || ""), dek: String(data.dek || ""), body: body.replace(/^\n+/, "") }; };
 // Translate an article into every language (or the ones given). Returns { entries, done, errors, index }.
 async function translateAll(slug, content, { langs = null, force = false } = {}) {
-  const key = hasStore() ? await getJSON(TRK.key, "") : "";
-  if (!key) return { entries: [], done: [], errors: [], skipped: true };
+  const keys = await trKeys();
+  if (!keys.deepl && !keys.google) return { entries: [], done: [], errors: [], skipped: true };
   const src = fmOf(content), en = sourceOf(src.title, src.dek, src.body);
   const index = await getJSON(TRK.index, {});
   const entry = (index[slug] = { en, langs: { ...(index[slug]?.langs || {}) } });
-  const out = { entries: [], done: [], errors: [] };
+  const out = { entries: [], done: [], errors: [], used: {} };
   await Promise.all(TARGETS.filter((l) => !langs || langs.includes(l.code)).map(async (l) => {
     try {
       const prev = await readTr(slug, l.code);
-      const t = await translateArticle(src, l.code, prev, key, { force });
+      const t = await translateArticle(src, l.code, prev, keys, { force });
+      if (t.chars && t.engine) out.used[t.engine] = (out.used[t.engine] || 0) + t.chars;
       if (!prev || JSON.stringify(prev) !== JSON.stringify(t)) out.entries.push({ path: trPath(slug, l.code), content: JSON.stringify(t, null, 1) + "\n" });
-      entry.langs[l.code] = { src: t.src, edited: !!t.edited, outdated: !!t.outdated, at: t.at };
+      entry.langs[l.code] = { src: t.src, edited: !!t.edited, outdated: !!t.outdated, at: t.at, engine: t.engine || "" };
       out.done.push(l.code);
     } catch (err) { out.errors.push(`${l.name}: ${err.message}`); }
   }));
   out.index = index;
+  if (Object.keys(out.used).length) { // characters sent this month, per service
+    const month = new Date().toISOString().slice(0, 7), u = await getJSON(TRK.used, {});
+    u[month] = u[month] || {};
+    for (const [e, n] of Object.entries(out.used)) u[month][e] = (u[month][e] || 0) + n;
+    for (const m of Object.keys(u)) if (m < new Date(Date.now() - 400 * 864e5).toISOString().slice(0, 7)) delete u[m];
+    await setJSON(TRK.used, u);
+  }
   return out;
 }
 
@@ -429,11 +442,13 @@ export default async function handler(req, res) {
     // Store products (content/products.json)
     // Languages: the DeepL key, the state of every translation, translating and editing
     if (action === "trStatus") {
-      const key = hasStore() ? await getJSON(TRK.key, "") : "";
+      const keys = await trKeys();
       let usage = null, keyError = "";
-      if (key) { try { usage = await deeplUsage(key); } catch (err) { keyError = err.message; } }
+      if (keys.deepl) { try { usage = await deeplUsage(keys.deepl); } catch (err) { keyError = err.message; } }
       const index = hasStore() ? await getJSON(TRK.index, {}) : {};
-      return res.json({ hasKey: !!key, keyEnd: key ? key.slice(-6) : "", usage, keyError, index, store: hasStore() });
+      const used = hasStore() ? (await getJSON(TRK.used, {}))[new Date().toISOString().slice(0, 7)] || {} : {};
+      return res.json({ hasKey: !!keys.deepl, keyEnd: keys.deepl ? keys.deepl.slice(-6) : "", usage, keyError,
+        hasGoogle: !!keys.google, googleEnd: keys.google ? keys.google.slice(-4) : "", used, index, store: hasStore() });
     }
     if (action === "saveDeeplKey" && req.method === "POST") {
       if (!hasStore()) return fail(500, "The store (Redis) isn't connected.");
@@ -445,6 +460,15 @@ export default async function handler(req, res) {
       await setJSON(TRK.key, key);
       return res.json({ ok: true, usage });
     }
+    if (action === "saveGoogleKey" && req.method === "POST") {
+      if (!hasStore()) return fail(500, "The store (Redis) isn't connected.");
+      const key = String(body.key || "").trim();
+      if (!key) { await setJSON(TRK.google, ""); return res.json({ ok: true, removed: true }); }
+      if (!/^AIza[\w-]{30,}$/.test(key)) return fail(400, "That doesn't look like a Google API key (it starts with AIza).");
+      try { await googleCheck(key); } catch (err) { return fail(400, err.message); }
+      await setJSON(TRK.google, key);
+      return res.json({ ok: true });
+    }
     if (action === "translate" && req.method === "POST") {
       const slug = String(body.slug || "");
       if (!SLUG.test(slug)) return fail(400, "Invalid article address.");
@@ -452,7 +476,7 @@ export default async function handler(req, res) {
       if (!content) return fail(404, "That article isn't on the site yet. Save it first.");
       const langs = Array.isArray(body.langs) ? body.langs.map(String) : null;
       const tr = await translateAll(slug, content, { langs, force: !!body.force });
-      if (tr.skipped) return fail(400, "Add your DeepL key first (Languages tab).");
+      if (tr.skipped) return fail(400, "Add a DeepL or Google key first (Languages tab).");
       if (tr.entries.length) await commit(tr.entries, `Translate article: ${slug}`);
       await setJSON(TRK.index, tr.index);
       return res.json({ ok: !tr.errors.length, done: tr.done, errors: tr.errors, changed: tr.entries.length, index: tr.index[slug] });
