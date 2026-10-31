@@ -3,8 +3,9 @@ title: Japanese Street Fashion: A Guide to Lolita, Decora, Jirai Kei & Gyaru
 dek: Discover Japanese street fashion through four distinctive styles, with a guide to the Tokyo shops and destinations where you can explore them.
 date: 2026-10-30
 category: Guide
-cover: /images/articles/japanese-street-fashion-a-guide-to-lolita-decora-jirai-kei-gyaru/cover-pure-violet.jpg
-color: 7f00ff
+cover: /images/articles/japanese-street-fashion-a-guide-to-lolita-decora-jirai-kei-gyaru/cover-enhanced-24.jpg
+color: d34d89
+coverPosition: 50% 0%
 coverAlt: Erunyan wearing a colorful Decora fashion outfit
 coverCaption: @Erunyan wearing a colorful Decora outfit | Photo by Netta Meisles
 author: Netta Meisles
