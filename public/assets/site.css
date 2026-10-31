@@ -601,3 +601,6 @@ h1:empty,h2:empty,h3:empty,p:empty,.label:empty{display:none}
    constantly redrawn canvas look grainy on many screens), smooth font edges, no faked bold or slant */
 .lava-in{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:geometricPrecision;font-synthesis:none;font-kerning:normal}
 .lava-band canvas{z-index:0}.lava-in{z-index:1}
+/* the big headline on the strip ("ZAZZI") has a black outline, drawn behind the letters so they keep their shape */
+.lava-in h1{-webkit-text-stroke:.08em #000;paint-order:stroke fill}
+.lava-in.hl-black h1{-webkit-text-stroke-color:#fff}
