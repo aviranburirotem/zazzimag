@@ -27,11 +27,11 @@
   },
   "home": {
     "headline": "ZAZZI",
-    "headlineSize": "110",
+    "headlineSize": "80",
     "headlinePos": "mc",
     "headlineColor": "white",
     "intro": "MAGAZINE",
-    "introSize": "120",
+    "introSize": "85",
     "introAlign": "center",
     "videoLabel": "Street scenes from Harajuku, Tokyo",
     "secStories": "Stories",
