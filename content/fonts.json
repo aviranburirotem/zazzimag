@@ -1,0 +1,10 @@
+{
+  "roles": {
+    "head": "Archivo",
+    "main": "Archivo",
+    "article": "Newsreader",
+    "desc": "Outfit",
+    "label": "IBM Plex Mono"
+  },
+  "custom": []
+}
