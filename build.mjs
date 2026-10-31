@@ -1,8 +1,8 @@
 // Builds the static site into /dist. Run: node build.mjs
 // Articles live in content/articles/*.md — add a file there and it appears on the site.
 import { fontSetup } from "./lib/fonts.js";
-import { palette, validHex } from "./lib/colors.js";
-import { LANGS, TARGETS, NOTE, REGION, langOf } from "./lib/i18n.js";
+import { palette, validHex, logoVariant } from "./lib/colors.js";
+import { LANGS, TARGETS, NOTE, REGION, langOf, noNiqqud } from "./lib/i18n.js";
 import fs from "node:fs";
 import path from "node:path";
 import { markdown, frontmatter } from "./lib/markdown.js";
@@ -18,10 +18,15 @@ let LANG = "en";
 const SITE_TR = {};
 for (const l of TARGETS) {
   const f = `content/translations/site/${l.code}.json`;
-  try { if (fs.existsSync(f)) SITE_TR[l.code] = JSON.parse(fs.readFileSync(f, "utf8")).strings || {}; } catch {}
+  try {
+    if (fs.existsSync(f)) SITE_TR[l.code] = JSON.parse(fs.readFileSync(f, "utf8")).strings || {};
+    if (l.code === "he") for (const k of Object.keys(SITE_TR.he || {})) SITE_TR.he[k] = noNiqqud(SITE_TR.he[k]); // no vowel marks in Hebrew
+  } catch {}
 }
 const TR_KEYS = new Set(TRANSLATABLE.map((f) => f.key));
-const T = (k) => { const v = LANG !== "en" && TR_KEYS.has(k) ? SITE_TR[LANG]?.[k] : null; return v && v.trim() ? v : T_EN(k); };
+const SITE_JSON = JSON.parse(fs.readFileSync("content/site.json", "utf8"));
+const HIDDEN = new Set(Array.isArray(SITE_JSON.hidden) ? SITE_JSON.hidden : []); // switched off in the console: empty in every language
+const T = (k) => { if (HIDDEN.has(k)) return ""; const v = LANG !== "en" && TR_KEYS.has(k) ? SITE_TR[LANG]?.[k] : null; return v && v.trim() ? v : T_EN(k); };
 const LOCALE = { en: "en-US", de: "de-DE", es: "es-ES", fr: "fr-FR", he: "he-IL", ja: "ja-JP", ko: "ko-KR" };
 const H = (p) => (LANG === "en" || !String(p).startsWith("/") ? p : `/${LANG}${p}`); // a link inside the language being built
 const DIR = () => langOf(LANG)?.dir || "ltr";
@@ -95,6 +100,7 @@ for (const a of articles) {
     if (!fs.existsSync(f)) continue;
     try {
       const t = JSON.parse(fs.readFileSync(f, "utf8"));
+      if (l.code === "he") for (const k of ["title", "dek", "body", "coverCaption", "coverAlt"]) t[k] = noNiqqud(t[k]); // no vowel marks in Hebrew
       if (t.body) a.tr[l.code] = { title: t.title || a.title, dek: t.dek || "", html: markdown(t.body), edited: !!t.edited, coverCaption: t.coverCaption || "", coverAlt: t.coverAlt || "" };
     } catch {}
   }
@@ -124,6 +130,9 @@ const stories = [...articles, ...issues].sort((a, b) => (Boolean(b.pinned) - Boo
 // colour, worked out in the console when the cover is chosen (or picked there by hand).
 const LEAD = stories.find((s) => s.kind !== "issue");
 const PAL = palette(validHex(LEAD?.color) ? String(LEAD.color).replace("#", "") : "");
+// the heart logo in the matching colour (red is the original)
+const LOGO_V = logoVariant(validHex(LEAD?.color) ? String(LEAD.color).replace("#", "") : "");
+const LOGO_SFX = LOGO_V === "red" ? "" : `-${LOGO_V}`;
 const COLOR_CSS = `:root{--accent:${PAL.accent};--accent-fill:${PAL.accent};--on-accent:#ffffff}`;
 
 // ---------- templates ----------
@@ -189,7 +198,7 @@ ${body}
   </video>
   <button class="vstrip-btn" type="button" aria-label="${tx("ui.pauseVideo")}" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button>
 </div>` : ""}<div class="wrap">
-  <a class="logo" href="${H(COMING_SOON ? "/preview/" : "/")}" aria-label="${tx("ui.homeLink")}"><img src="/assets/logo.png" alt="" width="56" height="56"></a>
+  <a class="logo" href="${H(COMING_SOON ? "/preview/" : "/")}" aria-label="${tx("ui.homeLink")}"><img src="/assets/logo${LOGO_SFX}.png?v=${V}" alt="" width="56" height="56"></a>
   <nav aria-label="Footer" class="label"><a href="${H("/articles/")}">${tx("ui.footerArticles")}</a><a href="${H("/about/")}">${tx("ui.footerInfo")}</a>${on("show.storeNav") ? `<a href="${H("/store/")}">${tx("ui.footerStore")}</a>` : ""}<a href="${H("/accessibility/")}">${tx("ui.footerA11y")}</a><a href="${H("/privacy/")}">${tx("ui.footerPrivacy")}</a>${PIXEL_ON ? `<a href="${H("/privacy/")}#cookies" data-consent-open>${tx("ui.cookieSettings")}</a>` : ""}</nav>
   <div class="social"><a class="icon-btn" href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram @${SITE.handle}">${icon("instagram")}</a><a class="icon-btn" href="mailto:${SITE.email}" aria-label="Email ${SITE.email}">${icon("mail")}</a></div>
   <p class="legal" lang="en" dir="ltr">${LEGAL}</p>
@@ -229,7 +238,7 @@ const issueTile = (a, feat = false) => `<a class="tile art issue${feat ? " feat"
 const igSlot = () => `<div class="tile ig ig-slot" aria-hidden="true"><div class="ph"></div></div>`;
 
 // Animated heart logo (looping video, falls back to the still logo)
-const logoVideo = (size) => `<video class="logo-vid" width="${size}" height="${size}" autoplay muted loop playsinline preload="metadata" poster="/assets/logo.png" aria-hidden="true" data-light="/assets/logo-animated.mp4?v=${V}" data-dark="/assets/logo-animated-dark.mp4?v=${V}"><source src="/assets/logo-animated.mp4?v=${V}" type="video/mp4"></video><span class="sr">${esc(SITE.name)}</span>`;
+const logoVideo = (size) => `<video class="logo-vid" width="${size}" height="${size}" autoplay muted loop playsinline preload="metadata" poster="/assets/logo${LOGO_SFX}.png?v=${V}" aria-hidden="true" data-light="/assets/logo-animated${LOGO_SFX}.mp4?v=${V}" data-dark="/assets/logo-animated-dark.mp4?v=${V}"><source src="/assets/logo-animated${LOGO_SFX}.mp4?v=${V}" type="video/mp4"></video><span class="sr">${esc(SITE.name)}</span>`;
 
 // Header ticker: words drift slowly between the logo and the buttons (decorative, hidden from screen readers)
 function ticker() {
@@ -324,7 +333,7 @@ const langMenu = () => `<div class="lang" data-lang-menu>
 const shareBox = (title, url) => {
   const u = encodeURIComponent(url), t = encodeURIComponent(title), tu = encodeURIComponent(`${title} ${url}`);
   const link = (href, ic, name, ext = true) => `<a class="sh" href="${href}"${ext ? ' target="_blank" rel="noopener"' : ""}>${icon(ic)}<span>${name}</span></a>`;
-  return `<aside class="share" aria-label="${tx("ui.share")}"><span class="label">${tx("ui.share")}</span>
+  return `<aside class="share" aria-label="${tx("ui.share")}"><span class="label"${EN()}>${tx("ui.share")}</span>
     ${link(`mailto:?subject=${t}&body=${u}`, "mail", tx("ui.shareEmail"), false)}
     <button class="sh" type="button" data-copy="${esc(url)}" data-done="${tx("ui.linkCopied")}">${icon("link")}<span>${tx("ui.copyLink")}</span></button>
     ${link(`https://www.facebook.com/sharer/sharer.php?u=${u}`, "thumbs-up", "Facebook")}
@@ -345,13 +354,13 @@ function articlePage(a) {
     title, description: dek, active: "articles", pathname: a.url, image: a.cover, type: "article",
     bodyAttrs: ` data-article="${esc(a.slug)}" data-langs="${Object.keys(a.tr).join(",")}"`,
     body: `<article>
-    <header class="wrap"><div class="article-head">
+    <header class="wrap art-top">${shareBox(title, SITE.url + H(a.url))}<div class="article-head">
       <div class="crumbs label"><a href="${H("/articles/")}">${tx("articles.heading")}</a><span>/</span><span>${a.categories.map((c) => esc(catName(c))).join(" · ")}</span></div>
       <h1${content}>${esc(title)}</h1>${dek ? `<p class="dek"${content}>${esc(dek)}</p>` : ""}
       <div class="meta label"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${esc(minRead(a))}</span>${byline ? `<span${LANG === "en" ? "" : ' lang="en" dir="ltr"'}>${tx("articles.byline")} ${esc(byline)}</span>` : ""}</div>
       ${t ? `<p class="tr-note">${icon("globe")}<span>${esc(NOTE[LANG][t.edited ? 1 : 0])} · <a href="${a.url}" data-lang-pick="en" lang="en" dir="ltr">${esc(NOTE[LANG][2])}</a></span></p>` : en ? `<p class="tr-note">${icon("globe")}<span>${tx("ui.notTranslated")}</span></p>` : ""}</div></header>
     <figure class="wrap hero${a.heroShape === "vertical" ? " vertical" : ""}"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(t?.coverAlt || a.coverAlt || title)}"${coverPos(a, "heroPosition")}></div>${a.coverCaption ? `<figcaption${t?.coverCaption ? "" : content}>${esc(t?.coverCaption || a.coverCaption)}</figcaption>` : ""}</figure>
-    <div class="wrap art-wrap">${shareBox(title, SITE.url + H(a.url))}<div class="body"${content}>${html}</div></div>
+    <div class="wrap"><div class="body"${content}>${html}</div></div>
     <div class="wrap">
       ${more.length && on("show.readNext") ? `<div class="section-h"><h2>${tx("articles.readNext")}</h2><a class="label with-ic" href="${H("/articles/")}">${tx("articles.allLink")} ${icon("arrow-right")}</a></div><div class="grid">${more.map((x) => artTile(x)).join("")}</div>` : ""}
       ${on("show.feedStrip") ? `<section data-ig-section><div class="section-h"><h2${EN()}>${tx("articles.feedHeading")}</h2><a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}<bdi>@${SITE.handle}</bdi></a></div>

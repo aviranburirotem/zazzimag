@@ -37,6 +37,9 @@
   .texts textarea{min-height:90px}
   .texts .def{background:none;border:0;padding:0;font-size:12px;color:var(--muted);text-decoration:underline;justify-self:start}
   .texts .f{display:grid;gap:6px}
+  .texts .f-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+  .show-tick{flex:none;font-weight:600}
+  .texts .f.is-hidden input:not([type=checkbox]),.texts .f.is-hidden textarea{opacity:.45}
   .texts .def[disabled]{opacity:.4;cursor:default}
   .tr-table{width:100%;border-collapse:collapse;font-size:13px}
   .tr-table th,.tr-table td{padding:10px 8px;border-top:1px solid var(--line);text-align:left;vertical-align:middle}
@@ -1920,7 +1923,9 @@ async function renderTexts() {
     const control = f.type === "text"
       ? `<input id="${id}" data-key="${f.key}" value="${esc(v)}">`
       : `<textarea id="${id}" data-key="${f.key}" rows="${f.type === "list" ? 4 : 3}">${esc(v)}</textarea>`;
-    return `<div class="f"><label for="${id}">${esc(f.label)}${f.hint ? ` <span class="hint">${esc(f.hint)}</span>` : ""}</label>${control}
+    const shown = !(saved.hidden || []).includes(f.key);
+    return `<div class="f${shown ? "" : " is-hidden"}"><div class="f-top"><label for="${id}">${esc(f.label)}${f.hint ? ` <span class="hint">${esc(f.hint)}</span>` : ""}</label>
+        <label class="showbox show-tick"><input type="checkbox" data-show="${f.key}" ${shown ? "checked" : ""}> Show</label></div>${control}
       <button type="button" class="def" data-def="${f.key}">Use original text</button></div>`;
   };
   app.querySelector("main").innerHTML = `<div class="list-head"><div><span class="label">Site texts</span><h1>Wording</h1></div>
@@ -1948,6 +1953,7 @@ async function renderTexts() {
     form.querySelectorAll('input[type="range"]').forEach((r) => { const o = r.parentElement.querySelector("output"); const f = SCHEMA.flatMap((g) => g.fields).find((x) => x.key === r.dataset.key); if (o) o.textContent = r.value + (f?.unit || ""); });
   };
   form.addEventListener("input", prev);
+  form.addEventListener("change", (e) => { const t = e.target.closest("[data-show]"); if (t) t.closest(".f").classList.toggle("is-hidden", !t.checked); });
   form.addEventListener("change", prev);
   form.addEventListener("click", (e) => {
     const pb = e.target.closest("[data-pos]");
@@ -1969,8 +1975,9 @@ async function renderTexts() {
   form.onsubmit = async (e) => {
     e.preventDefault();
     const values = Object.fromEntries([...form.querySelectorAll("[data-key]")].map((el) => [el.dataset.key, el.type === "checkbox" ? (el.checked ? "on" : "off") : el.value]));
+    const hidden = [...form.querySelectorAll("[data-show]")].filter((el) => !el.checked).map((el) => el.dataset.show);
     const btn = document.getElementById("tsave"); btn.disabled = true; status("Saving…");
-    try { const r = await api("saveSettings", { method: "POST", body: { values } }); status((r.translateErrors || []).length ? `Saved, but some translations didn't work: ${r.translateErrors.join("; ")}` : r.translated ? "Saved and translated. The site will update in about a minute." : "Saved. The site will update in about a minute.", (r.translateErrors || []).length ? "err" : "ok"); }
+    try { const r = await api("saveSettings", { method: "POST", body: { values, hidden } }); status((r.translateErrors || []).length ? `Saved, but some translations didn't work: ${r.translateErrors.join("; ")}` : r.translated ? "Saved and translated. The site will update in about a minute." : "Saved. The site will update in about a minute.", (r.translateErrors || []).length ? "err" : "ok"); }
     catch (err) { if (err.message !== "auth") status(err.message, "err"); }
     btn.disabled = false;
   };

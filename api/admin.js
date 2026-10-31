@@ -467,6 +467,8 @@ export default async function handler(req, res) {
         (out[a] ??= {})[b] = v.replace(/\r/g, "");
       }
       if (out.brand?.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(out.brand.email.trim())) return fail(400, "The contact email doesn't look right.");
+      const hideable = new Set(SCHEMA.flatMap((g) => g.fields).filter((f) => ["text", "long", "list"].includes(f.type)).map((f) => f.key));
+      if (Array.isArray(body.hidden)) out.hidden = body.hidden.map(String).filter((k) => hideable.has(k));
       let st = { entries: [], errors: [] };
       try { st = await translateSite({ siteJson: out }); } catch (err) { st.errors = [err.message]; }
       await commit([{ path: "content/site.json", content: JSON.stringify(out, null, 2) + "\n" }, ...st.entries], "Update site texts");
