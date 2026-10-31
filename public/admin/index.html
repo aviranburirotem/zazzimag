@@ -25,7 +25,7 @@
   .b.danger{color:var(--accent)}
   .b[disabled]{opacity:.5;cursor:default}
   .b .ic{width:16px;height:16px}
-  .c-tabs{display:flex;gap:4px;margin-left:8px}
+  .c-tabs{display:flex;flex-wrap:wrap;gap:4px;margin-left:8px;min-width:0;flex:1}
   .c-tabs button{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:8px 12px;border-radius:4px;font-size:13px;font-weight:600;color:var(--muted)}
   .c-tabs button[aria-current="page"]{background:var(--soft);color:var(--fg)}
   .c-tabs .ic{width:16px;height:16px}
@@ -454,6 +454,7 @@ async function renderList(flash = "") {
       <div class="row-actions">
         ${a.draft ? "" : `<a class="b" href="/articles/${esc(a.slug)}/" target="_blank" rel="noopener" aria-label="View">${icon("eye")}</a>`}
         <button class="b" type="button" data-act="edit">${icon("pencil")}<span>Edit</span></button>
+        ${a.draft ? "" : `<button class="b" type="button" data-act="edit-he" title="Edit the Hebrew version">${icon("globe")}<span>עברית</span></button>`}
         <button class="b danger" type="button" data-act="ask-delete" aria-label="Delete">${icon("trash-2")}</button>
       </div></div>`).join("");
   } catch (err) {
@@ -546,6 +547,7 @@ function renderEditor() {
       <div class="save-bar">
         <button class="b primary" type="submit" id="save">${icon("save")}<span>Save</span></button>
         ${ed.isNew ? "" : `<a class="b" href="/articles/${esc(ed.slug)}/" target="_blank" rel="noopener">${icon("eye")}<span>Open live page</span></a>`}
+        ${ed.isNew || d.draft === true ? "" : `<button class="b" type="button" id="edit-he">${icon("globe")}<span>Edit Hebrew version</span></button>`}
         <span class="status" id="st"></span>
       </div>
     </form>
@@ -620,6 +622,7 @@ function renderEditor() {
   };
   const pickCover = () => { if (needSlug()) $("cover-file").click(); };
   $("cover-btn").onclick = pickCover; $("cover-pick").onclick = pickCover;
+  if ($("edit-he")) $("edit-he").onclick = () => editTranslation(ed.slug, "he", () => openEditor(ed.slug)); // unsaved changes to the English stay unsaved
   $("cover-file").onchange = async (e) => {
     const f = e.target.files[0]; e.target.value = "";
     if (!f) return;
@@ -2477,6 +2480,7 @@ app.addEventListener("click", async (e) => {
   if (act === "p-save") saveStore();
   if (act === "back") renderList();
   if (act === "edit") openEditor(slug);
+  if (act === "edit-he") editTranslation(slug, "he", () => renderList());
   if (act === "ask-delete") {
     row.querySelector(".row-actions").innerHTML = `<span class="confirm">Delete this article and its photos? <button class="b danger" type="button" data-act="delete">${icon("trash-2")}Delete</button><button class="b" type="button" data-act="cancel">Cancel</button></span>`;
   }
