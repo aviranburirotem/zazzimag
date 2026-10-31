@@ -499,10 +499,10 @@ html.a11y-still .car-track{scroll-behavior:auto}
 .lava-sub a{color:inherit}
 .pos-tc .lava-sub p,.pos-mc .lava-sub p,.pos-bc .lava-sub p{margin-inline:auto}
 .pos-tr .lava-sub p,.pos-mr .lava-sub p,.pos-br .lava-sub p{margin-inline-start:auto}
-.lava-in.hl-white{color:#fff;text-shadow:0 2px 28px rgba(0,0,0,.45)}
-.lava-in.hl-pink{color:#ff5bb0;text-shadow:0 2px 28px rgba(0,0,0,.5)}
-.lava-in.hl-yellow{color:#ffe14d;text-shadow:0 2px 28px rgba(0,0,0,.5)}
-.lava-in.hl-black{color:#111214;text-shadow:0 2px 24px rgba(255,255,255,.35)}
+.lava-in.hl-white{color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.22),0 2px 12px rgba(0,0,0,.22)}
+.lava-in.hl-pink{color:#ff5bb0;text-shadow:0 1px 1px rgba(0,0,0,.28),0 2px 12px rgba(0,0,0,.25)}
+.lava-in.hl-yellow{color:#ffe14d;text-shadow:0 1px 1px rgba(0,0,0,.28),0 2px 12px rgba(0,0,0,.25)}
+.lava-in.hl-black{color:#111214;text-shadow:0 1px 10px rgba(255,255,255,.3)}
 .pos-tl,.pos-tc,.pos-tr{justify-content:flex-start}
 .pos-ml,.pos-mc,.pos-mr{justify-content:center}
 .pos-bl,.pos-bc,.pos-br{justify-content:flex-end}
@@ -596,3 +596,8 @@ h1:empty,h2:empty,h3:empty,p:empty,.label:empty{display:none}
 /* the strip's headlines: upright (no italics), with the space between them set in the console */
 .lava-in h1{font-style:normal}
 .lava-sub p:first-child{margin-top:var(--hg,4px)}
+
+/* crisp text on the moving strip: a tight shadow instead of a wide blur (wide blurred shadows over a
+   constantly redrawn canvas look grainy on many screens), smooth font edges, no faked bold or slant */
+.lava-in{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:geometricPrecision;font-synthesis:none;font-kerning:normal}
+.lava-band canvas{z-index:0}.lava-in{z-index:1}
