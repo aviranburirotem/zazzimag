@@ -8,10 +8,25 @@ import path from "node:path";
 import { markdown, frontmatter } from "./lib/markdown.js";
 import { icon } from "./lib/icons.js";
 import { LAUNCHED } from "./lib/site-config.js";
-import { texts } from "./lib/site-schema.js";
+import { texts, TRANSLATABLE } from "./lib/site-schema.js";
 
-// Site wording, editable in the console (content/site.json)
-const T = texts(JSON.parse(fs.readFileSync("content/site.json", "utf8")));
+// Site wording, editable in the console (content/site.json). The site is built once per language:
+// LANG is the language being built; T() gives its words (translated in the console → Languages),
+// falling back to English. Brand names, legal text and settings never change (see site-schema.js).
+const T_EN = texts(JSON.parse(fs.readFileSync("content/site.json", "utf8")));
+let LANG = "en";
+const SITE_TR = {};
+for (const l of TARGETS) {
+  const f = `content/translations/site/${l.code}.json`;
+  try { if (fs.existsSync(f)) SITE_TR[l.code] = JSON.parse(fs.readFileSync(f, "utf8")).strings || {}; } catch {}
+}
+const TR_KEYS = new Set(TRANSLATABLE.map((f) => f.key));
+const T = (k) => { const v = LANG !== "en" && TR_KEYS.has(k) ? SITE_TR[LANG]?.[k] : null; return v && v.trim() ? v : T_EN(k); };
+const LOCALE = { en: "en-US", de: "de-DE", es: "es-ES", fr: "fr-FR", he: "he-IL", ja: "ja-JP", ko: "ko-KR" };
+const H = (p) => (LANG === "en" || !String(p).startsWith("/") ? p : `/${LANG}${p}`); // a link inside the language being built
+const DIR = () => langOf(LANG)?.dir || "ltr";
+const catName = (c) => (c === T_EN("issues.category") ? T("issues.category") : (LANG !== "en" && SITE_TR[LANG]?.["cat:" + c]) || c);
+const minRead = (a) => T("ui.minRead").replace(/\{n\}/g, a.minutes);
 // Fonts chosen in the console (content/fonts.json); the site always stays in its light look for now
 const FONTS = fontSetup(fs.existsSync("content/fonts.json") ? JSON.parse(fs.readFileSync("content/fonts.json", "utf8")) : {});
 
@@ -53,7 +68,7 @@ const COMING_SOON = process.env.COMING_SOON
 
 const abs = (u) => (/^https?:/.test(u) ? u : SITE.url + u);
 const esc = (s = "") => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const fmtDate = (d) => new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+const fmtDate = (d) => new Date(d + "T12:00:00Z").toLocaleDateString(LOCALE[LANG] || "en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
 // ---------- load articles ----------
 const dir = "content/articles";
@@ -63,7 +78,7 @@ const articles = fs.readdirSync(dir).filter((f) => f.endsWith(".md")).map((file)
   const words = body.split(/\s+/).length;
   // one or several categories: "category: Guide" or "category: [Guide, Street Style]"
   const categories = [...new Set((Array.isArray(data.category) ? data.category : String(data.category || "").split(",")).map((c) => String(c).trim()).filter(Boolean))];
-  return { ...data, categories, category: categories[0] || "", slug, html: markdown(body), readTime: `${Math.max(1, Math.round(words / 220))} min`, url: `/articles/${slug}/` };
+  return { ...data, categories, category: categories[0] || "", slug, html: markdown(body), minutes: Math.max(1, Math.round(words / 220)), url: `/articles/${slug}/` };
 }).filter((a) => a.draft !== true).sort((a, b) => (a.date < b.date ? 1 : -1));
 
 for (const a of articles) {
@@ -78,13 +93,13 @@ for (const a of articles) {
     if (!fs.existsSync(f)) continue;
     try {
       const t = JSON.parse(fs.readFileSync(f, "utf8"));
-      if (t.body) a.tr[l.code] = { title: t.title || a.title, dek: t.dek || "", html: markdown(t.body), edited: !!t.edited, url: `/${l.code}/articles/${a.slug}/` };
+      if (t.body) a.tr[l.code] = { title: t.title || a.title, dek: t.dek || "", html: markdown(t.body), edited: !!t.edited };
     } catch {}
   }
 }
 
 // Copyright notice shown in every footer
-const LEGAL = esc(T("footer.copyright").replace(/\{year\}/g, new Date().getFullYear())).replace(/\n/g, "<br>");
+const LEGAL = esc(T_EN("footer.copyright").replace(/\{year\}/g, new Date().getFullYear())).replace(/\n/g, "<br>");
 
 // ---------- load issues (flip-through magazines, managed in the console) ----------
 const idir = "content/issues";
@@ -96,7 +111,7 @@ const issues = (fs.existsSync(idir) ? fs.readdirSync(idir) : []).filter((f) => f
   return {
     ...d, kind: "issue", slug, pages, url: `/issues/${slug}/`,
     cover: pages[0]?.image || "", coverAlt: pages[0]?.alt || d.title,
-    category: T("issues.category"), categories: [T("issues.category")], readTime: T("issues.pages").replace(/\{n\}/g, pages.length),
+    category: T_EN("issues.category"), categories: [T_EN("issues.category")],
   };
 }).filter((i) => i.draft !== true && i.title && i.date && i.pages.length).sort((a, b) => (a.date < b.date ? 1 : -1));
 
@@ -110,22 +125,34 @@ const PAL = palette(validHex(LEAD?.color) ? String(LEAD.color).replace("#", "") 
 const COLOR_CSS = `:root{--accent:${PAL.accent};--accent-fill:${PAL.accent};--on-accent:#ffffff}`;
 
 // ---------- templates ----------
-function layout({ title, description, active, body, image, type = "website", pathname = "/", scripts = [], head = "", bodyAttrs = "" }) {
+// The same address in another language (English has no prefix)
+const inLang = (code, p) => (code === "en" ? p : `/${code}${p}`);
+// Hebrew letters: Heebo next to the chosen fonts, Frank Ruhl Libre for article text
+const HE_FONTS = `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400..900&family=Frank+Ruhl+Libre:wght@400..700&display=swap">`;
+const heCss = (css) => css.replace(/(--(?:head|display|text|mono):"[^"]+",)/g, '$1"Heebo",').replace(/(--serif:"[^"]+",)/g, '$1"Frank Ruhl Libre",');
+// words the page scripts need, in the language being built
+const UI_KEYS = ["ui.previous", "ui.next", "ui.pauseCarousel", "ui.playCarousel", "ui.pauseAnimation", "ui.playAnimation", "ui.pauseVideo", "ui.playVideo", "ui.post", "ui.openPost", "ui.instagramPost", "ui.viewOnInstagram", "ui.close", "ui.showing", "ui.prevPage", "ui.nextPage", "ui.zoomIn", "ui.zoomOut", "ui.a11yText", "ui.a11yContrast", "ui.a11yLinks", "ui.a11yFont", "ui.a11yStill", "ui.a11yReset", "ui.language", "issues.pages", "home.followTile", "issues.category", "articles.allFilter"];
+
+function layout({ title, description, active, body, image, type = "website", pathname = "/", scripts = [], head = "", bodyAttrs = "", langs = null }) {
   const full = title ? `${title} · ${SITE.name}` : SITE.name;
-  const nav = (href, label, key, cls = "") => `<a href="${href}"${cls ? ` class="${cls}"` : ""}${active === key ? ' aria-current="page"' : ""}>${label}</a>`;
+  const nav = (href, label, key, cls = "") => `<a href="${H(href)}"${cls ? ` class="${cls}"` : ""}${active === key ? ' aria-current="page"' : ""}>${label}</a>`;
+  // every language version of this page, for search engines (pathname is the English address)
+  const alts = (langs || LANGS.map((l) => l.code)).map((c) => `<link rel="alternate" hreflang="${c}" href="${SITE.url}${inLang(c, pathname)}">`).join("\n") + `\n<link rel="alternate" hreflang="x-default" href="${SITE.url}${pathname}">`;
+  const ui = Object.fromEntries(UI_KEYS.map((k) => [k, T(k)]));
   return `<!doctype html>
-<html lang="en">
+<html lang="${LANG}" dir="${DIR()}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(full)}</title>
 <meta name="description" content="${esc(description || SITE.tagline)}">
-<link rel="canonical" href="${SITE.url}${pathname}">
+<link rel="canonical" href="${SITE.url}${H(pathname)}">
+${alts}
 <meta property="og:site_name" content="${SITE.name}">
 <meta property="og:title" content="${esc(title || SITE.name)}">
 <meta property="og:description" content="${esc(description || SITE.tagline)}">
 <meta property="og:type" content="${type}">
-<meta property="og:url" content="${SITE.url}${pathname}">
+<meta property="og:url" content="${SITE.url}${H(pathname)}">
 <meta property="og:image" content="${abs(image || "/assets/logo-poster.png")}">${COMING_SOON ? '\n<meta name="robots" content="noindex">' : ""}
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="${PAL.accent}">
@@ -133,14 +160,15 @@ function layout({ title, description, active, body, image, type = "website", pat
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 ${FONTS.links.map((u) => `<link rel="stylesheet" href="${esc(u)}">`).join("\n")}
-<link rel="stylesheet" href="/assets/site.css?v=${V}">
-<style>${FONTS.css}
+<link rel="stylesheet" href="/assets/site.css?v=${V}">${LANG === "he" ? "\n" + HE_FONTS : ""}
+<style>${LANG === "he" ? heCss(FONTS.css) : FONTS.css}
 ${COLOR_CSS}</style>${head}
 </head>
-<body${bodyAttrs} data-handle="${esc(SITE.handle)}" data-follow="${tx("home.followTile")}" data-issue-label="${tx("issues.category")}">
-<a class="skip" href="#main">Skip to content</a>
+<body${bodyAttrs} data-lang="${LANG}" data-base="${LANG === "en" ? "" : "/" + LANG}" data-handle="${esc(SITE.handle)}" data-follow="${tx("home.followTile")}" data-issue-label="${tx("issues.category")}">
+<script type="application/json" id="zz-ui">${JSON.stringify(ui).replace(/</g, "\\u003c")}</script>
+<a class="skip" href="#main">${tx("ui.skip")}</a>
 <header class="site-header"><div class="wrap bar">
-  <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home">${logoVideo(56)}</a>
+  <a class="logo" href="${H(COMING_SOON ? "/preview/" : "/")}" aria-label="${tx("ui.homeLink")}">${logoVideo(56)}</a>
   ${on("show.ticker") ? ticker() : `<div class="ticker-space"></div>`}
   <nav class="site-nav" aria-label="Main">
     ${langMenu()}
@@ -152,25 +180,25 @@ ${COLOR_CSS}</style>${head}
 <main id="main">
 ${body}
 </main>
-<footer class="site-footer">${on("show.videoStrip") && active === "home" ? `<div class="vstrip" role="img" aria-label="${esc(T("home.videoLabel"))}">
+<footer class="site-footer">${on("show.videoStrip") && active === "home" ? `<div class="vstrip" role="img" aria-label="${tx("home.videoLabel")}">
   <video muted loop playsinline preload="none" poster="${VIDEO.poster}" aria-hidden="true" tabindex="-1">
     <source media="(max-width: 700px)" src="${VIDEO.small}" type="video/mp4">
     <source src="${VIDEO.wide}" type="video/mp4">
   </video>
-  <button class="vstrip-btn" type="button" aria-label="Pause video" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button>
+  <button class="vstrip-btn" type="button" aria-label="${tx("ui.pauseVideo")}" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button>
 </div>` : ""}<div class="wrap">
-  <a class="logo" href="${COMING_SOON ? "/preview/" : "/"}" aria-label="Zazzi magazine home"><img src="/assets/logo.png" alt="" width="56" height="56"></a>
-  <nav aria-label="Footer" class="label"><a href="/articles/">Articles</a><a href="/about/">Info &amp; contact</a>${on("show.storeNav") ? `<a href="/store/">Store</a>` : ""}<a href="/accessibility/">Accessibility</a><a href="/privacy/">Privacy</a>${PIXEL_ON ? `<a href="/privacy/#cookies" data-consent-open>Cookie settings</a>` : ""}</nav>
+  <a class="logo" href="${H(COMING_SOON ? "/preview/" : "/")}" aria-label="${tx("ui.homeLink")}"><img src="/assets/logo.png" alt="" width="56" height="56"></a>
+  <nav aria-label="Footer" class="label"><a href="${H("/articles/")}">${tx("ui.footerArticles")}</a><a href="${H("/about/")}">${tx("ui.footerInfo")}</a>${on("show.storeNav") ? `<a href="${H("/store/")}">${tx("ui.footerStore")}</a>` : ""}<a href="${H("/accessibility/")}">${tx("ui.footerA11y")}</a><a href="${H("/privacy/")}">${tx("ui.footerPrivacy")}</a>${PIXEL_ON ? `<a href="${H("/privacy/")}#cookies" data-consent-open>${tx("ui.cookieSettings")}</a>` : ""}</nav>
   <div class="social"><a class="icon-btn" href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram @${SITE.handle}">${icon("instagram")}</a><a class="icon-btn" href="mailto:${SITE.email}" aria-label="Email ${SITE.email}">${icon("mail")}</a></div>
-  <p class="legal">${LEGAL}</p>
+  <p class="legal" lang="en" dir="ltr">${LEGAL}</p>
 </div></footer>
 <div class="modal" id="modal" hidden></div>
 <div class="a11y">
-  <button class="a11y-toggle" id="a11y-toggle" type="button" aria-expanded="false" aria-controls="a11y-panel" aria-label="Accessibility options">${icon("accessibility")}</button>
-  <div class="a11y-panel" id="a11y-panel" role="dialog" aria-label="Accessibility options" hidden>
-    <h2>Accessibility <button class="a11y-close" type="button" data-a11y-close aria-label="Close accessibility options">${icon("x")}</button></h2>
+  <button class="a11y-toggle" id="a11y-toggle" type="button" aria-expanded="false" aria-controls="a11y-panel" aria-label="${tx("ui.a11yOptions")}">${icon("accessibility")}</button>
+  <div class="a11y-panel" id="a11y-panel" role="dialog" aria-label="${tx("ui.a11yOptions")}" hidden>
+    <h2>${tx("ui.a11yTitle")} <button class="a11y-close" type="button" data-a11y-close aria-label="${tx("ui.close")}">${icon("x")}</button></h2>
     <div class="a11y-opts"></div>
-    <a href="/accessibility/">Accessibility statement</a>
+    <a href="${H("/accessibility/")}">${tx("ui.a11yStatement")}</a>
   </div>
 </div>
 <template id="fb-icons"><span class="x">${icon("x")}</span><span class="l">${icon("chevron-left")}</span><span class="r">${icon("chevron-right")}</span><span class="zi">${icon("zoom-in")}</span><span class="zo">${icon("zoom-out")}</span></template>
@@ -183,19 +211,23 @@ ${body}
 // Where the cover is centred when it's cropped (set in the console: "Position on the home page")
 // coverPosition = home tiles, heroPosition = top of the article (each set separately in the console)
 const coverPos = (a, key = "coverPosition") => (/^\d{1,3}(\.\d+)?% \d{1,3}(\.\d+)?%$/.test(String(a[key] || "").trim()) ? ` style="object-position:${String(a[key]).trim()}"` : "");
-const catAttr = (a) => esc((a.categories || [a.category]).join("|")); // for the category filters
-const artTile = (a, feat = false) => a.kind === "issue" ? issueTile(a, feat) : `<a class="tile art${feat ? " feat" : ""}" href="${a.url}" data-cat="${catAttr(a)}" data-slug="${esc(a.slug)}">
-  <div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"${coverPos(a)}>${a.categories.length ? `<span class="badges">${a.categories.map((c) => `<span class="badge a">${esc(c)}</span>`).join("")}</span>` : ""}</div>
-  <span class="label">${fmtDate(a.date)} · ${a.readTime} read</span><h3>${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap">${esc(a.dek)}</p>` : ""}</a>`;
+const catAttr = (a) => esc((a.categories || [a.category]).map(catName).join("|")); // for the category filters
+// an article's title and description in the language being built (English when not translated yet)
+const trOf = (a) => (LANG !== "en" && a.tr?.[LANG]) || null;
+const enAttr = (a) => (LANG !== "en" && !trOf(a) ? ' lang="en" dir="ltr"' : "");
+const artTile = (a, feat = false) => a.kind === "issue" ? issueTile(a, feat) : `<a class="tile art${feat ? " feat" : ""}" href="${H(a.url)}" data-cat="${catAttr(a)}" data-slug="${esc(a.slug)}">
+  <div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"${coverPos(a)}>${a.categories.length ? `<span class="badges">${a.categories.map((c) => `<span class="badge a">${esc(catName(c))}</span>`).join("")}</span>` : ""}</div>
+  <span class="label">${fmtDate(a.date)} · ${esc(minRead(a))}</span><h3${enAttr(a)}>${esc(trOf(a)?.title || a.title)}</h3>${feat && (trOf(a)?.dek || a.dek) ? `<p class="cap"${enAttr(a)}>${esc(trOf(a)?.dek || a.dek)}</p>` : ""}</a>`;
 // Issues look like a printed magazine: the cover sits on a little stack of pages.
 // Clicking opens the flip-through popup (flipbook.js); the link still works on its own.
-const issueTile = (a, feat = false) => `<a class="tile art issue${feat ? " feat" : ""}" href="${a.url}" data-issue="${esc(a.slug)}" data-cat="${catAttr(a)}">
+const pagesLabel = (i) => T("issues.pages").replace(/\{n\}/g, i.pages.length);
+const issueTile = (a, feat = false) => `<a class="tile art issue${feat ? " feat" : ""}" href="${H(a.url)}" data-issue="${esc(a.slug)}" data-cat="${catAttr(a)}">
   <div class="ph"><div class="mag"${(() => { const d = a.cover && a.cover.startsWith("/") && imgDims(a.cover); return d ? ` style="aspect-ratio:${d.w}/${d.h}"` : ""; })()}><img src="${esc(fbPage({ image: a.cover }).imageM || a.cover)}" alt="${esc(a.coverAlt || a.title)}" loading="lazy"></div></div>
-  <span class="label issue-label">${icon("book-open")}${tx("issues.category")} · ${esc(a.readTime)}</span><h3>${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap">${esc(a.dek)}</p>` : ""}</a>`;
+  <span class="label issue-label">${icon("book-open")}${tx("issues.category")} · ${esc(pagesLabel(a))}</span><h3 lang="en" dir="ltr">${esc(a.title)}</h3>${feat && a.dek ? `<p class="cap" lang="en" dir="ltr">${esc(a.dek)}</p>` : ""}</a>`;
 const igSlot = () => `<div class="tile ig ig-slot" aria-hidden="true"><div class="ph"></div></div>`;
 
 // Animated heart logo (looping video, falls back to the still logo)
-const logoVideo = (size) => `<video class="logo-vid" width="${size}" height="${size}" autoplay muted loop playsinline preload="metadata" poster="/assets/logo.png" aria-hidden="true" data-light="/assets/logo-animated.mp4?v=${V}" data-dark="/assets/logo-animated-dark.mp4?v=${V}"><source src="/assets/logo-animated.mp4?v=${V}" type="video/mp4"></video><span class="sr">Zazzi magazine</span>`;
+const logoVideo = (size) => `<video class="logo-vid" width="${size}" height="${size}" autoplay muted loop playsinline preload="metadata" poster="/assets/logo.png" aria-hidden="true" data-light="/assets/logo-animated.mp4?v=${V}" data-dark="/assets/logo-animated-dark.mp4?v=${V}"><source src="/assets/logo-animated.mp4?v=${V}" type="video/mp4"></video><span class="sr">${esc(SITE.name)}</span>`;
 
 // Header ticker: words drift slowly between the logo and the buttons (decorative, hidden from screen readers)
 function ticker() {
@@ -203,7 +235,7 @@ function ticker() {
   if (!words.length) return `<div class="ticker-space"></div>`;
   const run = words.map((w) => `<span class="tk-word">${esc(w)}</span>${icon("heart", "tk-heart")}`).join("");
   const dur = Math.max(18, words.join(" ").length * 0.45).toFixed(1);
-  return `<div class="ticker" aria-hidden="true"><div class="ticker-track" style="animation-duration:${dur}s">${run}${run}</div></div>`;
+  return `<div class="ticker" aria-hidden="true" dir="ltr"><div class="ticker-track" style="animation-duration:${dur}s">${run}${run}</div></div>`;
 }
 
 // ---------- pages ----------
@@ -218,24 +250,24 @@ function home() {
   let ai = 0;
   const nextArt = () => (ai < arts.length ? artTile(arts[ai++]) : "");
   const igOr = () => (feed ? igSlot() : nextArt()); // without the feed, articles take the Instagram places
-  const igLink = `<a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a>`;
+  const igLink = `<a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}<bdi>@${SITE.handle}</bdi></a>`;
   const sections = [];
 
   const big = arts[ai] ? artTile(arts[ai++], true) : "";
   const s1 = [big, igOr(), iss[0] ? artTile(iss[0]) : igOr(), igOr(), igOr()].filter(Boolean);
-  if (s1.length) sections.push(`<section class="wrap home-sec sec-hero" aria-label="Latest">${s1.join("")}</section>`);
+  if (s1.length) sections.push(`<section class="wrap home-sec sec-hero" aria-label="${tx("ui.latest")}">${s1.join("")}</section>`);
 
   // a carousel: header with arrows and pause, then a row of tiles that scrolls sideways
   const car = (title, tiles, extra = "", foot = "") => `<div class="half carousel" data-carousel>
       <div class="section-h"><h2>${title}</h2><div class="car-ctl">${extra}
-        <button class="car-btn" type="button" data-car="prev" aria-label="Previous">${icon("arrow-left")}</button>
-        <button class="car-btn" type="button" data-car="next" aria-label="Next">${icon("arrow-right")}</button>
-        <button class="car-btn" type="button" data-car="pause" aria-label="Pause the carousel" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></div></div>
+        <button class="car-btn" type="button" data-car="prev" aria-label="${tx("ui.previous")}">${icon("arrow-left")}</button>
+        <button class="car-btn" type="button" data-car="next" aria-label="${tx("ui.next")}">${icon("arrow-right")}</button>
+        <button class="car-btn" type="button" data-car="pause" aria-label="${tx("ui.pauseCarousel")}" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></div></div>
       <div class="car-track" role="region" aria-label="${esc(title)}" tabindex="0">${tiles.join("")}</div>${foot}</div>`;
   const left = [], right = [];
   for (let i = 0; i < 10; i++) { const t = nextArt(); if (t) left.push(t); }
   if (feed) for (let i = 0; i < 9; i++) right.push(igSlot());
-  const more = `<a class="btn alt more-btn" href="/articles/">${tx("home.moreArticles")} ${icon("arrow-right")}</a>`;
+  const more = `<a class="btn alt more-btn" href="${H("/articles/")}">${tx("home.moreArticles")} ${icon("arrow-right")}</a>`;
   const halves = [left.length ? car(tx("home.secStories"), left, "", more) : "", right.length ? car(tx("home.secInstagram"), right, igLink) : ""].filter(Boolean);
   if (halves.length) sections.push(`<section class="wrap home-sec sec-car${halves.length === 1 ? " solo" : ""}">${halves.join("")}</section>`);
 
@@ -255,61 +287,57 @@ function home() {
     description: `${SITE.name}. ${SITE.tagline}`,
     body: `${lava ? `<div class="wrap lava-wrap"><section class="lava-band" data-lava data-colors="${esc(JSON.stringify(PAL.lava))}" style="--hs:${hlSize};background:linear-gradient(90deg,${PAL.lava.bgL},${PAL.lava.bgR})">
       <canvas aria-hidden="true"></canvas>${sw}
-      ${T("home.headline") || T("home.intro") ? `<div class="lava-in pos-${hlPos} hl-${hlColor}" style="--is:${introSize}">${T("home.headline") ? `<h1>${br("home.headline")}</h1>` : ""}${T("home.intro") ? `<div class="lava-sub">${md("home.intro")}</div>` : ""}</div>` : ""}
-      <button class="lava-pause" type="button" data-lava-pause aria-label="Pause the animation" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></section></div>` : ""}
+      ${T("home.headline") || T("home.intro") ? `<div class="lava-in pos-${hlPos} hl-${hlColor}" style="--is:${introSize}">${T("home.headline") ? `<h1 class="brand-hl">${br("home.headline")}</h1>` : ""}${T("home.intro") ? `<div class="lava-sub">${md("home.intro")}</div>` : ""}</div>` : ""}
+      <button class="lava-pause" type="button" data-lava-pause aria-label="${tx("ui.pauseAnimation")}" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></section></div>` : ""}
     <section class="wrap intro${lava ? " after-lava" : ""} align-${introAlign}" style="--hs:${hlSize};--is:${introSize}">${lava && !T("home.headline") ? `<h1 class="visually-hidden">${esc(SITE.name)}</h1>` : ""}
       ${lava ? "" : sw}
       ${lava ? "" : `<div>${T("home.headline") ? `<h1>${br("home.headline")}</h1>` : ""}
       ${md("home.intro")}</div>`}
-      ${on("show.igButton") ? `<a class="handle" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}${icon("arrow-up-right")}</a>` : ""}</section>
+      ${on("show.igButton") ? `<a class="handle" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}<bdi>@${SITE.handle}</bdi>${icon("arrow-up-right")}</a>` : ""}</section>
     <div class="home-sections">${grid}</div>
-    ${on("show.band") ? `<section class="band"><div class="wrap"><h2>${tx("home.bandHeading")}</h2><a class="btn alt" href="/articles/">${tx("home.bandButton")} ${icon("arrow-right")}</a></div></section>` : ""}`,
+    ${on("show.band") ? `<section class="band"><div class="wrap"><h2>${tx("home.bandHeading")}</h2><a class="btn alt" href="${H("/articles/")}">${tx("home.bandButton")} ${icon("arrow-right")}</a></div></section>` : ""}`,
   });
 }
 
 function articlesIndex() {
   const ALL = T("articles.allFilter");
-  const cats = [ALL, ...new Set(stories.flatMap((a) => a.categories || [a.category]))];
+  const cats = [ALL, ...new Set(stories.flatMap((a) => a.categories || [a.category]).map(catName))];
   return layout({
     title: T("articles.heading"), active: "articles", pathname: "/articles/",
-    description: "All Zazzi stories: street style, trends, guides and interviews.",
+    description: T("ui.articlesDescription"),
     body: `<section class="wrap intro"><div><span class="label">${esc(T("articles.count").replace(/\{n\}/g, stories.length))}</span><h1>${tx("articles.heading")}</h1></div></section>
     <p id="filter-status" class="visually-hidden" aria-live="polite"></p>
-    <div class="wrap filters" role="group" aria-label="Filter by category">${cats.map((c) => `<button class="chip" type="button" data-filter="${esc(c)}" aria-pressed="${c === ALL}">${esc(c)}</button>`).join("")}</div>
+    <div class="wrap filters" role="group" aria-label="${tx("ui.filterBy")}">${cats.map((c) => `<button class="chip" type="button" data-filter="${esc(c)}" aria-pressed="${c === ALL}">${esc(c)}</button>`).join("")}</div>
     <section class="wrap grid">${stories.map((a) => artTile(a)).join("")}</section>`,
   });
 }
 
 // Language menu in the header: the article languages, by their own names (decorative until site.js runs)
 const langMenu = () => `<div class="lang" data-lang-menu>
-  <button class="lang-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Language: English">${icon("globe")}<span class="lang-code">EN</span></button>
-  <ul class="lang-list" role="menu" hidden>${LANGS.map((l) => `<li role="none"><button type="button" role="menuitemradio" aria-checked="${l.code === "en"}" data-lang="${l.code}" lang="${l.code}">${esc(l.native)}</button></li>`).join("")}</ul></div>`;
+  <button class="lang-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="${tx("ui.language")}: ${esc(langOf(LANG).native)}">${icon("globe")}<span class="lang-code">${LANG.toUpperCase()}</span></button>
+  <ul class="lang-list" role="menu" hidden>${LANGS.map((l) => `<li role="none"><button type="button" role="menuitemradio" aria-checked="${l.code === LANG}" data-lang="${l.code}" lang="${l.code}" dir="${l.dir}">${esc(l.native)}</button></li>`).join("")}</ul></div>`;
 
-function articlePage(a, lang = "") {
+function articlePage(a) {
   const more = articles.filter((x) => x.slug !== a.slug).slice(0, 4);
   const byline = (a.author || "").trim();
-  const t = lang ? a.tr[lang] : null, L = lang ? langOf(lang) : null;
+  const t = trOf(a), en = LANG !== "en" && !t; // en: this language has no translation of the article yet
   const title = t ? t.title : a.title, dek = t ? t.dek : a.dek, html = t ? t.html : a.html;
-  const avail = Object.keys(a.tr);
-  // every language version of this article, for search engines
-  const alt = avail.length ? [`<link rel="alternate" hreflang="en" href="${SITE.url}${a.url}">`, `<link rel="alternate" hreflang="x-default" href="${SITE.url}${a.url}">`,
-    ...avail.map((c) => `<link rel="alternate" hreflang="${c}" href="${SITE.url}${a.tr[c].url}">`)].join("\n") : "";
+  const content = en ? ' lang="en" dir="ltr"' : "";
   return layout({
-    title, description: dek, active: "articles", pathname: t ? t.url : a.url, image: a.cover, type: "article",
-    head: (alt ? "\n" + alt : "") + (lang === "he" ? `\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400..900&family=Frank+Ruhl+Libre:wght@400..700&display=swap">` : ""), bodyAttrs: ` data-article="${esc(a.slug)}" data-page-lang="${lang || "en"}" data-langs="${avail.join(",")}"`,
-    body: `<article${L ? ` lang="${L.code}" dir="${L.dir}" class="translated"` : ""}>
+    title, description: dek, active: "articles", pathname: a.url, image: a.cover, type: "article",
+    bodyAttrs: ` data-article="${esc(a.slug)}" data-langs="${Object.keys(a.tr).join(",")}"`,
+    body: `<article>
     <header class="wrap"><div class="article-head">
-      <div class="crumbs label" lang="en" dir="ltr"><a href="/articles/">Articles</a><span>/</span><span>${a.categories.map(esc).join(" · ")}</span></div>
-      <h1>${esc(title)}</h1>${dek ? `<p class="dek">${esc(dek)}</p>` : ""}
-      <div class="meta label" lang="en" dir="ltr"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${a.readTime} read</span>${byline ? `<span>${tx("articles.byline")} ${esc(byline)}</span>` : ""}</div>
-      ${t ? `<p class="tr-note">${icon("globe")}<span>${esc(NOTE[lang][t.edited ? 1 : 0])} · <a href="${a.url}" data-lang-pick="en" lang="en">${esc(NOTE[lang][2])}</a></span></p>` : ""}</div></header>
-    <figure class="wrap hero${a.heroShape === "vertical" ? " vertical" : ""}"${L ? ' lang="en" dir="ltr"' : ""}><div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}"${coverPos(a, "heroPosition")}></div>${a.coverCaption ? `<figcaption>${esc(a.coverCaption)}</figcaption>` : ""}</figure>
-    <div class="wrap"><div class="body">${html}</div>
-      <div${L ? ' lang="en" dir="ltr"' : ""}>
-      ${more.length && on("show.readNext") ? `<div class="section-h"><h2>${tx("articles.readNext")}</h2><a class="label with-ic" href="/articles/">${tx("articles.allLink")} ${icon("arrow-right")}</a></div><div class="grid">${more.map((x) => artTile(x)).join("")}</div>` : ""}
-      ${on("show.feedStrip") ? `<section data-ig-section><div class="section-h"><h2>${tx("articles.feedHeading")}</h2><a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}</a></div>
+      <div class="crumbs label"><a href="${H("/articles/")}">${tx("articles.heading")}</a><span>/</span><span>${a.categories.map((c) => esc(catName(c))).join(" · ")}</span></div>
+      <h1${content}>${esc(title)}</h1>${dek ? `<p class="dek"${content}>${esc(dek)}</p>` : ""}
+      <div class="meta label"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${esc(minRead(a))}</span>${byline ? `<span>${tx("articles.byline")} <bdi>${esc(byline)}</bdi></span>` : ""}</div>
+      ${t ? `<p class="tr-note">${icon("globe")}<span>${esc(NOTE[LANG][t.edited ? 1 : 0])} · <a href="${a.url}" data-lang-pick="en" lang="en" dir="ltr">${esc(NOTE[LANG][2])}</a></span></p>` : en ? `<p class="tr-note">${icon("globe")}<span>${tx("ui.notTranslated")}</span></p>` : ""}</div></header>
+    <figure class="wrap hero${a.heroShape === "vertical" ? " vertical" : ""}"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(a.coverAlt || a.title)}"${coverPos(a, "heroPosition")}></div>${a.coverCaption ? `<figcaption><bdi>${esc(a.coverCaption)}</bdi></figcaption>` : ""}</figure>
+    <div class="wrap"><div class="body"${content}>${html}</div>
+      ${more.length && on("show.readNext") ? `<div class="section-h"><h2>${tx("articles.readNext")}</h2><a class="label with-ic" href="${H("/articles/")}">${tx("articles.allLink")} ${icon("arrow-right")}</a></div><div class="grid">${more.map((x) => artTile(x)).join("")}</div>` : ""}
+      ${on("show.feedStrip") ? `<section data-ig-section><div class="section-h"><h2>${tx("articles.feedHeading")}</h2><a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}<bdi>@${SITE.handle}</bdi></a></div>
       <div class="strip" data-ig-strip>${'<div class="tile ig-slot" aria-hidden="true"><div class="ph"></div></div>'.repeat(6)}</div></section>` : ""}
-    </div></div></article>`,
+    </div></article>`,
   });
 }
 
@@ -343,22 +371,22 @@ const fbPage = (p) => {
 function issuePage(i) {
   const data = JSON.stringify(i.pages.map(fbPage)).replace(/</g, "\\u003c");
   return layout({
-    title: i.title, description: i.dek || `${i.title}: ${T("issues.pages").replace(/\{n\}/g, i.pages.length)}`, active: "articles", pathname: i.url, image: i.cover, type: "article",
+    title: i.title, description: i.dek || `${i.title}: ${pagesLabel(i)}`, active: "articles", pathname: i.url, image: i.cover, type: "article",
     body: `<article class="issue">
     <header class="wrap"><div class="article-head issue-head">
-      <div class="crumbs label"><a href="/articles/">${tx("articles.heading")}</a><span>/</span><span>${tx("issues.category")}</span></div>
-      <h1>${esc(i.title)}</h1>${i.dek ? `<p class="dek">${esc(i.dek)}</p>` : ""}
-      <div class="meta label"><time datetime="${i.date}">${fmtDate(i.date)}</time><span>${esc(i.readTime)}</span></div></div></header>
-    <section class="wrap flipbook" data-flipbook aria-roledescription="flip-through magazine" aria-label="${esc(i.title)}">
+      <div class="crumbs label"><a href="${H("/articles/")}">${tx("articles.heading")}</a><span>/</span><span>${tx("issues.category")}</span></div>
+      <h1 lang="en" dir="ltr">${esc(i.title)}</h1>${i.dek ? `<p class="dek" lang="en" dir="ltr">${esc(i.dek)}</p>` : ""}
+      <div class="meta label"><time datetime="${i.date}">${fmtDate(i.date)}</time><span>${esc(pagesLabel(i))}</span></div></div></header>
+    <section class="wrap flipbook" dir="ltr" data-flipbook aria-label="${esc(i.title)}">
       <div class="fb-stage"><div class="fb-book"></div></div>
       <div class="fb-controls">
-        <button class="fb-btn" type="button" data-fb="prev" aria-label="Previous page">${icon("chevron-left")}</button>
+        <button class="fb-btn" type="button" data-fb="prev" aria-label="${tx("ui.prevPage")}">${icon("chevron-left")}</button>
         <span class="fb-count label" aria-live="polite"></span>
-        <button class="fb-btn" type="button" data-fb="next" aria-label="Next page">${icon("chevron-right")}</button>
-        <button class="fb-btn fb-zoom-btn" type="button" data-fb="zoom" aria-label="Zoom in" aria-pressed="false"><span class="i-in">${icon("zoom-in")}</span><span class="i-out">${icon("zoom-out")}</span></button>
+        <button class="fb-btn" type="button" data-fb="next" aria-label="${tx("ui.nextPage")}">${icon("chevron-right")}</button>
+        <button class="fb-btn fb-zoom-btn" type="button" data-fb="zoom" aria-label="${tx("ui.zoomIn")}" aria-pressed="false"><span class="i-in">${icon("zoom-in")}</span><span class="i-out">${icon("zoom-out")}</span></button>
       </div>
       <p class="fb-caption"></p>
-      <p class="fb-hint label">${tx("issues.hint")}</p>
+      <p class="fb-hint label" dir="${DIR()}">${tx("issues.hint")}</p>
       <noscript><div class="fb-fallback">${i.pages.map((p) => `<figure><img src="${esc(p.image)}" alt="${esc(p.alt || "")}" loading="lazy">${p.caption ? `<figcaption>${esc(p.caption)}</figcaption>` : ""}</figure>`).join("")}</div></noscript>
       <script type="application/json" class="fb-data">${data}</script>
     </section>
@@ -369,18 +397,18 @@ function issuePage(i) {
 function about() {
   return layout({
     title: T("nav.info"), active: "about", pathname: "/about/",
-    description: "Who we are and how to reach Zazzi Magazine.",
+    description: T("ui.aboutDescription"),
     body: `<section class="wrap page"><h1>${tx("about.heading")}</h1><div class="cols">
     <div>${md("about.text")}
     <div class="contact-cards">
-      <a class="contact-card" href="mailto:${SITE.email}">${icon("mail")}<span><span class="label">Email</span>${SITE.email}</span></a>
-      <a class="contact-card" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}<span><span class="label">Instagram</span>@${SITE.handle}</span></a>
+      <a class="contact-card" href="mailto:${SITE.email}">${icon("mail")}<span><span class="label">${tx("ui.formEmail")}</span><bdi>${SITE.email}</bdi></span></a>
+      <a class="contact-card" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}<span><span class="label">Instagram</span><bdi>@${SITE.handle}</bdi></span></a>
     </div></div>
     <form data-mailto="${SITE.email}"><span class="label">${tx("about.formHeading")}</span>
-      <label for="name">Name<input id="name" name="name" required autocomplete="name"></label>
-      <label for="email">Email<input id="email" name="email" type="email" required autocomplete="email"></label>
-      <label for="topic">Topic<select id="topic" name="topic">${T("about.topics").split("\n").map((o) => o.trim()).filter(Boolean).map((o) => `<option>${esc(o)}</option>`).join("")}</select></label>
-      <label for="message">Message<textarea id="message" name="message" required></textarea></label>
+      <label for="name">${tx("ui.formName")}<input id="name" name="name" required autocomplete="name"></label>
+      <label for="email">${tx("ui.formEmail")}<input id="email" name="email" type="email" required autocomplete="email" dir="ltr"></label>
+      <label for="topic">${tx("ui.formTopic")}<select id="topic" name="topic">${T("about.topics").split("\n").map((o) => o.trim()).filter(Boolean).map((o) => `<option>${esc(o)}</option>`).join("")}</select></label>
+      <label for="message">${tx("ui.formMessage")}<textarea id="message" name="message" required></textarea></label>
       <button class="btn" type="submit">${tx("about.sendButton")} ${icon("arrow-right")}</button>
       <p class="ok" hidden>${tx("about.sentMessage")}</p></form></div></section>`,
   });
@@ -389,7 +417,7 @@ function about() {
 // Store products, managed in the console (content/products.json)
 const slugify = (t) => String(t).toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 70) || "item";
 const ilsNumber = (v) => Number(String(v ?? "").replace(/[^0-9.]/g, "")) || 0;
-const PRODUCTS = (() => {
+const PRODUCTS = (() => { // names and descriptions stay as written
   let list = [];
   try { list = (JSON.parse(fs.readFileSync("content/products.json", "utf8")).products || []).filter((p) => p && p.name && !p.hidden); } catch {}
   const used = new Set();
@@ -407,7 +435,7 @@ const badgeText = (p) => (p.status === "soldout" ? T("store.soldOutBadge") : (p.
 
 function productCard(p) {
   const badge = badgeText(p);
-  return `<a class="product${p.status === "soldout" ? " sold" : ""}" href="${p.url}">
+  return `<a class="product${p.status === "soldout" ? " sold" : ""}" href="${H(p.url)}">
     <div class="ph">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.imageAlt || p.name)}" loading="lazy">` : `<span class="p-name-ph">${esc(p.name)}</span>`}${badge ? `<span class="p-badge">${esc(badge)}</span>` : ""}</div>
     <div class="p-info"><h3>${esc(p.name)}</h3>${price(p)}</div>
   </a>`;
@@ -429,7 +457,7 @@ function productPage(p) {
     title: p.name, active: "store", pathname: p.url, image: p.image || undefined,
     description: (p.description || `${p.name} from the ${SITE.name} store.`).replace(/\s+/g, " ").slice(0, 160),
     body: `<section class="wrap page product-page">
-      <div class="crumbs label"><a href="/store/">${tx("store.heading")}</a><span>/</span><span>${esc(p.name)}</span></div>
+      <div class="crumbs label"><a href="${H("/store/")}">${tx("store.heading")}</a><span>/</span><span>${esc(p.name)}</span></div>
       <div class="pp-grid">
         <div class="pp-image${p.status === "soldout" ? " sold" : ""}">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.imageAlt || p.name)}">` : `<span class="p-name-ph">${esc(p.name)}</span>`}</div>
         <div class="pp-info">
@@ -438,7 +466,7 @@ function productPage(p) {
           ${price(p, "pp-price")}
           ${p.description ? `<div class="pp-desc">${markdown(p.description)}</div>` : ""}
           <div class="pp-action">${productAction(p)}</div>
-          <a class="label with-ic pp-back" href="/store/">${tx("store.backLink")} ${icon("arrow-right")}</a>
+          <a class="label with-ic pp-back" href="${H("/store/")}">${tx("store.backLink")} ${icon("arrow-right")}</a>
         </div>
       </div>
     </section>`,
@@ -447,7 +475,7 @@ function productPage(p) {
 
 function store() {
   const items = T("store.items").split("\n").map((t) => t.trim()).filter(Boolean);
-  const notify = `<form data-mailto="${SITE.email}" data-subject="Store: notify me"><label for="notify">Email<input id="notify" name="email" type="email" required autocomplete="email"></label>
+  const notify = `<form data-mailto="${SITE.email}" data-subject="Store: notify me"><label for="notify">${tx("ui.formEmail")}<input id="notify" name="email" type="email" required autocomplete="email" dir="ltr"></label>
       <button class="btn alt" type="submit">${icon("mail")} ${tx("store.button")}</button><p class="ok" hidden>${tx("store.sentMessage")}</p></form>`;
   const grid = PRODUCTS.length
     ? `<div class="products">${PRODUCTS.map(productCard).join("")}</div>`
@@ -467,7 +495,7 @@ function accessibility() {
   return layout({
     title: "Accessibility statement", pathname: "/accessibility/",
     description: "Zazzi Magazine accessibility statement, in line with Israeli Standard 5568 (WCAG 2.0 level AA).",
-    body: `<section class="wrap page statement">
+    body: `<section class="wrap page statement" lang="en" dir="ltr">
     <h1>Accessibility</h1>
     <div id="en" lang="en">
       <p>Zazzi Magazine wants everyone to be able to read and enjoy the site, including people with disabilities. We designed it to meet Israeli Standard 5568 (Web Content Accessibility Guidelines) at level AA, which is based on the international WCAG 2.0 guidelines, as required by the Equal Rights for Persons with Disabilities (Service Accessibility Adjustments) Regulations, 2013.</p>
@@ -503,7 +531,7 @@ function privacy() {
   return layout({
     title: "Privacy policy", pathname: "/privacy/",
     description: `How ${SITE.name} handles information when you visit zazzimag.com.`,
-    body: `<section class="wrap page statement">
+    body: `<section class="wrap page statement" lang="en" dir="ltr">
     <h1>Privacy</h1>
     <div id="en" lang="en">
       <p>This policy explains what information is collected when you use zazzimag.com, run by ${esc(SITE.name)} ("we"). We keep it short because we collect very little: there are no visitor accounts${PIXEL_ON ? ", the only tracking is Meta's pixel, which runs only if you agree," : ", no advertising and no tracking cookies,"} and we never sell your information.</p>
@@ -546,7 +574,7 @@ function privacy() {
 }
 
 function notFound() {
-  return layout({ title: "Page not found", pathname: "/404", body: `<section class="wrap page"><h1>Not found</h1><p class="label">This page doesn't exist.</p><p><a class="btn alt" href="/">Back to home</a></p></section>` });
+  return layout({ title: T("ui.notFound"), pathname: "/404", langs: ["en"], body: `<section class="wrap page"><h1>${tx("ui.notFound")}</h1><p class="label">${tx("ui.notFoundText")}</p><p><a class="btn alt" href="${H("/")}">${tx("ui.backHome")}</a></p></section>` });
 }
 
 function comingSoon() {
@@ -651,24 +679,30 @@ for (const [from, to] of Object.entries(REDIRECTS)) {
   write(`${from.slice(1)}index.html`, `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Moved</title><meta name="robots" content="noindex"><link rel="canonical" href="${SITE.url}${to}"><meta http-equiv="refresh" content="0; url=${to}"><script>location.replace(${JSON.stringify(to)} + location.hash)</script></head><body><p>This article moved: <a href="${to}">continue to the new address</a>.</p></body></html>`);
 }
 
-// Full site. While coming-soon is on, the home page lives at /preview/ (hidden from search engines).
-write("preview/index.html", home()); // private preview, always password-protected
-if (!COMING_SOON) write("index.html", home());
-write("articles/index.html", articlesIndex());
-for (const a of articles) {
-  write(`articles/${a.slug}/index.html`, articlePage(a));
-  for (const c of Object.keys(a.tr)) write(`${c}/articles/${a.slug}/index.html`, articlePage(a, c));
+// Full site, once per language: English at the root, the others under /<code>/ (e.g. /he/articles/…).
+// While coming-soon is on, the home page lives at /preview/ (hidden from search engines).
+for (const l of LANGS) {
+  LANG = l.code;
+  const pre = l.code === "en" ? "" : `${l.code}/`;
+  write(`${pre}preview/index.html`, home()); // private preview, always password-protected
+  if (!COMING_SOON) write(`${pre}index.html`, home());
+  write(`${pre}articles/index.html`, articlesIndex());
+  for (const a of articles) write(`${pre}articles/${a.slug}/index.html`, articlePage(a));
+  for (const i of issues) write(`${pre}issues/${i.slug}/index.html`, issuePage(i));
+  write(`${pre}issues/data.json`, JSON.stringify(Object.fromEntries(issues.map((i) => [i.slug, { title: i.title, dek: i.dek || "", pagesLabel: pagesLabel(i), pages: i.pages.map(fbPage) }]))));
+  write(`${pre}about/index.html`, about());
+  write(`${pre}store/index.html`, store());
+  for (const p of PRODUCTS) write(`${pre}store/${p.slug}/index.html`, productPage(p));
+  write(`${pre}accessibility/index.html`, accessibility());
+  write(`${pre}privacy/index.html`, privacy());
+  if (l.code !== "en") for (const [from, to] of Object.entries(REDIRECTS)) { // old article addresses, in this language too
+    if (!/^\/articles\/[a-z0-9-]+\/$/.test(from) || !/^\/articles\/[a-z0-9-]+\/$/.test(to) || articles.some((a) => a.url === from)) continue;
+    const t2 = `/${l.code}${to}`;
+    write(`${pre}${from.slice(1)}index.html`, `<!doctype html><html lang="${l.code}"><head><meta charset="utf-8"><title>Moved</title><meta name="robots" content="noindex"><link rel="canonical" href="${SITE.url}${t2}"><meta http-equiv="refresh" content="0; url=${t2}"><script>location.replace(${JSON.stringify(t2)} + location.hash)</script></head><body><p><a href="${t2}">${t2}</a></p></body></html>`);
+  }
 }
-// for the browser: translated titles of every article, per language (home and article lists swap them in)
-for (const l of TARGETS) write(`i18n/${l.code}.json`, JSON.stringify(Object.fromEntries(articles.filter((a) => a.tr[l.code]).map((a) => [a.slug, { t: a.tr[l.code].title, d: a.tr[l.code].dek, u: a.tr[l.code].url }]))));
+LANG = "en";
 write("i18n/langs.json", JSON.stringify({ langs: LANGS.map(({ code, native, dir }) => ({ code, native, dir })), region: REGION }));
-for (const i of issues) write(`issues/${i.slug}/index.html`, issuePage(i));
-write("issues/data.json", JSON.stringify(Object.fromEntries(issues.map((i) => [i.slug, { title: i.title, dek: i.dek || "", pagesLabel: i.readTime, pages: i.pages.map(fbPage) }]))));
-write("about/index.html", about());
-write("store/index.html", store());
-for (const p of PRODUCTS) write(`store/${p.slug}/index.html`, productPage(p));
-write("accessibility/index.html", accessibility());
-write("privacy/index.html", privacy());
 write("articles.json", JSON.stringify(articles.map(({ html, ...a }) => a), null, 2));
 // Admin console helpers (shared with the build so the preview matches the site)
 fs.copyFileSync("lib/markdown.js", path.join(OUT, "admin/markdown.js"));
@@ -688,10 +722,10 @@ if (COMING_SOON) {
   const page = comingSoon();
   write("index.html", page);
   write("404.html", page);
-  write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /preview/\nDisallow: /articles/\nDisallow: /about/\nDisallow: /store/\nDisallow: /issues/\nDisallow: /admin/\nDisallow: /ig-queue/\n`);
+  write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /preview/\nDisallow: /articles/\nDisallow: /about/\nDisallow: /store/\nDisallow: /issues/\nDisallow: /admin/\nDisallow: /ig-queue/\n${TARGETS.map((l) => `Disallow: /${l.code}/\n`).join("")}`);
 } else {
   write("404.html", notFound());
-  write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${["/", "/articles/", "/about/", "/store/", "/accessibility/", "/privacy/", ...articles.flatMap((a) => [a.url, ...Object.values(a.tr).map((t) => t.url)]), ...issues.map((i) => i.url), ...PRODUCTS.map((p) => p.url)].map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
+  write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${LANGS.flatMap((l) => ["/", "/articles/", "/about/", "/store/", "/accessibility/", "/privacy/", ...articles.map((a) => a.url), ...issues.map((i) => i.url), ...PRODUCTS.map((p) => p.url)].map((u) => inLang(l.code, u))).map((u) => `  <url><loc>${SITE.url}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
   write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /preview/\nDisallow: /ig-queue/\nSitemap: ${SITE.url}/sitemap.xml\n`);
 }
 

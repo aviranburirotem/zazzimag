@@ -49,6 +49,8 @@
   .tr-dlg{border:1px solid var(--line);border-radius:8px;padding:0;width:min(860px,94vw);max-height:90vh}
   .tr-dlg form{display:grid;gap:12px;padding:20px}
   .tr-dlg input{width:100%}
+  .site-words{display:grid;gap:12px;max-height:60vh;overflow:auto;padding-right:6px}
+  .site-words .pill{display:inline-block;width:auto}
   .svc{display:grid;gap:10px;padding:14px 0;border-top:1px solid var(--line)}
   .svc h3{margin:0;display:flex;align-items:center;gap:8px;font-size:16px}
   .tr-dlg textarea{min-height:46vh;width:100%;font:15px/1.6 system-ui,sans-serif}
@@ -344,7 +346,7 @@
 <script type="module">
 import { markdown, frontmatter } from "./markdown.js";
 import { icon } from "./icons.js";
-import { SCHEMA } from "./site-schema.js";
+import { SCHEMA, TRANSLATABLE } from "./site-schema.js";
 import { mainColor, palette } from "./colors.js";
 import { FREE as FREE_FONTS, ROLES as FONT_ROLES, googleUrl } from "./fonts.js";
 import { TARGETS as TR_LANGS, ENGINE_NAMES } from "./i18n.js";
@@ -1968,7 +1970,7 @@ async function renderTexts() {
     e.preventDefault();
     const values = Object.fromEntries([...form.querySelectorAll("[data-key]")].map((el) => [el.dataset.key, el.type === "checkbox" ? (el.checked ? "on" : "off") : el.value]));
     const btn = document.getElementById("tsave"); btn.disabled = true; status("Saving…");
-    try { await api("saveSettings", { method: "POST", body: { values } }); status("Saved. The site will update in about a minute.", "ok"); }
+    try { const r = await api("saveSettings", { method: "POST", body: { values } }); status((r.translateErrors || []).length ? `Saved, but some translations didn't work: ${r.translateErrors.join("; ")}` : r.translated ? "Saved and translated. The site will update in about a minute." : "Saved. The site will update in about a minute.", (r.translateErrors || []).length ? "err" : "ok"); }
     catch (err) { if (err.message !== "auth") status(err.message, "err"); }
     btn.disabled = false;
   };
@@ -2167,6 +2169,11 @@ async function renderLangs(flash = "") {
           <div class="f"><label for="gk">${st.hasGoogle ? "Replace the Google key" : "Google API key"}</label><input id="gk" type="password" autocomplete="off" placeholder="AIza…"></div>
           <div><button class="b primary" type="button" id="gk-save">${icon("save")}<span>Save Google key</span></button>${st.hasGoogle ? ` <button class="b" type="button" id="gk-del">Remove</button>` : ""}</div></div>
       </fieldset>
+      <fieldset><legend>Site words</legend>
+        <p class="hint" style="margin:0">Menus, buttons, labels, section titles and categories, so the whole site appears in the visitor's language (Hebrew pages also read right to left). Brand names, the big brand headline, legal texts, Instagram posts and issue titles stay as they are. They're translated again automatically when you save Site texts.</p>
+        <div><button class="b primary" type="button" id="tr-site"${st.hasKey || st.hasGoogle ? "" : " disabled"}>${icon("globe")}<span>Translate site words</span></button></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${TR_LANGS.map((l) => `<button class="b" type="button" data-site-edit="${l.code}">${icon("pencil")}<span>${esc(l.name)}</span></button>`).join("")}</div>
+      </fieldset>
       <fieldset><legend>Articles</legend>
         <div><button class="b primary" type="button" id="tr-all"${st.hasKey || st.hasGoogle ? "" : " disabled"}>${icon("globe")}<span>Translate all articles</span></button> <span class="hint">Translates what's missing or out of date. Your own edits are kept.</span></div>
         <div class="tr-wrap"><table class="tr-table"><thead><tr><th>Article</th>${TR_LANGS.map((l) => `<th>${esc(l.name)}<br><span class="hint" style="font-weight:400">${ENGINE_NAMES[l.engine]}</span></th>`).join("")}</tr></thead><tbody>
@@ -2204,7 +2211,46 @@ async function renderLangs(flash = "") {
   main.querySelector("#gk-del")?.addEventListener("click", async () => {
     try { await api("saveGoogleKey", { method: "POST", body: { key: "" } }); renderLangs("Google key removed. Saved translations stay on the site."); } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
   });
-  main.querySelector("#tr-all").onclick = () => run(list.filter((a) => !a.draft).map((a) => a.slug));
+  const cats = [...new Set(list.flatMap((a) => [].concat(a.category || [])).filter(Boolean))];
+  const siteWords = async () => { status("Translating the site's words…"); const r = await api("translateSite", { method: "POST", body: { categories: cats } }); return r.errors || []; };
+  main.querySelector("#tr-site").onclick = async () => {
+    try { const errs = await siteWords(); renderLangs(errs.length ? `Done, with problems: ${errs.join("; ")}` : "The site's words are translated. The site updates in about a minute."); }
+    catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+  };
+  main.querySelector("#tr-all").onclick = async () => {
+    try { await siteWords(); } catch (err) { if (err.message === "auth") return; }
+    run(list.filter((a) => !a.draft).map((a) => a.slug));
+  };
+  main.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-site-edit]"); if (!b) return;
+    const lang = b.dataset.siteEdit, L = TR_LANGS.find((l) => l.code === lang);
+    let tr, saved;
+    try { [tr, { saved }] = await Promise.all([api("siteTrGet", { query: `&lang=${lang}` }), api("settings")]); } catch (err) { if (err.message !== "auth") status(err.message, "err"); return; }
+    const get = (k) => k.split(".").reduce((o, x) => (o && typeof o === "object" ? o[x] : undefined), saved);
+    const keys = Object.keys(tr.strings);
+    if (!keys.length) return status("Translate the site's words first.", "err");
+    const enOf = (k) => (k.startsWith("cat:") ? k.slice(4) : (get(k) ?? TRANSLATABLE.find((f) => f.key === k)?.default ?? ""));
+    const labelOf = (k) => (k.startsWith("cat:") ? "Category" : TRANSLATABLE.find((f) => f.key === k)?.label || k);
+    const order = [...TRANSLATABLE.map((f) => f.key).filter((k) => keys.includes(k)), ...keys.filter((k) => k.startsWith("cat:"))];
+    const dlg = document.createElement("dialog"); dlg.className = "tr-dlg";
+    dlg.innerHTML = `<form method="dialog"><div><span class="label">${esc(L.name)}</span><h2 style="margin:4px 0 0">Site words</h2>
+        <p class="hint" style="margin:6px 0 0">Change any line. Your version stays until that English text changes. Keep {n} and similar parts as they are.</p></div>
+      <div class="site-words">${order.map((k) => `<div class="f"><label for="sw-${esc(k)}">${esc(labelOf(k))} <span class="hint">${esc(String(enOf(k)).slice(0, 140))}</span>${tr.edited.includes(k) ? ` <span class="pill live">Your version</span>` : ""}</label>
+        ${String(tr.strings[k]).includes("\n") || String(tr.strings[k]).length > 90 ? `<textarea id="sw-${esc(k)}" data-k="${esc(k)}" dir="${L.dir}" lang="${lang}" style="min-height:90px">${esc(tr.strings[k])}</textarea>` : `<input id="sw-${esc(k)}" data-k="${esc(k)}" dir="${L.dir}" lang="${lang}" value="${esc(tr.strings[k])}">`}</div>`).join("")}</div>
+      <div style="display:flex;gap:8px"><button class="b primary" type="button" data-sw="save">${icon("save")}<span>Save</span></button><button class="b" type="button" data-sw="close" style="margin-left:auto">Close</button></div></form>`;
+    document.body.append(dlg); dlg.showModal();
+    dlg.addEventListener("close", () => dlg.remove());
+    dlg.addEventListener("click", async (ev) => {
+      const x = ev.target.closest("[data-sw]"); if (!x) return;
+      if (x.dataset.sw === "close") return dlg.close();
+      const strings = {};
+      dlg.querySelectorAll("[data-k]").forEach((el) => { if (el.value !== tr.strings[el.dataset.k]) strings[el.dataset.k] = el.value; });
+      if (!Object.keys(strings).length) return dlg.close();
+      x.disabled = true;
+      try { await api("siteTrSave", { method: "POST", body: { lang, strings } }); dlg.close(); renderLangs(`Your ${L.name} words are saved. The site updates in about a minute.`); }
+      catch (err) { x.disabled = false; if (err.message !== "auth") alert(err.message); }
+    });
+  });
   main.addEventListener("click", async (e) => {
     const go = e.target.closest("[data-tr-go]"); if (go) return run([go.closest("tr").dataset.slug]);
     const cell = e.target.closest("[data-tr-edit]"); if (!cell) return;

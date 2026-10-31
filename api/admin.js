@@ -8,9 +8,9 @@
 //   GITHUB_REPO     optional, defaults to aviranburirotem/zazzimag
 import crypto from "node:crypto";
 import { frontmatter } from "../lib/markdown.js";
-import { SCHEMA } from "../lib/site-schema.js";
+import { SCHEMA, TRANSLATABLE, texts as siteTexts } from "../lib/site-schema.js";
 import { FREE as FREE_FONTS, ROLES as FONT_ROLES } from "../lib/fonts.js";
-import { TARGETS, translateArticle, deeplUsage, googleCheck, sourceOf } from "../lib/i18n.js";
+import { TARGETS, translateArticle, translateStrings, deeplUsage, googleCheck, sourceOf } from "../lib/i18n.js";
 import { getToken, saveToken, getHiddenPosts, setHiddenPosts, hasStore, getJSON, setJSON } from "../lib/token.js";
 import { run as runIgQueue, KEYS as IGK, DEFAULT_SCHEDULE } from "../lib/ig-publish.js";
 import { fetchPosts } from "./instagram.js";
@@ -122,14 +122,42 @@ async function translateAll(slug, content, { langs = null, force = false } = {})
     } catch (err) { out.errors.push(`${l.name}: ${err.message}`); }
   }));
   out.index = index;
-  if (Object.keys(out.used).length) { // characters sent this month, per service
-    const month = new Date().toISOString().slice(0, 7), u = await getJSON(TRK.used, {});
-    u[month] = u[month] || {};
-    for (const [e, n] of Object.entries(out.used)) u[month][e] = (u[month][e] || 0) + n;
-    for (const m of Object.keys(u)) if (m < new Date(Date.now() - 400 * 864e5).toISOString().slice(0, 7)) delete u[m];
-    await setJSON(TRK.used, u);
-  }
+  await countUsed(out.used);
   return out;
+}
+
+// The site's own words in every language (content/translations/site/<lang>.json).
+// siteJson: the saved site texts (null = read them from GitHub); cats: article categories to make sure of.
+async function translateSite({ siteJson = null, cats = [], force = false } = {}) {
+  const keys = await trKeys();
+  if (!keys.deepl && !keys.google) return { entries: [], done: [], errors: [], skipped: true };
+  if (!siteJson) { try { siteJson = JSON.parse((await gh(repo(`/contents/content/site.json?ref=${BRANCH}`), { raw: true })) || "{}"); } catch { siteJson = {}; } }
+  const T = siteTexts(siteJson);
+  const out = { entries: [], done: [], errors: [], used: {} };
+  await Promise.all(TARGETS.map(async (l) => {
+    try {
+      const prev = force ? null : await readTr("site", l.code);
+      const oldCats = Object.keys(prev?.strings || {}).filter((k) => k.startsWith("cat:")).map((k) => k.slice(4));
+      const items = [
+        ...TRANSLATABLE.map((f) => ({ k: f.key, en: T(f.key), kind: f.type })),
+        ...[...new Set([...oldCats, ...cats.map(String)])].filter(Boolean).map((c) => ({ k: "cat:" + c, en: c, kind: "text" })),
+      ];
+      const t = await translateStrings(items, l.code, prev, keys);
+      if (t.chars && t.engine) out.used[t.engine] = (out.used[t.engine] || 0) + t.chars;
+      const { chars, ...keep } = t;
+      if (!prev || JSON.stringify(prev.strings) !== JSON.stringify(t.strings) || JSON.stringify(prev.edited) !== JSON.stringify(t.edited)) out.entries.push({ path: trPath("site", l.code), content: JSON.stringify(keep, null, 1) + "\n" });
+      out.done.push(l.code);
+    } catch (err) { out.errors.push(`${l.name}: ${err.message}`); }
+  }));
+  await countUsed(out.used);
+  return out;
+}
+async function countUsed(used) { // characters sent this month, per service
+  if (!hasStore() || !Object.keys(used).length) return;
+  const month = new Date().toISOString().slice(0, 7), u = await getJSON(TRK.used, {});
+  u[month] = u[month] || {};
+  for (const [e, n] of Object.entries(used)) u[month][e] = (u[month][e] || 0) + n;
+  await setJSON(TRK.used, u);
 }
 
 async function commit(entries, message) {
@@ -408,6 +436,10 @@ export default async function handler(req, res) {
         try {
           tr = await translateAll(slug, content2);
           entries.push(...tr.entries.filter((e) => !entries.some((x) => x.path === e.path && !x.remove)));
+          const fm = frontmatter(content2).data, cats = [].concat(fm.category || []).map(String);
+          const st = await translateSite({ cats }); // new categories get their names in every language
+          entries.push(...st.entries);
+          tr.errors.push(...st.errors.filter((e) => !tr.errors.includes(e)));
         } catch (err) { tr.errors = [err.message]; }
       }
       const title = (content.match(/\ntitle:\s*(.+)/) || [])[1] || slug;
@@ -435,8 +467,10 @@ export default async function handler(req, res) {
         (out[a] ??= {})[b] = v.replace(/\r/g, "");
       }
       if (out.brand?.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(out.brand.email.trim())) return fail(400, "The contact email doesn't look right.");
-      await commit([{ path: "content/site.json", content: JSON.stringify(out, null, 2) + "\n" }], "Update site texts");
-      return res.json({ ok: true });
+      let st = { entries: [], errors: [] };
+      try { st = await translateSite({ siteJson: out }); } catch (err) { st.errors = [err.message]; }
+      await commit([{ path: "content/site.json", content: JSON.stringify(out, null, 2) + "\n" }, ...st.entries], "Update site texts");
+      return res.json({ ok: true, translateErrors: st.errors || [], translated: !st.skipped });
     }
 
     // Store products (content/products.json)
@@ -480,6 +514,36 @@ export default async function handler(req, res) {
       if (tr.entries.length) await commit(tr.entries, `Translate article: ${slug}`);
       await setJSON(TRK.index, tr.index);
       return res.json({ ok: !tr.errors.length, done: tr.done, errors: tr.errors, changed: tr.entries.length, index: tr.index[slug] });
+    }
+    if (action === "translateSite" && req.method === "POST") {
+      const st = await translateSite({ cats: Array.isArray(body.categories) ? body.categories : [], force: !!body.force });
+      if (st.skipped) return fail(400, "Add a DeepL or Google key first (Languages tab).");
+      if (st.entries.length) await commit(st.entries, "Translate the site's words");
+      return res.json({ ok: !st.errors.length, errors: st.errors, changed: st.entries.length });
+    }
+    if (action === "siteTrGet") {
+      const lang = String(req.query.lang || "");
+      if (!TARGETS.some((l) => l.code === lang)) return fail(400, "Invalid language.");
+      const t = await readTr("site", lang);
+      return res.json({ strings: t?.strings || {}, edited: Object.keys(t?.edited || {}), at: t?.at || "" });
+    }
+    if (action === "siteTrSave" && req.method === "POST") {
+      const lang = String(body.lang || "");
+      if (!TARGETS.some((l) => l.code === lang)) return fail(400, "Invalid language.");
+      const prev = await readTr("site", lang);
+      if (!prev) return fail(404, "Translate the site's words first.");
+      let siteJson = {}; try { siteJson = JSON.parse((await gh(repo(`/contents/content/site.json?ref=${BRANCH}`), { raw: true })) || "{}"); } catch {}
+      const T = siteTexts(siteJson), { hash } = await import("../lib/i18n.js");
+      const changes = body.strings && typeof body.strings === "object" ? body.strings : {};
+      const t = { ...prev, strings: { ...prev.strings }, edited: { ...(prev.edited || {}) } };
+      for (const [k, v] of Object.entries(changes)) {
+        if (!(k in prev.strings)) continue;
+        const val = String(v ?? "").replace(/\r/g, "").slice(0, 5000);
+        if (val === prev.strings[k]) continue;
+        t.strings[k] = val; t.edited[k] = hash(k.startsWith("cat:") ? k.slice(4) : T(k));
+      }
+      await commit([{ path: trPath("site", lang), content: JSON.stringify(t, null, 1) + "\n" }], `Edit ${lang} site words`);
+      return res.json({ ok: true });
     }
     if (action === "trGet") {
       const slug = String(req.query.slug || ""), lang = String(req.query.lang || "");

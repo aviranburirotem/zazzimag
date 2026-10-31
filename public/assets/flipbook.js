@@ -6,6 +6,7 @@
 // Used on issue pages, and in a popup when an issue tile is clicked (home and All articles).
 (() => {
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  let WORDS = {}; try { WORDS = JSON.parse(document.getElementById("zz-ui")?.textContent || "{}"); } catch {}
   // Pages get their photo only when the reader is near them (phones would otherwise load every page at once),
   // and phones get a lighter copy (imageM); zooming in swaps to the full photo.
   const face = (p, side, i) => `<div class="face ${side}">${p ? `<img data-i="${i}" alt="${esc(p.alt || `Page ${i + 1}`)}" draggable="false" decoding="async">` : ""}</div>`;
@@ -35,7 +36,7 @@
       zw.style.transform = z > 1 ? `translate(${tx}px,${ty}px) scale(${z})` : "";
       root.classList.toggle("fb-zoomed", z > 1);
       if ((z > 1) !== fullRes) { fullRes = z > 1; if (leaves.length) hydrate(); } // sharp photo while zoomed
-      if (zoomBtn) { zoomBtn.setAttribute("aria-pressed", String(z > 1)); zoomBtn.setAttribute("aria-label", z > 1 ? "Zoom out" : "Zoom in"); }
+      if (zoomBtn) { zoomBtn.setAttribute("aria-pressed", String(z > 1)); zoomBtn.setAttribute("aria-label", z > 1 ? WORDS["ui.zoomOut"] || "Zoom out" : WORDS["ui.zoomIn"] || "Zoom in"); }
     }
     // zoom to nz, keeping the point under (cx, cy) in place
     function setZoom(nz, cx, cy, anim) {
@@ -220,9 +221,11 @@
   const tiles = document.querySelectorAll("a[data-issue]");
   if (!tiles.length) return;
   let dataP = null, current = null, lastFocus = null, startUrl = null;
-  const loadData = () => (dataP ||= fetch("/issues/data.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : Promise.reject(r.status))));
+  const loadData = () => (dataP ||= fetch(`${document.body.dataset.base || ""}/issues/data.json`, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : Promise.reject(r.status))));
   const t = document.body.dataset;
   const tpl = document.getElementById("fb-icons")?.content;
+  let UI = {}; try { UI = JSON.parse(document.getElementById("zz-ui")?.textContent || "{}"); } catch {}
+  const W = (k, d) => String(UI[k] || d).replace(/"/g, "&quot;");
   const ico = (c, fallback) => tpl?.querySelector(c)?.innerHTML || fallback;
 
   const overlay = document.createElement("div");
@@ -231,15 +234,15 @@
   overlay.innerHTML = `<div class="fb-modal-inner" role="dialog" aria-modal="true" aria-labelledby="fb-modal-title">
     <div class="fb-modal-top">
       <div><span class="label fb-modal-kind"></span><h2 id="fb-modal-title"></h2></div>
-      <button class="fb-close" type="button" aria-label="Close">${ico(".x", "×")}</button>
+      <button class="fb-close" type="button" aria-label="${W("ui.close", "Close")}">${ico(".x", "×")}</button>
     </div>
-    <section class="flipbook in-modal" aria-roledescription="flip-through magazine">
+    <section class="flipbook in-modal" dir="ltr">
       <div class="fb-stage"><div class="fb-book"></div></div>
       <div class="fb-controls">
-        <button class="fb-btn" type="button" data-fb="prev" aria-label="Previous page">${ico(".l", "‹")}</button>
+        <button class="fb-btn" type="button" data-fb="prev" aria-label="${W("ui.prevPage", "Previous page")}">${ico(".l", "‹")}</button>
         <span class="fb-count label" aria-live="polite"></span>
-        <button class="fb-btn" type="button" data-fb="next" aria-label="Next page">${ico(".r", "›")}</button>
-        <button class="fb-btn fb-zoom-btn" type="button" data-fb="zoom" aria-label="Zoom in" aria-pressed="false"><span class="i-in">${ico(".zi", "+")}</span><span class="i-out">${ico(".zo", "−")}</span></button>
+        <button class="fb-btn" type="button" data-fb="next" aria-label="${W("ui.nextPage", "Next page")}">${ico(".r", "›")}</button>
+        <button class="fb-btn fb-zoom-btn" type="button" data-fb="zoom" aria-label="${W("ui.zoomIn", "Zoom in")}" aria-pressed="false"><span class="i-in">${ico(".zi", "+")}</span><span class="i-out">${ico(".zo", "−")}</span></button>
       </div>
       <p class="fb-caption"></p>
     </section>
@@ -262,6 +265,7 @@
     if (!data || !data.pages?.length) { location.href = tile.href; return; } // fall back to the issue page
     lastFocus = tile;
     overlay.querySelector("#fb-modal-title").textContent = data.title;
+    overlay.querySelector("#fb-modal-title").lang = "en"; // issue titles stay as written
     overlay.querySelector(".fb-modal-kind").textContent = `${t.issueLabel || "Issue"} · ${data.pagesLabel || ""}`;
     overlay.querySelector(".fb-modal-inner").setAttribute("aria-label", data.title);
     // fresh controls each time (listeners from the last issue are dropped with them)

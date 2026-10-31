@@ -9,6 +9,7 @@
   const box = document.querySelector("[data-lava]");
   if (!box) return;
   const cv = box.querySelector("canvas"), btn = box.querySelector("[data-lava-pause]");
+  let WORDS = {}; try { WORDS = JSON.parse(document.getElementById("zz-ui")?.textContent || "{}"); } catch {}
   const ctx = cv.getContext("2d", { alpha: false });
   const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   // colours: from the lead article's main colour (set by the build in data-colors), or a violet default
@@ -111,7 +112,7 @@
   const run = () => { if (!raf && !paused) { last = performance.now(); raf = requestAnimationFrame(loop); } };
   const setPaused = (p) => {
     paused = p;
-    if (btn) { btn.setAttribute("aria-pressed", String(p)); btn.setAttribute("aria-label", p ? "Play the animation" : "Pause the animation"); }
+    if (btn) { btn.setAttribute("aria-pressed", String(p)); btn.setAttribute("aria-label", p ? WORDS["ui.playAnimation"] || "Play the animation" : WORDS["ui.pauseAnimation"] || "Pause the animation"); }
     if (!p) run();
   };
 

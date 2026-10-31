@@ -2,6 +2,11 @@
 (() => {
   const HANDLE = document.body.dataset.handle || "zazzimag";
   const FOLLOW = document.body.dataset.follow || "Follow";
+  // words in the page's language (set by the build in #zz-ui)
+  let UI = {}; try { UI = JSON.parse(document.getElementById("zz-ui")?.textContent || "{}"); } catch {}
+  const ui = (k, d) => UI[k] || d;
+  const PAGE_LANG = document.documentElement.lang || "en";
+  const LOCALE = { en: "en-US", de: "de-DE", es: "es-ES", fr: "fr-FR", he: "he-IL", ja: "ja-JP", ko: "ko-KR" }[PAGE_LANG] || "en-US";
   const IG_URL = `https://www.instagram.com/${HANDLE}/`;
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const firstLine = (s) => (s || "").split("\n")[0];
@@ -56,9 +61,9 @@
   }
 
   function igTile(p, i) {
-    return `<button class="tile ig" type="button" data-ig="${i}" aria-label="Open Instagram post">
+    return `<button class="tile ig" type="button" data-ig="${i}" aria-label="${esc(ui("ui.openPost", "Open Instagram post"))}">
       <div class="ph"><img src="${esc(p.image)}" alt="${esc(firstLine(p.caption).slice(0, 120) || "Instagram post by @" + HANDLE)}" loading="lazy">${p.type === "VIDEO" ? `<span class="play" aria-hidden="true">${IC.play}</span>` : ""}</div>
-      <span class="ig-cap"><span class="label issue-label ig-label">${IC.instagram}Post</span>${firstLine(p.caption) ? `<span class="cap ig-text">${esc(firstLine(p.caption))}</span>` : ""}</span></button>`;
+      <span class="ig-cap"><span class="label issue-label ig-label">${IC.instagram}${esc(ui("ui.post", "Post"))}</span>${firstLine(p.caption) ? `<span class="cap ig-text" dir="auto">${esc(firstLine(p.caption))}</span>` : ""}</span></button>`;
   }
 
   // Posts made with a white frame keep it (the logo sits near its edge), but the text under the tile is
@@ -103,7 +108,7 @@
   function render() {
     slots.forEach((slot, i) => {
       if (posts[i]) slot.outerHTML = igTile(posts[i], i);
-      else if (i === posts.length) slot.outerHTML = `<a class="tile ig follow-tile" href="${IG_URL}" target="_blank" rel="noopener"><div class="ph"><div>${IC.instagram}<b>${esc(FOLLOW)}<br>@${HANDLE}</b></div></div></a>`;
+      else if (i === posts.length) slot.outerHTML = `<a class="tile ig follow-tile" href="${IG_URL}" target="_blank" rel="noopener"><div class="ph"><div>${IC.instagram}<b>${esc(FOLLOW)}<br><bdi>@${HANDLE}</bdi></b></div></div></a>`;
       else slot.remove();
     });
     document.querySelectorAll(".tile.ig .cap").forEach((el) => window.zzEggify?.(el));
@@ -111,7 +116,7 @@
     if (strip) {
       if (!posts.length) { strip.closest("[data-ig-section]")?.remove(); return; }
       strip.innerHTML = posts.slice(0, 6).map((p, i) =>
-        `<button class="tile ig" type="button" data-ig="${i}" aria-label="Open Instagram post"><div class="ph"><img src="${esc(p.image)}" alt="" loading="lazy"></div></button>`).join("");
+        `<button class="tile ig" type="button" data-ig="${i}" aria-label="${esc(ui("ui.openPost", "Open Instagram post"))}"><div class="ph"><img src="${esc(p.image)}" alt="" loading="lazy"></div></button>`).join("");
     }
   }
 
@@ -124,12 +129,12 @@
     const media = p.type === "VIDEO" && p.video
       ? `<video src="${esc(p.video)}" poster="${esc(p.image)}" controls playsinline></video>`
       : `<img src="${esc(p.image)}" alt="">`;
-    const date = p.date ? new Date(p.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
-    modal.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Instagram post">
+    const date = p.date ? new Date(p.date).toLocaleDateString(LOCALE, { month: "short", day: "numeric", year: "numeric" }) : "";
+    modal.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(ui("ui.instagramPost", "Instagram post"))}">
       <div class="ph">${media}</div>
-      <div class="txt"><div style="display:flex;align-items:center;gap:10px">${IC.instagram}<b>@${HANDLE}</b><button class="x" type="button" aria-label="Close">${IC.x}</button></div>
-      <p>${esc(p.caption)}</p><span class="label">${date}</span>
-      <a class="btn" style="margin-top:auto" href="${esc(p.url)}" target="_blank" rel="noopener">View on Instagram ${IC.out}</a></div></div>`;
+      <div class="txt"><div style="display:flex;align-items:center;gap:10px">${IC.instagram}<b dir="ltr">@${HANDLE}</b><button class="x" type="button" aria-label="${esc(ui("ui.close", "Close"))}">${IC.x}</button></div>
+      <p dir="auto">${esc(p.caption)}</p><span class="label">${date}</span>
+      <a class="btn" style="margin-top:auto" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(ui("ui.viewOnInstagram", "View on Instagram"))} ${IC.out}</a></div></div>`;
     lastFocus = document.activeElement;
     modal.hidden = false;
     document.body.style.overflow = "hidden";
@@ -151,9 +156,10 @@
       const cat = chip.dataset.filter;
       document.querySelectorAll("[data-filter]").forEach((c) => c.setAttribute("aria-pressed", String(c === chip)));
       let n = 0;
-      document.querySelectorAll("[data-cat]").forEach((el) => { el.hidden = !(cat === "All" || el.dataset.cat.split("|").includes(cat)); if (!el.hidden) n++; });
+      const all = cat === ui("articles.allFilter", "All");
+      document.querySelectorAll("[data-cat]").forEach((el) => { el.hidden = !(all || el.dataset.cat.split("|").includes(cat)); if (!el.hidden) n++; });
       const live = document.getElementById("filter-status");
-      if (live) live.textContent = `Showing ${n} ${n === 1 ? "story" : "stories"}${cat === "All" ? "" : " in " + cat}`;
+      if (live) live.textContent = ui("ui.showing", "{n} stories shown").replace(/\{n\}/g, n) + (all ? "" : ` · ${cat}`);
     }
   });
   document.addEventListener("keydown", (e) => {
@@ -227,7 +233,7 @@
       const paused = !stripWants();
       stripBtn.classList.toggle("is-paused", paused);
       stripBtn.setAttribute("aria-pressed", String(paused));
-      stripBtn.setAttribute("aria-label", paused ? "Play video" : "Pause video");
+      stripBtn.setAttribute("aria-label", paused ? ui("ui.playVideo", "Play video") : ui("ui.pauseVideo", "Pause video"));
     }
   }
   if (vid) {
@@ -241,7 +247,7 @@
 
   // ---- accessibility menu (Israeli Standard 5568) ----
   const KEY = "zz-a11y";
-  const OPTS = { "a11y-text": "Larger text", "a11y-contrast": "High contrast", "a11y-links": "Highlight links", "a11y-font": "Readable font", "a11y-still": "Stop animations" };
+  const OPTS = { "a11y-text": ui("ui.a11yText", "Larger text"), "a11y-contrast": ui("ui.a11yContrast", "High contrast"), "a11y-links": ui("ui.a11yLinks", "Highlight links"), "a11y-font": ui("ui.a11yFont", "Readable font"), "a11y-still": ui("ui.a11yStill", "Stop animations") };
   let prefs = {};
   try { prefs = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch {}
   const apply = () => {
@@ -254,7 +260,7 @@
   const panel = document.getElementById("a11y-panel"), toggle = document.getElementById("a11y-toggle");
   function closeA11y() { if (panel && !panel.hidden) { panel.hidden = true; toggle.setAttribute("aria-expanded", "false"); toggle.focus(); } }
   if (panel && toggle) {
-    panel.querySelector(".a11y-opts").innerHTML = Object.entries(OPTS).map(([k, label]) => `<button type="button" data-a11y="${k}" aria-pressed="false">${label}</button>`).join("") + `<button type="button" data-a11y-reset>Reset</button>`;
+    panel.querySelector(".a11y-opts").innerHTML = Object.entries(OPTS).map(([k, label]) => `<button type="button" data-a11y="${k}" aria-pressed="false">${label}</button>`).join("") + `<button type="button" data-a11y-reset>${ui("ui.a11yReset", "Reset")}</button>`;
     toggle.addEventListener("click", () => {
       const open = panel.hidden;
       panel.hidden = !open; toggle.setAttribute("aria-expanded", String(open));
@@ -376,15 +382,18 @@
 (() => {
   const still = () => document.documentElement.classList.contains("a11y-still") || matchMedia("(prefers-reduced-motion: reduce)").matches;
   const EVERY = 4500;
+  let UI = {}; try { UI = JSON.parse(document.getElementById("zz-ui")?.textContent || "{}"); } catch {}
+  const RTL = document.documentElement.dir === "rtl", S = RTL ? -1 : 1; // right to left: "next" moves the row the other way
   document.querySelectorAll("[data-carousel]").forEach((box, n) => {
     const track = box.querySelector(".car-track"), pauseBtn = box.querySelector('[data-car="pause"]');
     let paused = false, hover = false, focus = false, seen = false, timer = null;
     const step = () => { const t = track.firstElementChild; return t ? t.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0) : track.clientWidth; };
-    const atEnd = () => track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+    const pos = () => Math.abs(track.scrollLeft); // in right-to-left rows scrollLeft counts down from 0
+    const atEnd = () => pos() + track.clientWidth >= track.scrollWidth - 4;
     const go = (dir) => {
       if (dir > 0 && atEnd()) track.scrollTo({ left: 0 });
-      else if (dir < 0 && track.scrollLeft <= 4) track.scrollTo({ left: track.scrollWidth });
-      else track.scrollBy({ left: dir * step() });
+      else if (dir < 0 && pos() <= 4) track.scrollTo({ left: S * track.scrollWidth });
+      else track.scrollBy({ left: S * dir * step() });
     };
     const canMove = () => !paused && !hover && !focus && seen && !document.hidden && !still() && track.scrollWidth > track.clientWidth + 4;
     // nothing to scroll (only 2 tiles): hide the arrows and pause button
@@ -398,7 +407,7 @@
       if (b.dataset.car === "pause") {
         paused = !paused;
         b.setAttribute("aria-pressed", String(paused));
-        b.setAttribute("aria-label", paused ? "Play the carousel" : "Pause the carousel");
+        b.setAttribute("aria-label", paused ? UI["ui.playCarousel"] || "Play the carousel" : UI["ui.pauseCarousel"] || "Pause the carousel");
       } else go(b.dataset.car === "next" ? 1 : -1);
     });
     track.addEventListener("pointerenter", () => (hover = true));
@@ -408,31 +417,41 @@
     track.addEventListener("touchstart", () => { hover = true; }, { passive: true });
     track.addEventListener("touchend", () => setTimeout(() => (hover = false), EVERY), { passive: true });
     track.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
-      if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+      if (e.key === "ArrowRight") { e.preventDefault(); go(S); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); go(-S); }
     });
     if ("IntersectionObserver" in window) new IntersectionObserver(([en]) => (seen = en.isIntersecting), { threshold: 0.3 }).observe(track);
     else seen = true;
-    if (still()) { paused = true; pauseBtn?.setAttribute("aria-pressed", "true"); pauseBtn?.setAttribute("aria-label", "Play the carousel"); }
+    if (still()) { paused = true; pauseBtn?.setAttribute("aria-pressed", "true"); pauseBtn?.setAttribute("aria-label", UI["ui.playCarousel"] || "Play the carousel"); }
   });
 })();
 
-// ---- languages: articles can be read in other languages (menus and buttons stay in English) ----
+// ---- languages: the whole site exists in each language (English at the root, others under /<code>/) ----
 // The language: the visitor's own choice (remembered) → the browser's language → the country → English.
 (() => {
   const menu = document.querySelector("[data-lang-menu]");
   const KEY = "zz-lang";
   const get = (k, s = localStorage) => { try { return s.getItem(k); } catch { return null; } };
   const set = (k, v, s = localStorage) => { try { s.setItem(k, v); } catch {} };
+  const PAGE = document.body.dataset.lang || "en";
   let info = null; // { langs: [{ code, native, dir }], region: { IL: "he", … } }
-  const load = () => info ? Promise.resolve(info) : fetch("/i18n/langs.json").then((r) => r.json()).then((d) => (info = d)).catch(() => (info = { langs: [{ code: "en", native: "English", dir: "ltr" }], region: {} }));
+  const load = () => info ? Promise.resolve(info) : fetch("/i18n/langs.json").then((r) => r.json()).then((d) => (info = d)).catch(() => (info = { langs: [{ code: "en" }], region: {} }));
   const has = (c) => info.langs.some((l) => l.code === c);
+  const codes = () => info.langs.map((l) => l.code).filter((c) => c !== "en");
+  // this page's address in another language
+  const pathIn = (lang) => {
+    let p = location.pathname;
+    const m = p.match(/^\/([a-z]{2})(\/.*)$/);
+    if (m && codes().includes(m[1])) p = m[2];
+    if (p === "/" && document.body.dataset.preview) p = "/preview/";
+    return (lang === "en" ? "" : `/${lang}`) + p;
+  };
   async function country() {
     const cached = get("zz-geo", sessionStorage);
     if (cached) { try { return JSON.parse(cached).country || ""; } catch {} }
     try { const g = await fetch("/api/geo").then((r) => r.json()); set("zz-geo", JSON.stringify(g), sessionStorage); return g.country || ""; } catch { return ""; }
   }
-  async function pick() {
+  async function preferred() {
     await load();
     const chosen = get(KEY);
     if (chosen && has(chosen)) return { lang: chosen, chosen: true };
@@ -447,13 +466,6 @@
   // header menu
   const btn = menu?.querySelector(".lang-btn"), list = menu?.querySelector(".lang-list");
   const close = () => { if (list && !list.hidden) { list.hidden = true; btn.setAttribute("aria-expanded", "false"); } };
-  const show = (lang) => {
-    if (!menu) return;
-    const l = info?.langs.find((x) => x.code === lang);
-    menu.querySelector(".lang-code").textContent = lang.toUpperCase();
-    btn.setAttribute("aria-label", `Language: ${l ? l.native : "English"}`);
-    list.querySelectorAll("[data-lang]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.lang === lang)));
-  };
   btn?.addEventListener("click", () => {
     const open = list.hidden; list.hidden = !open; btn.setAttribute("aria-expanded", String(open));
     if (open) (list.querySelector('[aria-checked="true"]') || list.querySelector("button")).focus();
@@ -466,50 +478,16 @@
     }
   });
   document.addEventListener("click", (e) => { if (menu && !menu.contains(e.target)) close(); });
-
-  const body = document.body, slug = body.dataset.article, pageLang = body.dataset.pageLang || "en";
-  const avail = (body.dataset.langs || "").split(",").filter(Boolean);
-  const articleUrl = (lang) => (lang === "en" || !avail.includes(lang) ? `/articles/${slug}/` : `/${lang}/articles/${slug}/`);
-
-  // choosing a language: remember it, then go to that version of this article (or update the tiles)
-  async function choose(lang) {
-    set(KEY, lang); close();
-    if (slug) { const to = articleUrl(lang); if (to !== location.pathname) { location.href = to; return; } }
-    show(lang); swapTiles(lang);
-  }
-  menu?.addEventListener("click", (e) => { const b = e.target.closest("[data-lang]"); if (b) choose(b.dataset.lang); });
+  // choosing a language: remember it and open this page in that language
+  menu?.addEventListener("click", async (e) => {
+    const b = e.target.closest(".lang-list [data-lang]"); if (!b) return;
+    set(KEY, b.dataset.lang); close();
+    await load();
+    if (b.dataset.lang !== PAGE) location.href = pathIn(b.dataset.lang) + location.search + location.hash;
+  });
   document.addEventListener("click", (e) => { const a = e.target.closest("[data-lang-pick]"); if (a) set(KEY, a.dataset.langPick); });
 
-  // tiles on the home page and lists: translated titles, and links to the translated article
-  const tileState = new Map();
-  async function swapTiles(lang) {
-    const tiles = document.querySelectorAll(".tile.art[data-slug]");
-    if (!tiles.length) return;
-    let map = {};
-    if (lang !== "en") { try { map = await fetch(`/i18n/${lang}.json`).then((r) => r.json()); } catch {} }
-    const dir = info?.langs.find((l) => l.code === lang)?.dir || "ltr";
-    if (lang === "he") font();
-    tiles.forEach((t) => {
-      const h = t.querySelector("h3"), p = t.querySelector(".cap");
-      if (!tileState.has(t)) tileState.set(t, { href: t.getAttribute("href"), h: h?.textContent, p: p?.textContent });
-      const o = tileState.get(t), tr = map[t.dataset.slug];
-      t.setAttribute("href", tr ? tr.u : o.href);
-      if (h) { h.textContent = tr ? tr.t : o.h; tr ? (h.lang = lang, h.dir = dir) : (h.removeAttribute("lang"), h.removeAttribute("dir")); }
-      if (p) { p.textContent = tr && tr.d ? tr.d : o.p; tr && tr.d ? (p.lang = lang, p.dir = dir) : (p.removeAttribute("lang"), p.removeAttribute("dir")); }
-    });
-  }
-  let fontDone = false;
-  function font() { // Hebrew letters for tile titles
-    if (fontDone) return; fontDone = true;
-    const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Heebo:wght@400..900&display=swap"; document.head.append(l);
-  }
-
-  pick().then(({ lang, chosen }) => {
-    // an English article and a reader of another language: open their version (unless they picked English)
-    if (slug && pageLang === "en" && lang !== "en" && avail.includes(lang)) { location.replace(articleUrl(lang) + location.hash); return; }
-    // a translated article opened from a link: show its language in the menu without changing the visitor's choice
-    show(slug && pageLang !== "en" ? pageLang : lang);
-    if (!slug) swapTiles(lang);
-    else swapTiles(chosen || pageLang === "en" ? lang : pageLang);
-  });
+  // first visit to an English page by someone who reads another language: open their version
+  // (only on English pages, so a shared link in a given language opens in that language)
+  if (PAGE === "en") preferred().then(({ lang }) => { if (lang !== "en") location.replace(pathIn(lang) + location.search + location.hash); });
 })();
