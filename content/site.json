@@ -3,6 +3,7 @@
     "ticker": "on",
     "storeNav": "on",
     "lightSwitch": "on",
+    "lava": "on",
     "igButton": "on",
     "videoStrip": "on",
     "feed": "on",
@@ -25,9 +26,18 @@
     "articles": "All articles"
   },
   "home": {
-    "headline": "",
+    "headline": "ZAZZI.",
+    "headlineSize": "60",
+    "headlinePos": "mc",
+    "headlineColor": "white",
     "intro": "Streetwear, trends and self-expression",
+    "introSize": "90",
+    "introAlign": "center",
     "videoLabel": "Street scenes from Harajuku, Tokyo",
+    "secStories": "Stories",
+    "secInstagram": "On Instagram",
+    "secIssues": "Issues",
+    "moreArticles": "More articles",
     "followTile": "Follow",
     "bandHeading": "Every story, in one place",
     "bandButton": "See all articles"
