@@ -4,7 +4,7 @@ dek: An introduction to Karasu-zoku, the Japanese fashion subculture known as th
 date: 2026-10-31
 category: [Trends, History, Guide]
 cover: /images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cover-shibuya-2-62.jpg
-color: dbc1a4
+color: 141414
 heroPosition: 50% 46%
 heroShape: vertical
 coverAlt: An all-black Comme des Garçons total look. Ready-to-wear styling meets subtle avant-garde details.

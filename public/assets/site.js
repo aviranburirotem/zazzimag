@@ -491,3 +491,18 @@
   // (only on English pages, so a shared link in a given language opens in that language)
   if (PAGE === "en") preferred().then(({ lang }) => { if (lang !== "en") location.replace(pathIn(lang) + location.search + location.hash); });
 })();
+
+// ---- share box: copy the link; KakaoTalk opens the phone's share menu (or copies the link on a computer) ----
+(() => {
+  const say = (btn, text) => { const box = btn.closest(".share")?.querySelector(".sh-done"); if (box) { box.textContent = text; clearTimeout(box._t); box._t = setTimeout(() => (box.textContent = ""), 4000); } };
+  const copy = async (url) => { try { await navigator.clipboard.writeText(url); return true; } catch { const t = document.createElement("textarea"); t.value = url; document.body.append(t); t.select(); const ok = document.execCommand("copy"); t.remove(); return ok; } };
+  document.addEventListener("click", async (e) => {
+    const c = e.target.closest("[data-copy]");
+    if (c) { if (await copy(c.dataset.copy)) say(c, c.dataset.done); return; }
+    const n = e.target.closest("[data-native-share]");
+    if (n) {
+      if (navigator.share && matchMedia("(pointer: coarse)").matches) { try { await navigator.share({ title: n.dataset.title, url: n.dataset.nativeShare }); } catch {} return; }
+      if (await copy(n.dataset.nativeShare)) say(n, n.dataset.done);
+    }
+  });
+})();

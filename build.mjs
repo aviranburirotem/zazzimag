@@ -27,7 +27,8 @@ const H = (p) => (LANG === "en" || !String(p).startsWith("/") ? p : `/${LANG}${p
 const DIR = () => langOf(LANG)?.dir || "ltr";
 const EN = () => (LANG === "en" ? "" : ' lang="en"'); // words that stay in English on every language's pages
 const catName = (c) => (c === T_EN("issues.category") ? T("issues.category") : (LANG !== "en" && SITE_TR[LANG]?.["cat:" + c]) || c);
-const minRead = (a) => T("ui.minRead").replace(/\{n\}/g, a.minutes);
+// "3 min read": languages written with spaces get one after the number even if a translation dropped it
+const minRead = (a) => { let t = T("ui.minRead"); if (!["ja", "ko"].includes(LANG)) t = t.replace(/\{n\}(?=[^\s\d])/g, "{n} "); return t.replace(/\{n\}/g, a.minutes); };
 // Fonts chosen in the console (content/fonts.json); the site always stays in its light look for now
 const FONTS = fontSetup(fs.existsSync("content/fonts.json") ? JSON.parse(fs.readFileSync("content/fonts.json", "utf8")) : {});
 
@@ -129,8 +130,8 @@ const COLOR_CSS = `:root{--accent:${PAL.accent};--accent-fill:${PAL.accent};--on
 // The same address in another language (English has no prefix)
 const inLang = (code, p) => (code === "en" ? p : `/${code}${p}`);
 // Hebrew letters: Heebo next to the chosen fonts, Frank Ruhl Libre for article text
-const HE_FONTS = `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400..900&family=Frank+Ruhl+Libre:wght@400..700&display=swap">`;
-const heCss = (css) => css.replace(/(--(?:head|display|text|mono):"[^"]+",)/g, '$1"Heebo",').replace(/(--serif:"[^"]+",)/g, '$1"Frank Ruhl Libre",');
+const HE_FONTS = `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300..900&display=swap">`;
+const heCss = (css) => css.replace(/(--(?:head|display|text|mono):"[^"]+",)/g, '$1"Heebo",').replace(/(--serif:"[^"]+",)/g, '$1"Heebo",');
 // words the page scripts need, in the language being built
 const UI_KEYS = ["ui.previous", "ui.next", "ui.pauseCarousel", "ui.playCarousel", "ui.pauseAnimation", "ui.playAnimation", "ui.pauseVideo", "ui.playVideo", "ui.post", "ui.openPost", "ui.instagramPost", "ui.viewOnInstagram", "ui.close", "ui.showing", "ui.prevPage", "ui.nextPage", "ui.zoomIn", "ui.zoomOut", "ui.a11yText", "ui.a11yContrast", "ui.a11yLinks", "ui.a11yFont", "ui.a11yStill", "ui.a11yReset", "ui.language", "issues.pages", "home.followTile", "issues.category", "articles.allFilter"];
 
@@ -318,6 +319,22 @@ const langMenu = () => `<div class="lang" data-lang-menu>
   <button class="lang-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="${tx("ui.language")}: ${esc(langOf(LANG).native)}">${icon("globe")}<span class="lang-code">${LANG.toUpperCase()}</span></button>
   <ul class="lang-list" role="menu" hidden>${LANGS.map((l) => `<li role="none"><button type="button" role="menuitemradio" aria-checked="${l.code === LANG}" data-lang="${l.code}" lang="${l.code}" dir="${l.dir}">${esc(l.native)}</button></li>`).join("")}</ul></div>`;
 
+// Share box next to the article (a row under it on phones). Plain names and simple icons, no company logos.
+// KakaoTalk has no share link: phones open the device's share menu, computers copy the link.
+const shareBox = (title, url) => {
+  const u = encodeURIComponent(url), t = encodeURIComponent(title), tu = encodeURIComponent(`${title} ${url}`);
+  const link = (href, ic, name, ext = true) => `<a class="sh" href="${href}"${ext ? ' target="_blank" rel="noopener"' : ""}>${icon(ic)}<span>${name}</span></a>`;
+  return `<aside class="share" aria-label="${tx("ui.share")}"><span class="label">${tx("ui.share")}</span>
+    ${link(`mailto:?subject=${t}&body=${u}`, "mail", tx("ui.shareEmail"), false)}
+    <button class="sh" type="button" data-copy="${esc(url)}" data-done="${tx("ui.linkCopied")}">${icon("link")}<span>${tx("ui.copyLink")}</span></button>
+    ${link(`https://www.facebook.com/sharer/sharer.php?u=${u}`, "thumbs-up", "Facebook")}
+    ${link(`https://wa.me/?text=${tu}`, "phone", "WhatsApp")}
+    ${link(`https://social-plugins.line.me/lineit/share?url=${u}`, "message-circle", "LINE")}
+    <button class="sh" type="button" data-native-share="${esc(url)}" data-title="${esc(title)}" data-done="${tx("ui.pasteKakao")}">${icon("message-circle")}<span>KakaoTalk</span></button>
+    ${link(`viber://forward?text=${tu}`, "phone", "Viber", false)}
+    <span class="sh-done" role="status" aria-live="polite"></span></aside>`;
+};
+
 function articlePage(a) {
   const more = articles.filter((x) => x.slug !== a.slug).slice(0, 4);
   const byline = (a.author || "").trim();
@@ -334,7 +351,8 @@ function articlePage(a) {
       <div class="meta label"><time datetime="${a.date}">${fmtDate(a.date)}</time><span>${esc(minRead(a))}</span>${byline ? `<span${LANG === "en" ? "" : ' lang="en" dir="ltr"'}>${tx("articles.byline")} ${esc(byline)}</span>` : ""}</div>
       ${t ? `<p class="tr-note">${icon("globe")}<span>${esc(NOTE[LANG][t.edited ? 1 : 0])} · <a href="${a.url}" data-lang-pick="en" lang="en" dir="ltr">${esc(NOTE[LANG][2])}</a></span></p>` : en ? `<p class="tr-note">${icon("globe")}<span>${tx("ui.notTranslated")}</span></p>` : ""}</div></header>
     <figure class="wrap hero${a.heroShape === "vertical" ? " vertical" : ""}"><div class="ph"><img src="${esc(a.cover)}" alt="${esc(t?.coverAlt || a.coverAlt || title)}"${coverPos(a, "heroPosition")}></div>${a.coverCaption ? `<figcaption${t?.coverCaption ? "" : content}>${esc(t?.coverCaption || a.coverCaption)}</figcaption>` : ""}</figure>
-    <div class="wrap"><div class="body"${content}>${html}</div>
+    <div class="wrap art-wrap">${shareBox(title, SITE.url + H(a.url))}<div class="body"${content}>${html}</div></div>
+    <div class="wrap">
       ${more.length && on("show.readNext") ? `<div class="section-h"><h2>${tx("articles.readNext")}</h2><a class="label with-ic" href="${H("/articles/")}">${tx("articles.allLink")} ${icon("arrow-right")}</a></div><div class="grid">${more.map((x) => artTile(x)).join("")}</div>` : ""}
       ${on("show.feedStrip") ? `<section data-ig-section><div class="section-h"><h2${EN()}>${tx("articles.feedHeading")}</h2><a class="label with-ic" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}<bdi>@${SITE.handle}</bdi></a></div>
       <div class="strip" data-ig-strip>${'<div class="tile ig-slot" aria-hidden="true"><div class="ph"></div></div>'.repeat(6)}</div></section>` : ""}

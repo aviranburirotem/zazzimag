@@ -561,3 +561,29 @@ html[dir="rtl"] .tile.issue .mag::before{transform:translate(-5px,5px)}
 html[dir="rtl"] .tile.issue .mag::after{transform:translate(-10px,10px)}
 html[dir="rtl"] .tile.issue:hover .mag{transform:translateY(-6px) rotate(2.5deg)}
 @media (prefers-reduced-motion:reduce){html[dir="rtl"] .tile.issue:hover .mag{transform:none}}
+/* ---- share box (articles): beside the text on wide screens, a row under it on phones ---- */
+.art-wrap{display:flex;flex-direction:column}
+.art-wrap .share{order:2}
+.share{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:36px auto 0;max-width:65ch;padding-top:18px;border-top:1px solid var(--line)}
+.share .label{width:100%;margin-bottom:4px}
+.sh{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--fg);font:inherit;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:border-color .15s,color .15s}
+.sh svg{width:15px;height:15px;flex:none}
+.sh:hover{border-color:var(--accent);color:var(--accent)}
+.sh:focus-visible{outline:3px solid #2b6cff;outline-offset:2px}
+.sh-done{width:100%;font-size:12px;color:var(--accent);min-height:1em}
+@media (min-width:1100px){
+  .art-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,65ch) minmax(0,1fr);column-gap:40px}
+  .art-wrap .body{grid-column:2;grid-row:1;margin-top:32px;max-width:none}
+  .share{grid-column:1;grid-row:1;justify-self:end;align-self:start;position:sticky;top:96px;flex-direction:column;align-items:stretch;flex-wrap:nowrap;width:150px;margin:40px 0 0;padding:0;border:0}
+  .share .label{margin:0 0 6px}
+  .sh{border-radius:6px;padding:8px 10px}
+  .sh-done{width:auto}
+}
+/* ---- thin dividers between sections ---- */
+.section-h{border-top:1px solid var(--line);padding-top:20px}
+.home-sec .section-h,.carousel .section-h{padding-top:18px}
+.home-sections .home-sec+.home-sec{margin-top:16px}
+.band{border-top:1px solid var(--line)}
+.article-head{padding-bottom:6px}
+/* Hebrew articles: the text uses the headline's font */
+.body:lang(he){font-family:var(--head);font-size:19px;line-height:1.75;font-weight:400}
