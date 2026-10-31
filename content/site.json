@@ -146,5 +146,7 @@
   "footer": {
     "copyright": "© {year} Zazzi Magazine (zazzimag.com). All rights reserved. The text, photographs, graphics, logo and design on this site are protected by copyright and other intellectual property laws. You may not copy, reproduce, republish, distribute or use any of this content for commercial purposes without our prior written permission, except as permitted by law. Third-party content, including photos used under license, remains the property of its respective owners."
   },
-  "hidden": []
+  "hidden": [
+    "home.intro"
+  ]
 }
