@@ -551,7 +551,7 @@ export default async function handler(req, res) {
       const slug = String(req.query.slug || ""), lang = String(req.query.lang || "");
       if (!SLUG.test(slug) || !TARGETS.some((l) => l.code === lang)) return fail(400, "Invalid request.");
       const t = await readTr(slug, lang);
-      return res.json({ translation: t ? { title: t.title, dek: t.dek, body: t.body, edited: !!t.edited, outdated: !!t.outdated, at: t.at } : null });
+      return res.json({ translation: t ? { title: t.title, dek: t.dek, body: t.body, coverCaption: t.coverCaption || "", coverAlt: t.coverAlt || "", edited: !!t.edited, outdated: !!t.outdated, at: t.at } : null });
     }
     if (action === "trSave" && req.method === "POST") {
       const slug = String(body.slug || ""), lang = String(body.lang || "");
@@ -560,6 +560,8 @@ export default async function handler(req, res) {
       if (!prev) return fail(404, "There's no translation to edit yet.");
       const one = (v, max) => String(v ?? "").replace(/\s*\n\s*/g, " ").trim().slice(0, max);
       const t = { ...prev, title: one(body.title, 300), dek: one(body.dek, 600), body: String(body.body || "").replace(/\r/g, "").slice(0, 200000), edited: true, outdated: false, at: new Date().toISOString().slice(0, 10) };
+      if (body.coverCaption !== undefined) t.coverCaption = one(body.coverCaption, 600);
+      if (body.coverAlt !== undefined) t.coverAlt = one(body.coverAlt, 600);
       await commit([{ path: trPath(slug, lang), content: JSON.stringify(t, null, 1) + "\n" }], `Edit ${lang} translation: ${slug}`);
       if (hasStore()) { const ix = await getJSON(TRK.index, {}); ix[slug] = ix[slug] || { en: prev.src, langs: {} }; ix[slug].langs[lang] = { src: t.src, edited: true, outdated: false, at: t.at }; await setJSON(TRK.index, ix); }
       return res.json({ ok: true });

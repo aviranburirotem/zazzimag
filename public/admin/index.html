@@ -52,6 +52,18 @@
   .tr-dlg{border:1px solid var(--line);border-radius:8px;padding:0;width:min(860px,94vw);max-height:90vh}
   .tr-dlg form{display:grid;gap:12px;padding:20px}
   .tr-dlg input{width:100%}
+  .pair-list{display:grid;gap:0}
+  .pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;padding:12px 0;border-top:1px solid var(--line);align-items:start}
+  .pair:first-child{border-top:0}
+  .pair .en p{margin:4px 0 0;font-size:13px;line-height:1.55;color:var(--muted)}
+  .pair .en img{display:block;width:120px;height:80px;object-fit:cover;border-radius:4px;margin-top:6px}
+  .pair .he{display:grid;gap:8px}
+  .pair .he input,.pair .he textarea{width:100%;font:15px/1.6 system-ui,sans-serif}
+  .pair .he textarea{min-height:64px;resize:vertical}
+  .pair .he label{display:grid;gap:4px;font-size:12px;font-weight:600}
+  .pair .pill{justify-self:start}
+  .he-list{display:flex;flex-wrap:wrap;gap:8px}
+  @media (max-width:760px){.pair{grid-template-columns:1fr;gap:8px}}
   .site-words{display:grid;gap:12px;max-height:60vh;overflow:auto;padding-right:6px}
   .site-words .pill{display:inline-block;width:auto}
   .svc{display:grid;gap:10px;padding:14px 0;border-top:1px solid var(--line)}
@@ -392,6 +404,7 @@ function topBar(extra = "") {
       <button type="button" data-act="tab-texts" ${tab === "texts" ? 'aria-current="page"' : ""}>${icon("pencil")}<span>Site texts</span></button>
       <button type="button" data-act="tab-fonts" ${tab === "fonts" ? 'aria-current="page"' : ""}>${icon("type")}<span>Fonts</span></button>
       <button type="button" data-act="tab-langs" ${tab === "langs" ? 'aria-current="page"' : ""}>${icon("globe")}<span>Languages</span></button>
+      <button type="button" data-act="tab-hebrew" ${tab === "hebrew" ? 'aria-current="page"' : ""}>${icon("pencil")}<span>עברית</span></button>
     </nav>
     <div class="c-actions">${extra}
       <a class="b" href="/preview/" target="_blank" rel="noopener">${icon("eye")}<span>View site</span></a>
@@ -2266,6 +2279,7 @@ async function renderLangs(flash = "") {
   main.addEventListener("click", async (e) => {
     const go = e.target.closest("[data-tr-go]"); if (go) return run([go.closest("tr").dataset.slug]);
     const cell = e.target.closest("[data-tr-edit]"); if (!cell) return;
+    if (cell.closest("tr")) return editTranslation(cell.closest("tr").dataset.slug, cell.dataset.trEdit, () => renderLangs());
     const slug = cell.closest("tr").dataset.slug, lang = cell.dataset.trEdit, L = TR_LANGS.find((l) => l.code === lang);
     let t;
     try { ({ translation: t } = await api("trGet", { query: `&slug=${encodeURIComponent(slug)}&lang=${lang}` })); } catch (err) { if (err.message !== "auth") status(err.message, "err"); return; }
@@ -2300,6 +2314,112 @@ async function renderLangs(flash = "") {
   });
 }
 
+// ---------- Hebrew: every Hebrew text in one place (legal texts stay as they are) ----------
+async function renderHebrew(flash = "") {
+  tab = "hebrew";
+  app.innerHTML = topBar() + `<main class="wrap c"><div class="list-head"><div><span class="label">עברית</span><h1>Hebrew texts</h1></div></div><div class="panel empty">Loading…</div></main>`;
+  let list, tr, saved;
+  try { [{ articles: list }, tr, { saved }] = await Promise.all([api("list"), api("siteTrGet", { query: "&lang=he" }), api("settings")]); } catch (err) { if (err.message === "auth") return; app.querySelector(".panel").textContent = err.message; return; }
+  const get = (k) => k.split(".").reduce((o, x) => (o && typeof o === "object" ? o[x] : undefined), saved);
+  const keys = Object.keys(tr.strings || {});
+  const enOf = (k) => (k.startsWith("cat:") ? k.slice(4) : (get(k) ?? TRANSLATABLE.find((f) => f.key === k)?.default ?? ""));
+  const labelOf = (k) => (k.startsWith("cat:") ? "Category" : TRANSLATABLE.find((f) => f.key === k)?.label || k);
+  const order = [...TRANSLATABLE.map((f) => f.key).filter((k) => keys.includes(k)), ...keys.filter((k) => k.startsWith("cat:"))];
+  const main = app.querySelector("main");
+  main.innerHTML = `<div class="list-head"><div><span class="label">עברית</span><h1>Hebrew texts</h1></div>
+      <p class="hint" style="max-width:56ch;margin:0">Fix any Hebrew wording: menus, buttons, labels and categories here, and each article (title, description, captions and text) below. English stays on the left for reference. Your versions are kept until that English text changes. Legal texts aren't translated.</p>
+      <p class="status ok" id="flash">${esc(flash)}</p></div>
+    <div class="texts">
+      <fieldset><legend>Articles</legend>
+        <div class="he-list">${list.filter((a) => !a.draft).map((a) => `<button class="b" type="button" data-he-art="${esc(a.slug)}">${icon("pencil")}<span>${esc(a.title)}</span></button>`).join("") || `<p class="hint">No published articles yet.</p>`}</div>
+      </fieldset>
+      <fieldset><legend>Site words</legend>
+        ${order.length ? `<div class="pair-list">${order.map((k) => `<div class="pair"><div class="en"><span class="label">${esc(labelOf(k))}</span><p>${esc(String(enOf(k))).replace(/\n/g, "<br>")}</p></div>
+          <div class="he">${String(tr.strings[k]).includes("\n") || String(tr.strings[k]).length > 90 ? `<textarea data-k="${esc(k)}" dir="rtl" lang="he" aria-label="${esc(labelOf(k))}">${esc(tr.strings[k])}</textarea>` : `<input data-k="${esc(k)}" dir="rtl" lang="he" aria-label="${esc(labelOf(k))}" value="${esc(tr.strings[k])}">`}
+          ${tr.edited.includes(k) ? `<span class="pill live">Your version</span>` : ""}</div></div>`).join("")}</div>`
+          : `<p class="hint" style="margin:0">The site's words aren't translated yet: Languages → Translate site words.</p>`}
+      </fieldset>
+    </div>
+    <div class="texts-bar"><button class="b primary" type="button" id="he-save"${order.length ? "" : " disabled"}>${icon("save")}<span>Save site words</span></button><span class="status" id="st"></span></div>`;
+  main.querySelector("#he-save").onclick = async (e) => {
+    const btn = e.currentTarget, strings = {};
+    main.querySelectorAll(".pair-list [data-k]").forEach((el) => { if (el.value !== tr.strings[el.dataset.k]) strings[el.dataset.k] = el.value; });
+    if (!Object.keys(strings).length) return status("Nothing changed.");
+    btn.disabled = true; status("Saving…");
+    try { await api("siteTrSave", { method: "POST", body: { lang: "he", strings } }); renderHebrew("Saved. The Hebrew site updates in about a minute."); }
+    catch (err) { btn.disabled = false; if (err.message !== "auth") status(err.message, "err"); }
+  };
+  main.addEventListener("click", (e) => { const b = e.target.closest("[data-he-art]"); if (b) editTranslation(b.dataset.heArt, "he", () => renderHebrew()); });
+}
+
+// One article in another language, side by side with the English: title, description, cover caption,
+// then paragraph by paragraph (photos show only their description and caption to fix).
+async function editTranslation(slug, lang, back) {
+  const L = TR_LANGS.find((l) => l.code === lang);
+  app.innerHTML = topBar() + `<main class="wrap c"><div class="panel empty">Loading…</div></main>`;
+  let t, raw;
+  try { [{ translation: t }, { raw }] = await Promise.all([api("trGet", { query: `&slug=${encodeURIComponent(slug)}&lang=${lang}` }), api("article", { query: `&slug=${encodeURIComponent(slug)}` })]); }
+  catch (err) { if (err.message !== "auth") app.querySelector(".panel").textContent = err.message; return; }
+  const main = app.querySelector("main");
+  if (!t) { main.innerHTML = `<div class="panel empty">This article isn't translated into ${esc(L.name)} yet. Use Translate in the Languages tab.</div>`; return; }
+  const { data, body } = frontmatter(raw);
+  const split = (md) => String(md || "").replace(/\r/g, "").replace(/^\n+/, "").split(/\n{2,}/);
+  const enB = split(body), trB = split(t.body), aligned = enB.length === trB.length;
+  const PHOTO = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g;
+  const isPhotos = (b) => b.trim() && b.split("\n").every((l) => /^\s*(?:!\[[^\]]*\]\([^)]*\)\s*)+$|^\s*@\[[a-z]+\]\([^)]*\)\s*$/i.test(l));
+  const field = (id, label, en, val, long) => `<div class="pair"><div class="en"><span class="label">${esc(label)}</span><p>${esc(en || "—")}</p></div>
+    <div class="he">${long ? `<textarea id="${id}" dir="${L.dir}" lang="${lang}" aria-label="${esc(label)}">${esc(val)}</textarea>` : `<input id="${id}" dir="${L.dir}" lang="${lang}" aria-label="${esc(label)}" value="${esc(val)}">`}</div></div>`;
+  const blockHtml = (i) => {
+    const en = enB[i], tb = trB[i];
+    if (isPhotos(en)) {
+      const ps = [...tb.matchAll(PHOTO)], es = [...en.matchAll(PHOTO)];
+      if (!ps.length) return "";
+      return ps.map((m, j) => `<div class="pair photo-pair" data-b="${i}"><div class="en"><span class="label">Photo ${j + 1}</span><img src="${esc(m[2])}" alt="" loading="lazy"><p>${esc(es[j]?.[3] || "")}</p></div>
+        <div class="he"><label>Caption<input data-cap="${i}:${j}" dir="${L.dir}" lang="${lang}" value="${esc(m[3] || "")}"></label>
+        <label>Description (screen readers)<input data-alt="${i}:${j}" dir="${L.dir}" lang="${lang}" value="${esc(m[1] || "")}"></label></div></div>`).join("");
+    }
+    return `<div class="pair" data-b="${i}"><div class="en"><p>${esc(en).replace(/\n/g, "<br>")}</p></div><div class="he"><textarea data-block="${i}" dir="${L.dir}" lang="${lang}" aria-label="Paragraph ${i + 1}">${esc(tb)}</textarea></div></div>`;
+  };
+  main.innerHTML = `<div class="list-head"><div><span class="label">${esc(L.name)} · ${esc(data.title || slug)}</span><h1>Edit the ${esc(L.name)} version</h1></div>
+      <p class="hint" style="max-width:56ch;margin:0">English on the left, ${esc(L.name)} on the right. Keep **bold**, *italic* and [links](…) marks as they are. Saving keeps your version even when the English changes later.</p></div>
+    ${t.outdated ? `<p class="status err">The English changed since you edited this. Translate again from the Languages tab to update it, or keep your version.</p>` : ""}
+    <div class="texts"><fieldset><legend>Top of the article</legend>
+      ${field("te-t", "Title", data.title, t.title)}
+      ${field("te-d", "Short description", data.dek, t.dek, true)}
+      ${data.coverCaption ? field("te-cc", "Cover caption", data.coverCaption, t.coverCaption || "") : ""}
+      ${data.coverAlt ? field("te-ca", "Cover description (screen readers)", data.coverAlt, t.coverAlt || "") : ""}
+    </fieldset>
+    <fieldset><legend>Article text</legend>
+      ${aligned ? `<div class="pair-list">${enB.map((_, i) => blockHtml(i)).join("")}</div>`
+        : `<p class="hint" style="margin:0">The paragraphs no longer line up with the English, so the whole text is shown in one box.</p><textarea id="te-all" dir="${L.dir}" lang="${lang}" style="min-height:60vh">${esc(t.body)}</textarea>`}
+    </fieldset></div>
+    <div class="texts-bar"><button class="b primary" type="button" id="te-save">${icon("save")}<span>Save ${esc(L.name)} version</span></button>
+      <a class="b" href="/${lang}/articles/${esc(slug)}/" target="_blank" rel="noopener">${icon("eye")}<span>Open on the site</span></a>
+      <button class="b" type="button" id="te-back">Back</button><span class="status" id="st"></span></div>`;
+  main.querySelectorAll(".pair textarea").forEach((ta) => { const fit = () => { ta.style.height = "auto"; ta.style.height = Math.max(64, ta.scrollHeight + 4) + "px"; }; fit(); ta.addEventListener("input", fit); });
+  main.querySelector("#te-back").onclick = back;
+  main.querySelector("#te-save").onclick = async (e) => {
+    const btn = e.currentTarget;
+    let out;
+    if (!aligned) out = main.querySelector("#te-all").value;
+    else out = trB.map((tb, i) => {
+      const ta = main.querySelector(`[data-block="${i}"]`);
+      if (ta) return ta.value.trim();
+      let j = -1;
+      return tb.replace(PHOTO, (m, alt, url, cap) => { j++;
+        const c = main.querySelector(`[data-cap="${i}:${j}"]`)?.value ?? cap ?? "", a = main.querySelector(`[data-alt="${i}:${j}"]`)?.value ?? alt;
+        return `![${a.replace(/[\[\]]/g, "")}](${url}${c ? ` "${c.replace(/"/g, "”")}"` : ""})`; });
+    }).join("\n\n");
+    btn.disabled = true; status("Saving…");
+    try {
+      await api("trSave", { method: "POST", body: { slug, lang, title: main.querySelector("#te-t").value, dek: main.querySelector("#te-d").value, body: out,
+        ...(main.querySelector("#te-cc") ? { coverCaption: main.querySelector("#te-cc").value } : {}), ...(main.querySelector("#te-ca") ? { coverAlt: main.querySelector("#te-ca").value } : {}) } });
+      status(`Saved. The ${L.name} page updates in about a minute.`, "ok");
+    } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+    btn.disabled = false;
+  };
+}
+
 // ---------- global clicks ----------
 app.addEventListener("click", async (e) => {
   const act = e.target.closest("[data-act]")?.dataset.act;
@@ -2312,6 +2432,7 @@ app.addEventListener("click", async (e) => {
   if (act === "tab-video") renderVideo();
   if (act === "tab-fonts") renderFonts();
   if (act === "tab-langs") renderLangs();
+  if (act === "tab-hebrew") renderHebrew();
   if (act === "tab-queue") renderQueue();
   if (act.startsWith("q-")) qClick(act, e);
   if (act === "vid-choose") document.getElementById("vid-file").click();
