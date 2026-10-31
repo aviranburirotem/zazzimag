@@ -53,7 +53,9 @@
   .hl-prev-in{position:absolute;inset:0;display:flex;flex-direction:column;padding:4.5cqw 1.6cqw}
   .hl-prev b{display:block;font-style:italic;font-weight:900;font-stretch:70%;line-height:.92;letter-spacing:-.02em;text-transform:uppercase}
   .hl-prev b.hl-white{color:#fff;text-shadow:0 1px 10px rgba(0,0,0,.45)}
-  .hl-prev b.hl-black{color:#111214}
+  .hl-prev b.hl-black,.hl-prev .sub.hl-black{color:#111214}
+  .hl-prev .sub{display:block;font-style:normal;font-weight:600;line-height:1.3;margin-top:.8cqw;max-width:60%}
+  .hl-prev .sub.hl-white{color:#fff;text-shadow:0 1px 10px rgba(0,0,0,.45)}.hl-prev .sub.hl-pink{color:#ff5bb0}.hl-prev .sub.hl-yellow{color:#ffe14d}
   .hl-prev b.hl-pink{color:#ff5bb0;text-shadow:0 1px 10px rgba(0,0,0,.5)}
   .hl-prev b.hl-yellow{color:#ffe14d;text-shadow:0 1px 10px rgba(0,0,0,.5)}
   .hl-prev .pos-tl,.hl-prev .pos-tc,.hl-prev .pos-tr{justify-content:flex-start}
@@ -1841,7 +1843,7 @@ async function renderTexts() {
       return `<div class="f"><span class="flabel" id="${id}-l">${esc(f.label)}</span>
         <div class="pos-pick" role="radiogroup" aria-labelledby="${id}-l"><input type="hidden" data-key="${f.key}" value="${esc(v)}">
         ${P.map(([k, lab]) => `<button type="button" role="radio" aria-checked="${k === v}" aria-label="${lab}" title="${lab}" data-pos="${k}"><span></span></button>`).join("")}</div>
-        <div class="hl-prev" aria-hidden="true"><div class="hl-prev-in"><b></b></div></div>
+        <div class="hl-prev" aria-hidden="true"><div class="hl-prev-in"><b></b><i class="sub"></i></div></div>
         <p class="hint" style="margin:6px 0 0">Preview. On the site the lava moves behind the headline.</p>${defBtn}</div>`;
     }
     const control = f.type === "text"
@@ -1864,7 +1866,12 @@ async function renderTexts() {
     inner.className = "hl-prev-in pos-" + pos;
     b.className = "hl-" + (val("home.headlineColor") || "white");
     b.innerHTML = esc(val("home.headline") || "").replace(/\n/g, "<br>");
-    box.querySelector(".hl-prev-in").hidden = !(val("home.headline") || "").trim();
+    const sub = inner.querySelector(".sub"), is = (parseFloat(val("home.introSize")) || 100) / 100;
+    sub.textContent = (val("home.intro") || "").replace(/[*_\[\]]|\(https?:[^)]*\)/g, "");
+    sub.style.fontSize = `calc(1.65cqw * ${is})`;
+    sub.className = "sub hl-" + (val("home.headlineColor") || "white");
+    b.hidden = !(val("home.headline") || "").trim();
+    inner.hidden = b.hidden && !sub.textContent.trim();
     b.style.fontSize = `calc(7cqw * ${size})`;
     form.querySelectorAll(".pos-pick [data-pos]").forEach((x) => x.setAttribute("aria-checked", String(x.dataset.pos === pos)));
     form.querySelectorAll('input[type="range"]').forEach((r) => { const o = r.parentElement.querySelector("output"); const f = SCHEMA.flatMap((g) => g.fields).find((x) => x.key === r.dataset.key); if (o) o.textContent = r.value + (f?.unit || ""); });

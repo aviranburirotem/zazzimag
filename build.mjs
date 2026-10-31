@@ -230,12 +230,12 @@ function home() {
     description: `${SITE.name}. ${SITE.tagline}`,
     body: `${lava ? `<div class="wrap lava-wrap"><section class="lava-band" data-lava style="--hs:${hlSize}">
       <canvas aria-hidden="true"></canvas>${sw}
-      ${T("home.headline") ? `<div class="lava-in pos-${hlPos}"><h1 class="hl-${hlColor}">${br("home.headline")}</h1></div>` : ""}
+      ${T("home.headline") || T("home.intro") ? `<div class="lava-in pos-${hlPos} hl-${hlColor}" style="--is:${introSize}">${T("home.headline") ? `<h1>${br("home.headline")}</h1>` : ""}${T("home.intro") ? `<div class="lava-sub">${md("home.intro")}</div>` : ""}</div>` : ""}
       <button class="lava-pause" type="button" data-lava-pause aria-label="Pause the animation" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></section></div>` : ""}
     <section class="wrap intro${lava ? " after-lava" : ""} align-${introAlign}" style="--hs:${hlSize};--is:${introSize}">${lava && !T("home.headline") ? `<h1 class="visually-hidden">${esc(SITE.name)}</h1>` : ""}
       ${lava ? "" : sw}
-      <div>${lava || !T("home.headline") ? "" : `<h1>${br("home.headline")}</h1>`}
-      ${md("home.intro")}</div>
+      ${lava ? "" : `<div>${T("home.headline") ? `<h1>${br("home.headline")}</h1>` : ""}
+      ${md("home.intro")}</div>`}
       ${on("show.igButton") ? `<a class="handle" href="${IG_URL}" target="_blank" rel="noopener">${icon("instagram")}@${SITE.handle}${icon("arrow-up-right")}</a>` : ""}</section>
     <div class="home-sections">${grid}</div>
     ${on("show.band") ? `<section class="band"><div class="wrap"><h2>${tx("home.bandHeading")}</h2><a class="btn alt" href="/articles/">${tx("home.bandButton")} ${icon("arrow-right")}</a></div></section>` : ""}`,
