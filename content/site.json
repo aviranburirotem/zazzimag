@@ -1,7 +1,7 @@
 {
   "show": {
     "ticker": "on",
-    "storeNav": "on",
+    "storeNav": "off",
     "lightSwitch": "on",
     "lava": "on",
     "igButton": "on",
