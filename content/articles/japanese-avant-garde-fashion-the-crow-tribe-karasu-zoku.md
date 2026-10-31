@@ -1,0 +1,39 @@
+---
+title: Japanese Avant-Garde Fashion: The Crow Tribe (Karasu-zoku)
+dek: An introduction to Karasu-zoku, the Japanese fashion subculture known as the Crow Tribe, where all-black dressing became a bold expression of avant-garde style
+date: 2026-10-31
+category: Trends
+author: Netta Meisles
+draft: true
+---
+In Tokyo, the crow is part of the city's soundtrack. Its unmistakable *kaa-kaa* call echoes across rooftops, train stations and busy streets. Its dark silhouette is a familiar sight above the crowds. It's easy to see why the bird became the namesake for **Karasu-zoku (カラス族), or the Crow Tribe**, a Japanese fashion subculture known for its almost entirely black wardrobe and avant-garde sensibility.
+
+Emerging in the early 1980s, Karasu-zoku followers embraced Japanese designer labels, wearing oversized black clothing that challenged mainstream fashion. Understated in colour but bold in form, the look became a defining image of Tokyo's fashion scene.
+
+## 1981: A New Chapter in Japanese Fashion
+
+In 1981, **Rei Kawakubo of Comme des Garçons** and **Yohji Yamamoto** made their Paris runway debuts, introducing a radical new approach to fashion. Their collections featured predominantly black garments, unconventional cuts, asymmetry and distressed fabrics.
+
+Kawakubo, founder of Comme des Garçons, challenged the structure of clothing through conceptual, experimental designs. Yamamoto explored fluid tailoring, movement and the expressive qualities of fabric. Their collections introduced a new perspective on Japanese fashion to an international audience.
+
+## The Crow Tribe Aesthetic
+
+Black, volume and deconstruction define the Karasu-zoku look. Long coats, wide trousers, layered fabrics and raw finishes create silhouettes that conceal rather than accentuate the body. Texture and construction give monochrome outfits their depth.
+
+Karasu-zoku challenged conventional ideas of beauty and dress. Similar concepts appear in the work of Western designers such as **Alexander McQueen, Rick Owens, Demna and Matières Fécales**, each exploring dark aesthetics and unconventional forms of dress in their own way. Once considered radical, anti-fashion has earned commercial success and a respected place within the fashion industry.
+
+## Designers & Labels to Explore
+
+- **Yohji Yamamoto:** Fluid tailoring, dramatic volume and expressive use of black.
+- **Y's:** Yamamoto's first label, founded in 1972.
+- **Yohji Yamamoto Pour Homme:** Distinctive menswear with generous silhouettes.
+- **Ground Y:** A contemporary take on Yamamoto's design language.
+- **S'YTE:** A casual, streetwear-oriented line within the Yohji Yamamoto brand family.
+- **Y-3:** Yamamoto's collaboration with adidas, combining avant-garde design and sportswear.
+- **LIMI feu:** Limi Yamamoto's label, known for strong silhouettes and dark palettes.
+- **Comme des Garçons:** Rei Kawakubo's experimental fashion house, known for conceptual design and deconstruction.
+- **Rick Owens:** American designer known for sculptural silhouettes, dark palettes and dramatic draping.
+
+## Making the Look Your Own
+
+You don't need a wardrobe full of designer labels to explore the Crow Tribe aesthetic. Start with a silhouette, a particular cut or a fabric that catches your eye. An oversized jacket, wide trousers or an asymmetrical top can be enough. Experiment with proportions and textures, adapting the look to your own wardrobe. The idea is to take inspiration from Karasu-zoku, not to reproduce a uniform.
