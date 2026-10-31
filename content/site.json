@@ -26,12 +26,12 @@
     "articles": "All articles"
   },
   "home": {
-    "headline": "ZAZZI.",
+    "headline": "ZAZZI",
     "headlineSize": "60",
     "headlinePos": "mc",
     "headlineColor": "white",
     "intro": "Streetwear, trends and self-expression",
-    "introSize": "90",
+    "introSize": "55",
     "introAlign": "center",
     "videoLabel": "Street scenes from Harajuku, Tokyo",
     "secStories": "Stories",
