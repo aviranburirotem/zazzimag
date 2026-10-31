@@ -52,6 +52,21 @@
   .tr-dlg{border:1px solid var(--line);border-radius:8px;padding:0;width:min(860px,94vw);max-height:90vh}
   .tr-dlg form{display:grid;gap:12px;padding:20px}
   .tr-dlg input{width:100%}
+  .sp-wrap{container-type:inline-size;margin:0 0 18px;max-width:1100px}
+  .sp{position:relative;display:flex;min-height:18cqw;overflow:hidden;border-radius:6px;user-select:none;font-family:"Archivo",system-ui,sans-serif}
+  .sp-in{position:relative;z-index:1;flex:1;display:flex}
+  .sp .lava-in{color:#fff}
+  .sp .lava-in h1{font-weight:900;font-stretch:70%;letter-spacing:-.02em;text-transform:uppercase;color:inherit}
+  .sp .lava-sub p{font-weight:600;color:inherit}
+  .sp .lava-in.hl-white{color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.22),0 2px 12px rgba(0,0,0,.22)}
+  .sp .lava-in.hl-pink{color:#ff5bb0}.sp .lava-in.hl-yellow{color:#ffe14d}.sp .lava-in.hl-black{color:#111214}
+  .sp .pos-tl,.sp .pos-tc,.sp .pos-tr{justify-content:flex-start}.sp .pos-ml,.sp .pos-mc,.sp .pos-mr{justify-content:center}.sp .pos-bl,.sp .pos-bc,.sp .pos-br{justify-content:flex-end}
+  .sp .pos-tl,.sp .pos-ml,.sp .pos-bl{align-items:flex-start;text-align:left}.sp .pos-tc,.sp .pos-mc,.sp .pos-bc{align-items:center;text-align:center}.sp .pos-tr,.sp .pos-mr,.sp .pos-br{align-items:flex-end;text-align:right}
+  .sp [data-el]{cursor:grab;outline:1px dashed transparent;outline-offset:4px}
+  .sp [data-el]:hover{outline-color:rgba(255,255,255,.8)}
+  .sp-blob{position:absolute;aspect-ratio:1;border-radius:50%;z-index:0;opacity:.95}
+  .strip-form{max-width:1100px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+  .tick-row{display:flex;gap:18px;flex-wrap:wrap}
   .pair-list{display:grid;gap:0}
   .pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;padding:12px 0;border-top:1px solid var(--line);align-items:start}
   .pair:first-child{border-top:0}
@@ -368,6 +383,7 @@ import { SCHEMA, TRANSLATABLE } from "./site-schema.js";
 import { mainColor, palette } from "./colors.js";
 import { FREE as FREE_FONTS, ROLES as FONT_ROLES, googleUrl } from "./fonts.js";
 import { TARGETS as TR_LANGS, ENGINE_NAMES } from "./i18n.js";
+import { stripSettings, stripHtml, STRIP_CSS } from "./strip.js";
 import { plan, nice, toMs, local, addDays } from "./ig-schedule.js";
 
 const app = document.getElementById("app");
@@ -401,6 +417,7 @@ function topBar(extra = "") {
       <button type="button" data-act="tab-insta" ${tab === "insta" ? 'aria-current="page"' : ""}>${icon("instagram")}<span>Instagram</span></button>
       <button type="button" data-act="tab-queue" ${tab === "queue" ? 'aria-current="page"' : ""}>${icon("calendar")}<span>Scheduled posts</span></button>
       <button type="button" data-act="tab-video" ${tab === "video" ? 'aria-current="page"' : ""}>${icon("film")}<span>Video</span></button>
+      <button type="button" data-act="tab-strip" ${tab === "strip" ? 'aria-current="page"' : ""}>${icon("image-plus")}<span>Top strip</span></button>
       <button type="button" data-act="tab-texts" ${tab === "texts" ? 'aria-current="page"' : ""}>${icon("pencil")}<span>Site texts</span></button>
       <button type="button" data-act="tab-fonts" ${tab === "fonts" ? 'aria-current="page"' : ""}>${icon("type")}<span>Fonts</span></button>
       <button type="button" data-act="tab-langs" ${tab === "langs" ? 'aria-current="page"' : ""}>${icon("globe")}<span>Languages</span></button>
@@ -1950,7 +1967,7 @@ async function renderTexts() {
   };
   app.querySelector("main").innerHTML = `<div class="list-head"><div><span class="label">Site texts</span><h1>Wording</h1></div>
       <p class="hint" style="max-width:46ch;margin:0">Change any text on the site. In longer texts you can use **bold**, *italic* and [links](https://…). Changes go live about a minute after saving.</p></div>
-    <form id="texts" class="texts" autocomplete="off">${SCHEMA.map((g) => `<fieldset><legend>${esc(g.group)}</legend>${g.fields.map(fieldHtml).join("")}</fieldset>`).join("")}</form>
+    <form id="texts" class="texts" autocomplete="off">${SCHEMA.filter((g) => !g.tab).map((g) => `<fieldset><legend>${esc(g.group)}</legend>${g.fields.map(fieldHtml).join("")}</fieldset>`).join("")}</form>
     <div class="texts-bar"><button class="b primary" type="submit" form="texts" id="tsave">${icon("save")}<span>Save texts</span></button><span class="status" id="st"></span></div>`;
   const form = document.getElementById("texts");
   // headline preview: size, place and colour on a still lava picture
@@ -2423,6 +2440,148 @@ async function editTranslation(slug, lang, back) {
   };
 }
 
+// ---------- Top strip: logo and headlines on the moving strip, with a live preview you can drag in ----------
+const STRIP_GROUP = SCHEMA.find((g) => g.tab === "strip");
+let stripCssDone = false;
+async function renderStrip() {
+  tab = "strip";
+  app.innerHTML = topBar() + `<main class="wrap c"><div class="list-head"><div><span class="label">Top strip</span><h1>Top strip</h1></div></div><div class="panel empty">Loading…</div></main>`;
+  let saved;
+  try { ({ saved } = await api("settings")); } catch (err) { if (err.message === "auth") return; }
+  if (!stripCssDone) { stripCssDone = true; const st = document.createElement("style"); st.textContent = STRIP_CSS; document.head.append(st); }
+  // what the site looks like now: the strip's colours and the logo colour, read from the preview page
+  let colors = { bgL: "#b768d8", bgR: "#7cb6ea", key: "#3fd2ff", side: "#e24bd2" }, heartPng = "/assets/logo.png";
+  try {
+    const html = await fetch("/preview/", { cache: "no-cache" }).then((r) => r.text());
+    const m = html.match(/data-colors="([^"]+)"/); if (m) colors = JSON.parse(m[1].replace(/&quot;/g, '"'));
+    const l = html.match(/poster="(\/assets\/logo[a-z-]*\.png)/); if (l) heartPng = l[1];
+  } catch {}
+  const get = (k) => k.split(".").reduce((o, x) => (o && typeof o === "object" ? o[x] : undefined), saved);
+  const v = Object.fromEntries(STRIP_GROUP.fields.map((f) => [f.key, String(get(f.key) ?? f.default)]));
+  let pendingLogo = null; // { file, data, url } a new image waiting to be uploaded on save
+  const field = (k) => STRIP_GROUP.fields.find((f) => f.key === k);
+  const range = (k) => { const f = field(k); return `<div class="f"><label for="sr-${k}">${esc(f.label)}</label><div class="range-row"><input type="range" id="sr-${k}" data-sk="${k}" min="${f.min}" max="${f.max}" step="${f.step || 1}" value="${esc(v[k])}"><output>${esc(v[k])}${f.unit || ""}</output></div></div>`; };
+  const tick = (k, label) => `<label class="showbox"><input type="checkbox" data-sk="${k}" ${v[k] === "off" || (k === "strip.showLogo" && v[k] !== "on") ? "" : "checked"}> ${label}</label>`;
+  const seg = (k, opts) => `<div class="seg" role="group" aria-label="${esc(field(k).label)}">${opts.map(([val, lab]) => `<button type="button" data-seg="${k}" data-val="${val}" aria-pressed="${v[k] === val}">${lab}</button>`).join("")}</div>`;
+  const P = [["tl", "Top left"], ["tc", "Top centre"], ["tr", "Top right"], ["ml", "Middle left"], ["mc", "Centre"], ["mr", "Middle right"], ["bl", "Bottom left"], ["bc", "Bottom centre"], ["br", "Bottom right"]];
+  const main = app.querySelector("main");
+  main.innerHTML = `<div class="list-head"><div><span class="label">Top strip</span><h1>Top strip</h1></div>
+      <p class="hint" style="max-width:52ch;margin:0">The logo and headlines on the moving strip at the top of the home page. Drag the logo or either headline in the preview to move it; the sliders fine-tune sizes and spacing. The preview keeps the real proportions.</p></div>
+    <div class="sp-wrap"><div class="lava-band sp" style="background:linear-gradient(90deg,${esc(colors.bgL)},${esc(colors.bgR)})">
+      <span class="sp-blob" style="left:6%;bottom:-34%;width:26%;background:radial-gradient(circle at 35% 30%,${esc(colors.key)},${esc(colors.side)})"></span>
+      <span class="sp-blob" style="left:58%;bottom:-40%;width:30%;background:radial-gradient(circle at 35% 30%,${esc(colors.key)},${esc(colors.side)})"></span>
+      <span class="sp-blob" style="left:40%;top:12%;width:4%;background:radial-gradient(circle at 35% 30%,${esc(colors.key)},${esc(colors.side)})"></span>
+      <div class="sp-in"></div></div></div>
+    <div class="texts strip-form">
+      <fieldset><legend>What's on it</legend>
+        <div class="tick-row">${tick("strip.showLogo", "Logo")}${tick("strip.showHeadline", "Big headline")}${tick("strip.showSub", "Second headline")}</div>
+        <div class="f"><span class="flabel">Logo</span>
+          <div class="seg" role="group" aria-label="Logo"><button type="button" data-logo="heart-animated">Moving heart</button><button type="button" data-logo="heart">Heart (still)</button><button type="button" data-logo="custom">My image</button></div>
+          <input type="file" id="sp-file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" hidden>
+          <p class="hint" style="margin:0" id="sp-logo-note"></p></div>
+        <div class="f"><label for="sp-hl">Big headline</label><textarea id="sp-hl" rows="2">${esc(v["home.headline"])}</textarea></div>
+        <div class="f"><label for="sp-sub">Second headline</label><textarea id="sp-sub" rows="2">${esc(v["home.intro"])}</textarea></div>
+      </fieldset>
+      <fieldset><legend>Arrangement</legend>
+        <div class="f"><span class="flabel">Logo next to the text</span>${seg("strip.layout", [["above", "Above"], ["left", "Left"], ["right", "Right"], ["below", "Below"]])}</div>
+        <div class="f"><span class="flabel">Place on the strip</span><div class="pos-pick" role="radiogroup" aria-label="Place on the strip">${P.map(([k, lab]) => `<button type="button" role="radio" aria-checked="${k === v["home.headlinePos"]}" aria-label="${lab}" title="${lab}" data-spos="${k}"><span></span></button>`).join("")}</div></div>
+        <div class="f"><label for="sp-color">Text colour</label><select id="sp-color">${field("home.headlineColor").options.map(([val, lab]) => `<option value="${val}"${val === v["home.headlineColor"] ? " selected" : ""}>${esc(lab)}</option>`).join("")}</select></div>
+      </fieldset>
+      <fieldset><legend>Sizes and spacing</legend>
+        ${range("strip.logoSize")}${range("home.headlineSize")}${range("home.introSize")}${range("strip.logoGap")}${range("home.headlineGap")}
+      </fieldset>
+      <fieldset><legend>Move each part</legend>
+        <p class="hint" style="margin:0">Or drag them in the preview.</p>
+        ${range("strip.logoX")}${range("strip.logoY")}${range("strip.hlX")}${range("strip.hlY")}${range("strip.subX")}${range("strip.subY")}
+        <div><button class="b" type="button" id="sp-reset">Put everything back in place</button></div>
+      </fieldset>
+    </div>
+    <div class="texts-bar"><button class="b primary" type="button" id="sp-save">${icon("save")}<span>Save the strip</span></button><span class="status" id="st"></span></div>`;
+
+  const box = main.querySelector(".sp-in");
+  const logoSrc = () => (v["strip.logo"] === "heart" || v["strip.logo"] === "heart-animated" ? heartPng : pendingLogo?.url || v["strip.logo"]);
+  function draw() {
+    const o = stripSettings((k) => v[k]);
+    box.innerHTML = stripHtml(o, {
+      headline: esc(v["home.headline"]).replace(/\n/g, "<br>"),
+      sub: v["home.intro"].trim() ? markdown(v["home.intro"]) : "",
+      logo: `<img src="${esc(logoSrc())}" alt="" draggable="false"${v["strip.logo"] === "heart-animated" ? ' class="lava-heart"' : ""}>`,
+    });
+    main.querySelectorAll("[data-logo]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.logo === (v["strip.logo"].startsWith("/") ? "custom" : v["strip.logo"]))));
+    main.querySelectorAll("[data-seg]").forEach((b) => b.setAttribute("aria-pressed", String(v[b.dataset.seg] === b.dataset.val)));
+    main.querySelectorAll("[data-spos]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.spos === v["home.headlinePos"])));
+    main.querySelectorAll('input[type="range"][data-sk]').forEach((r) => { r.value = v[r.dataset.sk]; r.parentElement.querySelector("output").textContent = v[r.dataset.sk] + (field(r.dataset.sk).unit || ""); });
+    main.querySelector("#sp-logo-note").textContent = v["strip.logo"] === "heart-animated" ? "The heart logo in the site's current colour, floating gently." : v["strip.logo"] === "heart" ? "The heart logo, still, in the site's current colour." : pendingLogo ? `New image: ${pendingLogo.name} (uploaded when you save)` : v["strip.logo"].startsWith("/") ? "Your image." : "Choose an image.";
+  }
+  draw();
+
+  main.addEventListener("input", (e) => {
+    const t = e.target;
+    if (t.matches('input[type="range"][data-sk]')) v[t.dataset.sk] = t.value;
+    if (t.id === "sp-hl") v["home.headline"] = t.value;
+    if (t.id === "sp-sub") v["home.intro"] = t.value;
+    draw(); status("Not saved yet.");
+  });
+  main.addEventListener("change", (e) => {
+    const t = e.target;
+    if (t.matches('input[type="checkbox"][data-sk]')) v[t.dataset.sk] = t.checked ? "on" : "off";
+    if (t.id === "sp-color") v["home.headlineColor"] = t.value;
+    if (t.id === "sp-file" && t.files[0]) {
+      const f = t.files[0];
+      if (f.size > 3_000_000) return status("That image is too large (up to 3 MB).", "err");
+      const ext = (f.name.split(".").pop() || "png").toLowerCase().replace("jpeg", "jpg");
+      pendingLogo = { name: f.name, file: `logo-${Date.now().toString(36)}.${ext}`, url: URL.createObjectURL(f), blob: f };
+      v["strip.logo"] = "/strip/" + pendingLogo.file; v["strip.showLogo"] = "on";
+      main.querySelector('[data-sk="strip.showLogo"]').checked = true;
+      t.value = "";
+    }
+    draw(); status("Not saved yet.");
+  });
+  main.addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.logo) { if (b.dataset.logo === "custom") return main.querySelector("#sp-file").click(); v["strip.logo"] = b.dataset.logo; v["strip.showLogo"] = "on"; main.querySelector('[data-sk="strip.showLogo"]').checked = true; }
+    else if (b.dataset.seg) v[b.dataset.seg] = b.dataset.val;
+    else if (b.dataset.spos) v["home.headlinePos"] = b.dataset.spos;
+    else if (b.id === "sp-reset") for (const k of ["strip.logoX", "strip.logoY", "strip.hlX", "strip.hlY", "strip.subX", "strip.subY"]) v[k] = "0";
+    else return;
+    draw(); status("Not saved yet.");
+  });
+
+  // drag a part in the preview: the distance is turned into desktop pixels (the strip is 1248 px wide there)
+  const KEYS = { logo: ["strip.logoX", "strip.logoY"], hl: ["strip.hlX", "strip.hlY"], sub: ["strip.subX", "strip.subY"] };
+  box.addEventListener("pointerdown", (e) => {
+    const el = e.target.closest("[data-el]"); if (!el) return;
+    e.preventDefault();
+    const [kx, ky] = KEYS[el.dataset.el], scale = 1248 / box.closest(".sp").getBoundingClientRect().width;
+    const start = { x: e.clientX, y: e.clientY, vx: +v[kx], vy: +v[ky] };
+    const clamp = (k, n) => String(Math.round(Math.min(field(k).max, Math.max(field(k).min, n))));
+    const move = (ev) => {
+      v[kx] = clamp(kx, start.vx + (ev.clientX - start.x) * scale); v[ky] = clamp(ky, start.vy + (ev.clientY - start.y) * scale);
+      const host = box.querySelector(".lava-in"); host.style.setProperty(el.dataset.el === "logo" ? "--lx" : el.dataset.el === "hl" ? "--hx" : "--sx", v[kx]); host.style.setProperty(el.dataset.el === "logo" ? "--ly" : el.dataset.el === "hl" ? "--hy" : "--sy", v[ky]);
+    };
+    const up = () => { removeEventListener("pointermove", move); removeEventListener("pointerup", up); draw(); status("Not saved yet."); };
+    addEventListener("pointermove", move); addEventListener("pointerup", up);
+  });
+
+  main.querySelector("#sp-save").onclick = async (e) => {
+    const btn = e.currentTarget; btn.disabled = true;
+    try {
+      const files = [];
+      if (pendingLogo && v["strip.logo"] === "/strip/" + pendingLogo.file) {
+        status("Uploading the logo…");
+        const data = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(pendingLogo.blob); });
+        const r = await api("stripLogo", { method: "POST", body: { file: pendingLogo.file, data } });
+        files.push({ file: r.file, sha: r.sha });
+      }
+      status("Saving…");
+      await api("saveSettings", { method: "POST", body: { values: v, files } });
+      pendingLogo = null;
+      status("Saved. The home page updates in about a minute.", "ok");
+    } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
+    btn.disabled = false;
+  };
+}
+
 // ---------- global clicks ----------
 app.addEventListener("click", async (e) => {
   const act = e.target.closest("[data-act]")?.dataset.act;
@@ -2435,6 +2594,7 @@ app.addEventListener("click", async (e) => {
   if (act === "tab-video") renderVideo();
   if (act === "tab-fonts") renderFonts();
   if (act === "tab-langs") renderLangs();
+  if (act === "tab-strip") renderStrip();
   if (act === "tab-hebrew") renderHebrew();
   if (act === "tab-queue") renderQueue();
   if (act.startsWith("q-")) qClick(act, e);

@@ -2,6 +2,7 @@
 // Articles live in content/articles/*.md — add a file there and it appears on the site.
 import { fontSetup } from "./lib/fonts.js";
 import { palette, validHex, logoVariant } from "./lib/colors.js";
+import { stripSettings, stripHtml, STRIP_CSS } from "./lib/strip.js";
 import { LANGS, TARGETS, NOTE, REGION, langOf, noNiqqud } from "./lib/i18n.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -173,7 +174,7 @@ ${alts}
 ${FONTS.links.map((u) => `<link rel="stylesheet" href="${esc(u)}">`).join("\n")}
 <link rel="stylesheet" href="/assets/site.css?v=${V}">${LANG === "he" ? "\n" + HE_FONTS : ""}
 <style>${LANG === "he" ? heCss(FONTS.css) : FONTS.css}
-${COLOR_CSS}</style>${head}
+${COLOR_CSS}${active === "home" ? STRIP_CSS : ""}</style>${head}
 </head>
 <body${bodyAttrs} data-lang="${LANG}" data-base="${LANG === "en" ? "" : "/" + LANG}" data-handle="${esc(SITE.handle)}" data-follow="${tx("home.followTile")}" data-issue-label="${tx("issues.category")}">
 <script type="application/json" id="zz-ui">${JSON.stringify(ui).replace(/</g, "\\u003c")}</script>
@@ -290,18 +291,24 @@ function home() {
   const hlPos = ["tl", "tc", "tr", "ml", "mc", "mr", "bl", "bc", "br"].includes(T("home.headlinePos")) ? T("home.headlinePos") : "bl";
   const hlColor = ["white", "pink", "yellow", "black"].includes(T("home.headlineColor")) ? T("home.headlineColor") : "white";
   const introSize = Math.min(3, Math.max(0.6, (parseFloat(T("home.introSize")) || 100) / 100));
-  const hlGap = Math.min(60, Math.max(-40, Number.isFinite(parseFloat(T_EN("home.headlineGap"))) ? parseFloat(T_EN("home.headlineGap")) : 4));
+  // the strip's words and logo (console → Top strip)
+  const st = stripSettings(T_EN);
+  const logoHtml = st.logo === "heart"
+    ? `<img src="/assets/logo${LOGO_SFX}.png?v=${V}" alt="">`
+    : /^\/strip\/[\w.-]+\.(png|jpe?g|webp|svg|gif)$/i.test(st.logo) ? `<img src="${esc(st.logo)}" alt="">`
+    : `<img class="lava-heart" src="/assets/logo${LOGO_SFX}.png?v=${V}" alt="">`; // "moving heart": the see-through heart with a gentle float (the logo video has a white background)
+  const stripIn = stripHtml(st, { headline: T("home.headline") ? br("home.headline") : "", sub: T("home.intro") ? md("home.intro") : "", logo: logoHtml });
   const introAlign = ["left", "center", "right"].includes(T("home.introAlign")) ? T("home.introAlign") : "left";
   const lava = on("show.lava"), sw = ""; // the light switch is off until it gets a new place
 
   return layout({
     active: "home", pathname: "/",
     description: `${SITE.name}. ${SITE.tagline}`,
-    body: `${lava ? `<div class="wrap lava-wrap"><section class="lava-band" data-lava data-colors="${esc(JSON.stringify(PAL.lava))}" style="--hs:${hlSize};background:linear-gradient(90deg,${PAL.lava.bgL},${PAL.lava.bgR})">
+    body: `${lava ? `<div class="wrap lava-wrap"><section class="lava-band" data-lava data-colors="${esc(JSON.stringify(PAL.lava))}" style="background:linear-gradient(90deg,${PAL.lava.bgL},${PAL.lava.bgR})">
       <canvas aria-hidden="true"></canvas>${sw}
-      ${T("home.headline") || T("home.intro") ? `<div class="lava-in pos-${hlPos} hl-${hlColor}" style="--is:${introSize};--hg:${hlGap}px"${LANG === "en" ? "" : ' lang="en" dir="ltr"'}>${T("home.headline") ? `<h1 class="brand-hl">${br("home.headline")}</h1>` : ""}${T("home.intro") ? `<div class="lava-sub">${md("home.intro")}</div>` : ""}</div>` : ""}
+      ${stripIn}
       <button class="lava-pause" type="button" data-lava-pause aria-label="${tx("ui.pauseAnimation")}" aria-pressed="false"><span class="i-pause">${icon("pause")}</span><span class="i-play">${icon("play")}</span></button></section></div>` : ""}
-    <section class="wrap intro${lava ? " after-lava" : ""} align-${introAlign}" style="--hs:${hlSize};--is:${introSize}">${lava && !T("home.headline") ? `<h1 class="visually-hidden">${esc(SITE.name)}</h1>` : ""}
+    <section class="wrap intro${lava ? " after-lava" : ""} align-${introAlign}" style="--hs:${hlSize};--is:${introSize}">${lava && !(st.showHeadline && T("home.headline")) ? `<h1 class="visually-hidden">${esc(SITE.name)}</h1>` : ""}
       ${lava ? "" : sw}
       ${lava ? "" : `<div>${T("home.headline") ? `<h1>${br("home.headline")}</h1>` : ""}
       ${md("home.intro")}</div>`}
@@ -741,10 +748,11 @@ fs.copyFileSync("lib/ig-schedule.js", path.join(OUT, "admin/ig-schedule.js"));
 fs.copyFileSync("lib/fonts.js", path.join(OUT, "admin/fonts.js"));
 fs.copyFileSync("lib/colors.js", path.join(OUT, "admin/colors.js"));
 fs.copyFileSync("lib/i18n.js", path.join(OUT, "admin/i18n.js"));
+fs.copyFileSync("lib/strip.js", path.join(OUT, "admin/strip.js"));
 { // the console always loads the newest helper files (no stale browser copies after a deploy)
-  const av = crypto.createHash("md5").update(fs.readFileSync("lib/markdown.js")).update(fs.readFileSync("lib/icons.js")).update(fs.readFileSync("lib/site-schema.js")).update(fs.readFileSync("lib/ig-schedule.js")).update(fs.readFileSync("lib/fonts.js")).update(fs.readFileSync("lib/colors.js")).update(fs.readFileSync("lib/i18n.js")).digest("hex").slice(0, 8);
+  const av = crypto.createHash("md5").update(fs.readFileSync("lib/markdown.js")).update(fs.readFileSync("lib/icons.js")).update(fs.readFileSync("lib/site-schema.js")).update(fs.readFileSync("lib/ig-schedule.js")).update(fs.readFileSync("lib/fonts.js")).update(fs.readFileSync("lib/colors.js")).update(fs.readFileSync("lib/i18n.js")).update(fs.readFileSync("lib/strip.js")).digest("hex").slice(0, 8);
   const f = path.join(OUT, "admin/index.html");
-  fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(/from "\.\/(markdown|icons|site-schema|ig-schedule|fonts|colors|i18n)\.js"/g, `from "./$1.js?v=${av}"`));
+  fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(/from "\.\/(markdown|icons|site-schema|ig-schedule|fonts|colors|i18n|strip)\.js"/g, `from "./$1.js?v=${av}"`));
 }
 
 if (COMING_SOON) {

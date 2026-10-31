@@ -458,7 +458,9 @@ export default async function handler(req, res) {
 
     if (action === "saveSettings" && req.method === "POST") {
       const input = body.values || {};
-      const out = {};
+      // start from what's saved, so a tab that sends only its own settings keeps everyone else's
+      let out = {};
+      try { out = JSON.parse((await gh(repo(`/contents/content/site.json?ref=${BRANCH}`), { raw: true })) || "{}"); } catch {}
       for (const g of SCHEMA) for (const f of g.fields) {
         const v = input[f.key];
         if (v === undefined) continue;
@@ -469,9 +471,14 @@ export default async function handler(req, res) {
       if (out.brand?.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(out.brand.email.trim())) return fail(400, "The contact email doesn't look right.");
       const hideable = new Set(SCHEMA.flatMap((g) => g.fields).filter((f) => ["text", "long", "list"].includes(f.type)).map((f) => f.key));
       if (Array.isArray(body.hidden)) out.hidden = body.hidden.map(String).filter((k) => hideable.has(k));
+      // a logo uploaded in the Top strip tab (stored as a blob first, added with this save)
+      const extra = [];
+      for (const f of Array.isArray(body.files) ? body.files : []) {
+        if (/^\/strip\/[a-z0-9][a-z0-9-]{0,70}\.(png|jpe?g|webp|svg|gif)$/.test(f.file || "") && /^[0-9a-f]{40}$/.test(f.sha || "")) extra.push({ path: "public" + f.file, sha: f.sha });
+      }
       let st = { entries: [], errors: [] };
       try { st = await translateSite({ siteJson: out }); } catch (err) { st.errors = [err.message]; }
-      await commit([{ path: "content/site.json", content: JSON.stringify(out, null, 2) + "\n" }, ...st.entries], "Update site texts");
+      await commit([{ path: "content/site.json", content: JSON.stringify(out, null, 2) + "\n" }, ...st.entries, ...extra], "Update site texts");
       return res.json({ ok: true, translateErrors: st.errors || [], translated: !st.skipped });
     }
 
@@ -575,6 +582,13 @@ export default async function handler(req, res) {
       return res.json({ roles: data.roles || {}, custom: data.custom || [] });
     }
     // one font file: stored as a blob now, added to the site with the next "saveFonts"
+    if (action === "stripLogo" && req.method === "POST") {
+      const file = String(body.file || ""), data = String(body.data || "").replace(/^data:[^,]*,/, "");
+      if (!/^[a-z0-9][a-z0-9-]{0,70}\.(png|jpe?g|webp|svg|gif)$/.test(file) || !data) return fail(400, "That image couldn't be read. Use a PNG, JPG, WebP, SVG or GIF.");
+      if (data.length > 4_000_000) return fail(413, "That image is too large (up to about 3 MB).");
+      const blob = await gh(repo("/git/blobs"), { method: "POST", body: { content: data, encoding: "base64" } });
+      return res.json({ ok: true, file: `/strip/${file}`, sha: blob.sha });
+    }
     if (action === "fontFile" && req.method === "POST") {
       const file = String(body.file || ""), data = String(body.data || "").replace(/^data:[^,]*,/, "");
       if (!/^[a-z0-9][a-z0-9-]{0,70}\.(woff2|woff|ttf|otf)$/.test(file) || !data) return fail(400, "That font file couldn't be read. Use a .woff2, .woff, .ttf or .otf file.");
