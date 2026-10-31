@@ -30,8 +30,8 @@
     "headlineSize": "105",
     "headlinePos": "mc",
     "headlineColor": "white",
-    "intro": "Streetwear, trends and self-expression",
-    "introSize": "60",
+    "intro": "Magazine",
+    "introSize": "110",
     "introAlign": "center",
     "videoLabel": "Street scenes from Harajuku, Tokyo",
     "secStories": "Stories",
@@ -146,7 +146,5 @@
   "footer": {
     "copyright": "© {year} Zazzi Magazine (zazzimag.com). All rights reserved. The text, photographs, graphics, logo and design on this site are protected by copyright and other intellectual property laws. You may not copy, reproduce, republish, distribute or use any of this content for commercial purposes without our prior written permission, except as permitted by law. Third-party content, including photos used under license, remains the property of its respective owners."
   },
-  "hidden": [
-    "home.intro"
-  ]
+  "hidden": []
 }
