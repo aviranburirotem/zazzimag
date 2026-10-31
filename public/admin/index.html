@@ -440,14 +440,15 @@ async function renderPublish(flash = "", kind = "ok") {
     : `<span class="pill draft">Started</span>`;
   const building = p.last && (p.state === "pending" || (!p.state && Date.now() - new Date(p.last.at) < 6 * 60000));
   main.innerHTML = `<div class="list-head"><div><span class="label">Publish</span><h1>Put your changes on the site</h1></div>
-      <p class="hint" style="max-width:56ch;margin:0">Everything you save in the console is kept safely, but it only appears on the site when you press <b>Publish</b>. Make all your edits, then publish once: each publish counts as one of Vercel's 100 free deployments a day. New photos for scheduled Instagram posts are published automatically, and hidden Instagram posts change right away.</p>
+      <p class="hint" style="max-width:56ch;margin:0">Everything you save in the console is kept safely, but it only appears on the site when you press <b>Publish</b>. Make all your edits, check them with <b>Preview changes</b>, then publish once: each publish counts as one of Vercel's 100 free deployments a day. New photos for scheduled Instagram posts are published automatically, and hidden Instagram posts change right away.</p>
       <p class="status ${kind}" id="flash">${esc(flash)}</p></div>
     <div class="texts">
     ${p.hook ? `<fieldset><legend>Publish</legend>
       <p style="margin:0;font-size:17px">${p.waiting == null ? "Your saved changes are ready to publish." : p.waiting ? `<b>${p.waiting}</b> saved change${p.waiting === 1 ? "" : "s"} waiting to go on the site.` : "The site is up to date with everything you saved."}</p>
       ${p.last ? `<p class="hint" style="margin:0">Last published ${esc(ago(p.last.at))}${p.last.reason === "queue photos" ? " (automatically, for new Instagram photos)" : ""} ${stateTxt}${p.note && p.state !== "success" ? ` · ${esc(p.note)}` : ""}</p>` : ""}
       ${building ? `<p class="hint" style="margin:0">Publishing takes about 1–2 minutes. This page updates by itself.</p>` : ""}
-      <div><button class="b primary" type="button" id="pub-go">${icon("send")}<span>Publish now</span></button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="b" href="/api/stage?enter=1&amp;p=%2Fpreview%2F" target="zz-site" rel="noopener">${icon("eye")}<span>Preview changes</span></a><button class="b primary" type="button" id="pub-go">${icon("send")}<span>Publish now</span></button></div>
+      <p class="hint" style="margin:0">Preview changes opens the site with everything you saved, before it's published. Only you can see it (you're logged in); a black bar at the bottom shows you're in the preview.</p>
       ${p.changes?.length ? `<details><summary class="hint">What's waiting</summary><ul class="hint pub-list">${p.changes.map((c) => `<li>${esc(c.msg)} <span class="label">${esc(ago(c.at))}</span></li>`).join("")}</ul></details>` : ""}
     </fieldset>` : ""}
     <fieldset><legend>${p.hook ? "Connection to Vercel" : "Set up publishing (one time)"}</legend>
@@ -496,7 +497,8 @@ function topBar(extra = "") {
     </nav>
     <div class="c-actions">${extra}
       <button class="b primary pub-btn" type="button" data-act="tab-publish" ${tab === "publish" ? 'aria-current="page"' : ""}>${icon("send")}<span>Publish</span>${pubBadge()}</button>
-      <a class="b" href="/preview/" target="_blank" rel="noopener">${icon("eye")}<span>View site</span></a>
+      <a class="b" href="/api/stage?enter=1&amp;p=%2Fpreview%2F" target="zz-site" rel="noopener" title="See your saved changes before they're published">${icon("eye")}<span>Preview changes</span></a>
+      <a class="b" href="/api/stage?exit=1&amp;p=%2Fpreview%2F" target="zz-site" rel="noopener" title="The site as visitors see it now">${icon("globe")}<span>Live site</span></a>
       <button class="b" type="button" data-act="logout">${icon("log-out")}<span>Log out</span></button>
     </div></div></header>`;
 }

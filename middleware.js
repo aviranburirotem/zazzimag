@@ -4,14 +4,10 @@
 import { LAUNCHED } from "./lib/site-config.js";
 
 export const config = {
-  matcher: [
-    "/preview", "/preview/:path*",
-    "/articles", "/articles/:path*", "/articles.json",
-    "/about", "/about/:path*",
-    "/store", "/store/:path*",
-    "/issues", "/issues/:path*",
-  ],
+  // every page (for the preview of unpublished changes); the private-page check below only runs for PRIVATE
+  matcher: ["/((?!api|admin|_vercel).*)"],
 };
+const PRIVATE = /^(\/(de|es|fr|he|ja|ko))?\/(preview|articles|about|store|issues)(\/|$)|^\/articles\.json$/; // also the translated copies (/he/…)
 
 const COOKIE = "zz_admin";
 const enc = new TextEncoder();
@@ -33,7 +29,15 @@ async function validSession(cookieHeader) {
 
 export default async function middleware(request) {
   const url = new URL(request.url);
-  const isPreview = url.pathname === "/preview" || url.pathname.startsWith("/preview/");
+  // Preview of unpublished changes (console → Publish → Preview changes): only for the logged-in owner
+  const cookies = request.headers.get("cookie") || "";
+  if (/(^|;\s*)zz_stage=1(;|$)/.test(cookies) && !url.searchParams.has("zzlive") && (await validSession(cookies))) {
+    const dest = new URL("/api/stage", url);
+    dest.searchParams.set("p", url.pathname + url.search);
+    return new Response(null, { headers: { "x-middleware-rewrite": dest.toString() } });
+  }
+  if (!PRIVATE.test(url.pathname)) return;
+  const isPreview = /^(\/[a-z]{2})?\/preview(\/|$)/.test(url.pathname);
   // /preview/ is always private. Articles, Info and Store are only locked before launch.
   if (!isPreview && (LAUNCHED || process.env.VERCEL_ENV !== "production")) return;
   if (await validSession(request.headers.get("cookie"))) return; // logged in to the console

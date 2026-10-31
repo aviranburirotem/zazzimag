@@ -51,9 +51,14 @@ const br = (k) => esc(T(k)).replace(/\n/g, "<br>");           // text with line 
 const md = (k) => markdown(T(k));                             // paragraphs with bold/italic/links
 const IG_URL = `https://www.instagram.com/${SITE.handle}/`;
 const OUT = "dist";
+// Preview of unpublished changes (api/stage.js): only the pages are built, the site's files are read from
+// ZZ_PUBLIC (changed files first, then the published ones) and not copied.
+const STAGE = process.env.ZZ_STAGE === "1";
+const PUBLIC_DIRS = (process.env.ZZ_PUBLIC || "public").split(path.delimiter);
+const pubPath = (rel) => { for (const d of PUBLIC_DIRS) { const f = path.join(d, rel); if (fs.existsSync(f)) return f; } return path.join(PUBLIC_DIRS[PUBLIC_DIRS.length - 1], rel); };
 import crypto from "node:crypto";
 // Version stamp for CSS/JS so browsers always load the latest files after a deploy
-const V = crypto.createHash("md5").update(fs.readFileSync("public/assets/site.css")).update(fs.readFileSync("public/assets/site.js")).update(fs.readFileSync("public/assets/flipbook.js")).update(fs.readFileSync("public/assets/lava.js")).update(fs.readFileSync("public/assets/logo-animated.mp4")).update(fs.readFileSync("public/assets/logo-animated-dark.mp4")).digest("hex").slice(0, 8);
+const V = crypto.createHash("md5").update(fs.readFileSync(pubPath("assets/site.css"))).update(fs.readFileSync(pubPath("assets/site.js"))).update(fs.readFileSync(pubPath("assets/flipbook.js"))).update(fs.readFileSync(pubPath("assets/lava.js"))).update(fs.readFileSync(pubPath("assets/logo-animated.mp4"))).update(fs.readFileSync(pubPath("assets/logo-animated-dark.mp4"))).digest("hex").slice(0, 8);
 
 // Footer video. The console can replace it (content/video/footer.json lists the uploaded parts,
 // which are joined back into files at build time). Without an upload, the original video is used.
@@ -383,7 +388,7 @@ function imgDims(url) {
   if (dimsCache.has(url)) return dimsCache.get(url);
   let out = null;
   try {
-    const b = fs.readFileSync(path.join("public", url));
+    const b = fs.readFileSync(pubPath(url));
     if (b[0] === 0x89 && b[1] === 0x50) out = { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
     else if (b[0] === 0xff && b[1] === 0xd8) {
       for (let i = 2; i < b.length - 9;) {
@@ -400,7 +405,7 @@ function imgDims(url) {
 // an issue page for the flipbook, with its lighter phone copy (images/issues/<slug>/m/<file>) when there is one
 const fbPage = (p) => {
   const m = /^\/images\/issues\/([a-z0-9-]+)\/([^/]+)$/.exec(p.image);
-  const light = m && fs.existsSync(`public/images/issues/${m[1]}/m/${m[2]}`) ? `/images/issues/${m[1]}/m/${m[2]}` : "";
+  const light = m && fs.existsSync(pubPath(`images/issues/${m[1]}/m/${m[2]}`)) ? `/images/issues/${m[1]}/m/${m[2]}` : "";
   const d = p.image.startsWith("/") ? imgDims(p.image) : null;
   return { image: p.image, ...(light ? { imageM: light } : {}), ...(d ? { w: d.w, h: d.h } : {}), caption: p.caption || "", alt: p.alt || "" };
 };
@@ -696,8 +701,8 @@ function comingSoon() {
 
 // ---------- write ----------
 fs.rmSync(OUT, { recursive: true, force: true });
-fs.cpSync("public", OUT, { recursive: true });
-if (VIDEO_MANIFEST) { // join the uploaded parts back into the footer video files
+if (!STAGE) fs.cpSync("public", OUT, { recursive: true });
+if (VIDEO_MANIFEST && !STAGE) { // join the uploaded parts back into the footer video files
   const dir = path.join(OUT, "assets/footer-video");
   fs.mkdirSync(dir, { recursive: true });
   for (const [kind, ext] of [["wide", "mp4"], ["small", "mp4"], ["poster", "jpg"]]) {
@@ -741,6 +746,7 @@ LANG = "en";
 write("i18n/langs.json", JSON.stringify({ langs: LANGS.map(({ code, native, dir }) => ({ code, native, dir })), region: REGION }));
 write("articles.json", JSON.stringify(articles.map(({ html, ...a }) => a), null, 2));
 // Admin console helpers (shared with the build so the preview matches the site)
+if (!STAGE) {
 fs.copyFileSync("lib/markdown.js", path.join(OUT, "admin/markdown.js"));
 fs.copyFileSync("lib/icons.js", path.join(OUT, "admin/icons.js"));
 fs.copyFileSync("lib/site-schema.js", path.join(OUT, "admin/site-schema.js"));
@@ -753,6 +759,7 @@ fs.copyFileSync("lib/strip.js", path.join(OUT, "admin/strip.js"));
   const av = crypto.createHash("md5").update(fs.readFileSync("lib/markdown.js")).update(fs.readFileSync("lib/icons.js")).update(fs.readFileSync("lib/site-schema.js")).update(fs.readFileSync("lib/ig-schedule.js")).update(fs.readFileSync("lib/fonts.js")).update(fs.readFileSync("lib/colors.js")).update(fs.readFileSync("lib/i18n.js")).update(fs.readFileSync("lib/strip.js")).digest("hex").slice(0, 8);
   const f = path.join(OUT, "admin/index.html");
   fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace(/from "\.\/(markdown|icons|site-schema|ig-schedule|fonts|colors|i18n|strip)\.js"/g, `from "./$1.js?v=${av}"`));
+}
 }
 
 if (COMING_SOON) {
