@@ -10,7 +10,6 @@ heroShape: vertical
 coverAlt: An all-black Comme des Garçons total look. Ready-to-wear styling meets subtle avant-garde details.
 coverCaption: Comme des Garçons total look. Ready-to-wear at first glance, avant-garde on closer inspection | Photo by Netta Meisles
 author: Netta Meisles
-draft: true
 cropOriginals: {"nakano-2-34-5-crop-2.jpg":"/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/nakano-2-34-5.jpg","cat-street-2-21-crop-2.jpg":"/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cat-street-2-21.jpg","cat-street-2-32-crop.jpg":"/images/articles/japanese-avant-garde-fashion-the-crow-tribe-karasu-zoku/cat-street-2-32.jpg"}
 ---
 In Tokyo, the crow is part of the city's soundtrack. Its unmistakable *kaa-kaa* call echoes across rooftops, train stations and busy streets. Its dark silhouette is a familiar sight above the crowds. It's easy to see why the bird became the namesake for **Karasu-zoku (カラス族), or the Crow Tribe**, a Japanese fashion subculture known for its almost entirely black wardrobe and avant-garde sensibility.
