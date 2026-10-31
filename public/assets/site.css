@@ -587,3 +587,7 @@ html[dir="rtl"] .tile.issue:hover .mag{transform:translateY(-6px) rotate(2.5deg)
 .article-head{padding-bottom:6px}
 /* Hebrew articles: the text uses the headline's font */
 .body:lang(he){font-family:var(--head);font-size:19px;line-height:1.75;font-weight:400}
+/* under the strip: the Instagram button on the side, as in the original design (right in English, left in Hebrew), with room above it */
+.intro.after-lava{display:flex;justify-content:flex-end;padding:26px max(16px,env(safe-area-inset-right,0px)) 18px max(16px,env(safe-area-inset-left,0px))}
+.intro.after-lava .handle{margin-top:0;justify-self:auto}
+@media (max-width:720px){.intro.after-lava{padding-top:20px}}
