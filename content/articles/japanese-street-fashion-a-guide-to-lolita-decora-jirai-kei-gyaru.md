@@ -68,7 +68,7 @@ Jirai Kei is a contemporary Japanese fashion style that combines feminine detail
 
 Gyaru is a Japanese fashion subculture that emerged in the 1990s, known for its glamorous, expressive approach to personal style. Bold makeup, dramatic lashes, styled hair, statement nails and eye-catching outfits are among its signature elements. Over the years, Gyaru has evolved into a variety of styles, each with its own take on glamour and self-expression.
 
-- Where to explore: Shibuya 109 has long been associated with Gyaru culture and remains a place to discover the look. Visit MA*RS for Gyaru-inspired clothing, or head to @ppgalclub in Shibuya for a Gyaru-style makeover and photoshoot.
+- Where to explore: Shibuya 109 has long been associated with Gyaru culture and remains a place to discover the look. Visit MA*RS for Gyaru-inspired clothing, or go to @ppgalclub in Shibuya for a full Gyaru-style makeover and photoshoot.
 
 
 
