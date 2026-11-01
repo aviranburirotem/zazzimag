@@ -1,7 +1,7 @@
 // Password protection, using the console login (/admin/).
 // - /preview/ is always private, before and after launch.
 // - Articles, issues, Info and Store are private only while the site is in coming-soon mode.
-import { LAUNCHED } from "./lib/site-config.js";
+import { MODE } from "./lib/site-config.js";
 
 export const config = {
   // every page (for the preview of unpublished changes); the private-page check below only runs for PRIVATE
@@ -38,9 +38,11 @@ export default async function middleware(request) {
   }
   if (!PRIVATE.test(url.pathname)) return;
   const isPreview = /^(\/[a-z]{2})?\/preview(\/|$)/.test(url.pathname);
-  // /preview/ is always private. Articles, Info and Store are only locked before launch.
-  if (!isPreview && (LAUNCHED || process.env.VERCEL_ENV !== "production")) return;
+  // /preview/ is always private. Articles, Info and Store are only locked while the site isn't live.
+  if (!isPreview && (MODE === "live" || process.env.VERCEL_ENV !== "production")) return;
   if (await validSession(request.headers.get("cookie"))) return; // logged in to the console
+  // visitors following a link to an article etc. see the coming-soon / under-construction page
+  if (!isPreview) return new Response(null, { headers: { "x-middleware-rewrite": new URL("/", url).toString(), "Cache-Control": "no-store", "X-Robots-Tag": "noindex" } });
   const login = new URL("/admin/", url);
   login.searchParams.set("next", url.pathname + url.search);
   return new Response(null, {

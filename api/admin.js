@@ -16,6 +16,7 @@ import { run as runIgQueue, KEYS as IGK, DEFAULT_SCHEDULE } from "../lib/ig-publ
 import { fetchPosts } from "./instagram.js";
 import { alert, sendEmail, AK } from "../lib/alerts.js";
 import { healthCheck } from "../lib/health.js";
+import { MODE as LIVE_MODE } from "../lib/site-config.js";
 
 const REPO = process.env.GITHUB_REPO || "aviranburirotem/zazzimag";
 const BRANCH = process.env.GITHUB_BRANCH || "main";
@@ -456,6 +457,25 @@ export default async function handler(req, res) {
     }
     if (action === "alertCheck" && req.method === "POST") return res.json(await healthCheck({ daily: true, force: true }));
     if (action === "alertClear" && req.method === "POST") { await setJSON(AK.log, []); return res.json({ ok: true }); }
+
+    // ---- site status: live / coming soon / under construction (lib/site-config.js, takes effect on publish) ----
+    if (action === "siteMode") {
+      const src = await gh(repo(`/contents/lib/site-config.js?ref=${BRANCH}`), { raw: true });
+      const m = /export const MODE = "(\w+)"/.exec(src || "");
+      return res.json({ mode: m ? m[1] : "soon", live: LIVE_MODE });
+    }
+    if (action === "setSiteMode" && req.method === "POST") {
+      const mode = String(body.mode || "");
+      if (!["live", "soon", "construction"].includes(mode)) return fail(400, "Unknown site status.");
+      const src = await gh(repo(`/contents/lib/site-config.js?ref=${BRANCH}`), { raw: true });
+      if (!/export const MODE = "\w+";/.test(src || "")) return fail(500, "The site status setting couldn't be found.");
+      const next = src.replace(/export const MODE = "\w+";/, `export const MODE = "${mode}";`);
+      const names = { live: "Live", soon: "Coming soon", construction: "Under construction" };
+      if (next !== src) await commit([{ path: "lib/site-config.js", content: next }], `Site status: ${names[mode]}`);
+      let published = null;
+      if (body.publish) { const r = await publishNow("button"); published = r.ok; if (!r.ok) return res.json({ ok: true, mode, published: false, publishError: r.error }); }
+      return res.json({ ok: true, mode, published });
+    }
 
     if (action === "list") return res.json({ articles: await listArticles() });
 

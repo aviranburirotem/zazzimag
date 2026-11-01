@@ -207,6 +207,11 @@
   .pub-list{margin:8px 0 0;padding-left:18px;line-height:1.7;max-height:260px;overflow:auto}
   .pill.err{background:#fde8e8;border-color:#f3b9b9;color:#9b1c1c}
   .al-log{display:grid;gap:0}.al-log details{border-top:1px solid var(--line);padding:10px 0}.al-log summary{cursor:pointer;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .mode-pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+  .mode-opt{display:grid;gap:6px;align-content:start;border:1px solid var(--line);border-radius:6px;padding:12px 14px;cursor:pointer;font-weight:400}
+  .mode-opt input{width:auto;margin:0 0 2px}
+  .mode-opt .pill{justify-self:start}
+  .mode-opt.on{border-color:var(--fg);box-shadow:0 0 0 1px var(--fg)}
   .pill.draft{background:#fff4e0;border-color:#f3d9a6;color:#8a5a00}
   .row-actions{display:flex;gap:6px}
   @media (max-width:640px){.row{grid-template-columns:52px minmax(0,1fr)}.row img,.row .noimg{width:52px;height:66px}.row-actions{grid-column:1/-1}}
@@ -452,6 +457,7 @@ async function renderPublish(flash = "", kind = "ok") {
       <p class="hint" style="margin:0">Preview changes opens the site with everything you saved, before it's published. Only you can see it (you're logged in); a black bar at the bottom shows you're in the preview.</p>
       ${p.changes?.length ? `<details><summary class="hint">What's waiting</summary><ul class="hint pub-list">${p.changes.map((c) => `<li>${esc(c.msg)} <span class="label">${esc(ago(c.at))}</span></li>`).join("")}</ul></details>` : ""}
     </fieldset>` : ""}
+    <fieldset id="site-mode"><legend>Site status</legend><p class="hint" style="margin:0">Loading…</p></fieldset>
     <fieldset><legend>${p.hook ? "Connection to Vercel" : "Set up publishing (one time)"}</legend>
       ${p.hook ? `<p class="hint" style="margin:0"><span class="pill live">Connected</span> The Publish button is connected to Vercel. You can replace the link below if you ever make a new one.</p>`
       : `<ol class="hint" style="margin:0;padding-left:18px;line-height:1.8">
@@ -475,6 +481,7 @@ async function renderPublish(flash = "", kind = "ok") {
     try { await api("publish", { method: "POST" }); renderPublish("Publishing… your changes will be on the site in about 1–2 minutes."); }
     catch (err) { if (err.message !== "auth") renderPublish(err.message, "err"); }
   };
+  drawSiteMode(main.querySelector("#site-mode"), p.hook);
   if (building) pubPoll = setTimeout(() => { if (tab === "publish") renderPublish(document.getElementById("flash")?.textContent || "", kind); }, 20000);
 }
 
@@ -2656,6 +2663,46 @@ async function renderStrip() {
     } catch (err) { if (err.message !== "auth") status(err.message, "err"); }
     btn.disabled = false;
   };
+}
+
+// Site status: Live / Coming soon / Under construction (saved in lib/site-config.js, takes effect when published)
+const MODE_INFO = {
+  live: ["Live", "Everyone sees the full site: home page, articles, issues, Info and Store."],
+  soon: ["Coming soon", "Visitors see the coming-soon page. The full site is only for you (logged in), at /preview/."],
+  construction: ["Under construction", "Visitors see the under-construction page (for a break or big changes). The full site is only for you (logged in), at /preview/."],
+};
+async function drawSiteMode(box, hook) {
+  let st;
+  try { st = await api("siteMode"); } catch (err) { if (err.message !== "auth") box.querySelector("p").textContent = err.message; return; }
+  const pending = st.mode !== st.live;
+  box.innerHTML = `<legend>Site status</legend>
+    <p style="margin:0;font-size:17px">The site is <b>${esc(MODE_INFO[st.live]?.[0] || st.live)}</b>${pending ? ` · changing to <b>${esc(MODE_INFO[st.mode][0])}</b> once it's published` : ""}.</p>
+    <div class="mode-pick" role="radiogroup" aria-label="Site status">${Object.entries(MODE_INFO).map(([k, [name, desc]]) => `
+      <label class="mode-opt${k === st.mode ? " on" : ""}"><input type="radio" name="site-mode" value="${k}" ${k === st.mode ? "checked" : ""}><b>${name}</b>${k === st.live ? ` <span class="pill live">Now</span>` : ""}<span class="hint">${desc}</span></label>`).join("")}</div>
+    <p class="hint" style="margin:0">The texts on the coming-soon and under-construction pages are in Site texts. The accessibility statement and privacy policy stay public in every status.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="b primary" type="button" id="mode-go" disabled>${icon("send")}<span>Switch and publish</span></button><button class="b" type="button" id="mode-save" disabled>${icon("save")}<span>Switch on next publish</span></button></div>`;
+  const pick = () => box.querySelector('input[name="site-mode"]:checked').value;
+  const go = box.querySelector("#mode-go"), save = box.querySelector("#mode-save");
+  if (!hook) go.hidden = true;
+  const update = () => {
+    box.querySelectorAll(".mode-opt").forEach((l) => l.classList.toggle("on", l.querySelector("input").checked));
+    const same = pick() === st.mode;
+    save.disabled = same; go.disabled = same && !pending;
+  };
+  box.querySelectorAll('input[name="site-mode"]').forEach((r) => (r.onchange = update));
+  update();
+  const set = async (publish) => {
+    const mode = pick(), name = MODE_INFO[mode][0];
+    if (publish && mode === "live" && st.live !== "live" && !confirm("Make the full site public now? Everyone will see the home page, articles, issues, Info and Store.")) return;
+    if (publish && mode !== "live" && st.live === "live" && !confirm(`Switch the site to "${name}"? Visitors will see the ${name.toLowerCase()} page instead of the site.`)) return;
+    go.disabled = save.disabled = true;
+    try {
+      const r = await api("setSiteMode", { method: "POST", body: { mode, publish } });
+      renderPublish(!publish ? `Saved. The site switches to "${name}" when you publish.` : r.published ? `Switching to "${name}"… it takes effect in about 1–2 minutes.` : `Saved, but publishing didn't work: ${r.publishError || "unknown error"}. Press Publish now to try again.`, publish && !r.published ? "err" : "ok");
+    } catch (err) { if (err.message !== "auth") renderPublish(err.message, "err"); }
+  };
+  go.onclick = () => set(true);
+  save.onclick = () => set(false);
 }
 
 // ---------- Alerts: an email when something stops working ----------

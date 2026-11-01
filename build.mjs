@@ -8,7 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { markdown, frontmatter } from "./lib/markdown.js";
 import { icon } from "./lib/icons.js";
-import { LAUNCHED } from "./lib/site-config.js";
+import { MODE } from "./lib/site-config.js";
 import { texts, TRANSLATABLE } from "./lib/site-schema.js";
 
 // Site wording, editable in the console (content/site.json). The site is built once per language:
@@ -74,10 +74,11 @@ const consentTag = PIXEL_ON ? `\n<script src="/assets/consent.js?v=${V}" data-pi
 
 // Coming-soon mode: the live site (zazzimag.com) shows only the coming-soon page.
 // Preview deployments and local builds still show the full site so you can work on it.
-// When ready to launch, set LAUNCHED to true in lib/site-config.js.
+// The status is set in the console (Publish → Site status), saved in lib/site-config.js.
 const COMING_SOON = process.env.COMING_SOON
   ? process.env.COMING_SOON === "1"
-  : !LAUNCHED && process.env.VERCEL_ENV === "production";
+  : MODE !== "live" && process.env.VERCEL_ENV === "production";
+const HOLD = MODE === "construction" ? "construction" : "comingSoon"; // which page visitors see while the site isn't live
 
 const abs = (u) => (/^https?:/.test(u) ? u : SITE.url + u);
 const esc = (s = "") => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -624,9 +625,9 @@ function comingSoon() {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>${esc(SITE.name)} · ${tx("comingSoon.heading")}</title>
+<title>${esc(SITE.name)} · ${tx(HOLD + ".heading")}</title>
 <meta name="description" content="${esc(SITE.name)}: ${esc(SITE.tagline)}">
-<meta property="og:title" content="${esc(SITE.name)} · ${tx("comingSoon.heading")}">
+<meta property="og:title" content="${esc(SITE.name)} · ${tx(HOLD + ".heading")}">
 <meta property="og:description" content="${esc(SITE.tagline)}">
 <meta property="og:image" content="${SITE.url}/assets/logo-poster.png">
 <meta property="og:url" content="${SITE.url}/">
@@ -676,11 +677,11 @@ function comingSoon() {
     <img src="/assets/logo-poster.png" alt="Zazzi magazine">
   </video>
   <button class="pause" type="button" id="pp" aria-pressed="false">${icon("pause")}<span>Pause animation</span></button>
-  <h1>${tx("comingSoon.heading")}</h1>
-  ${md("comingSoon.text")}
+  <h1>${tx(HOLD + ".heading")}</h1>
+  ${md(HOLD + ".text")}
 </main>
 <footer>
-  <span class="label">${tx("comingSoon.contactLabel")}</span>
+  <span class="label">${tx(HOLD + ".contactLabel")}</span>
   <a class="btn" href="mailto:${SITE.email}" aria-label="Email ${SITE.email}">${icon("mail")}<span class="t">${SITE.email}</span></a>
   <a class="btn dark" href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram @${SITE.handle}">${icon("instagram")}<span class="t">@${SITE.handle}</span></a>
   <a class="a11y-link" href="/accessibility/">${icon("accessibility")}Accessibility statement</a>
