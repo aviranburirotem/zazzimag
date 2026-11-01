@@ -3,12 +3,12 @@ title: Discovering Shimokitazawa: Shopping, Food & More
 dek: Discover Shimokitazawa, Tokyo, through its second-hand treasures, designer kimonos, independent boutiques and creative food scene.
 date: 2026-10-29
 category: Guide
-cover: /images/articles/shimokitazawa-tokyo-guide/cover-shimokitazawa-2-2.jpg
-color: b46e1f
-coverPosition: 0% 100%
-heroPosition: 50% 58%
+cover: /images/articles/shimokitazawa-tokyo-guide/cover-article820.jpg
+color: b06a1b
+coverPosition: 50% 100%
+heroPosition: 40% 63%
 coverAlt: Three Japanese girls smiling together in Shimokitazawa, Tokyo, a neighbourhood known for its vintage shops, independent boutiques and creative street culture
-coverCaption: Hunting for treasures at American Joe, a vintage clothing store in Shimokitazawa | Photo by Netta Meisles
+coverCaption: A sunny day in Shimokitazawa, full of smiles and neighbourhood charm | Photo by Netta Meisles
 author: netta meisles
 cropOriginals: {"sihmokita-article-14-2-crop-4.jpg":"/images/articles/shimokitazawa-tokyo-guide/sihmokita-article-14-2.jpg"}
 ---
