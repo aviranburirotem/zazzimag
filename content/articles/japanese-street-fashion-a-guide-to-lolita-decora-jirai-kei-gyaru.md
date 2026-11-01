@@ -56,9 +56,7 @@ Emerging in the late 1990s, Decora is known for hyper-saturated colors, layered 
 
 Jirai Kei is a contemporary Japanese fashion style that combines feminine details with a distinctive mix of sweetness and darker elements. Black and pink are common colors, but the style also appears in softer pastel palettes. Frills, lace, ribbons, bows, platform shoes and doll-like makeup are among its recognizable features.
 
-Where to explore: Shibuya 109 is a good place to look for Jirai Kei-inspired fashion. The shopping mall includes brands such as MA*RS and LIZ LISA, which offer styles associated with this feminine, detail-rich aesthetic.
-
-
+- Where to explore: Shibuya 109 is a good starting point for Jirai Kei-inspired fashion. Stores such as LIZ LISA offer pieces that reflect the subculture’s feminine aesthetic and attention to detail.
 
 
 ![Two Girls in Pastel Jirai Kei on the Streets of Shibuya](/images/articles/japanese-street-fashion-a-guide-to-lolita-decora-jirai-kei-gyaru/sihmokita-article111.jpg "A sweet mix of pastel colours, playful details and Jirai Kei fashion, spotted on the streets of Shibuya | Photo by Netta Meisles")
@@ -70,7 +68,7 @@ Where to explore: Shibuya 109 is a good place to look for Jirai Kei-inspired fas
 
 Gyaru is a Japanese fashion subculture that emerged in the 1990s, known for its glamorous, expressive approach to personal style. Bold makeup, dramatic lashes, styled hair, statement nails and eye-catching outfits are among its signature elements. Over the years, Gyaru has evolved into a variety of styles, each with its own take on glamour and self-expression.
 
-Where to explore: Shibuya 109 is closely associated with Gyaru culture and remains an important destination for Japanese youth fashion. For a more immersive experience, @ppgalclub in Shibuya offers Gyaru makeovers and photoshoots, giving visitors the chance to experience the style firsthand.
+- Where to explore: Shibuya 109 has long been associated with Gyaru culture and remains a place to discover the look. Visit MA*RS for Gyaru-inspired clothing, or head to @ppgalclub in Shibuya for a Gyaru-style makeover and photoshoot.
 
 
 
