@@ -11,7 +11,7 @@ coverCaption: @Erunyan wearing a colorful Decora outfit | Photo by Netta Meisles
 author: Netta Meisles
 pinned: true
 ---
-Harajuku is known for its street fashion and independent boutiques. Its backstreets, known as Ura-Harajuku, became a hub for independent designers in the late 1980s, helping shape the area’s experimental style. Today, this spirit can be seen in fashion subcultures such as Lolita, with its Victorian-inspired dresses, and Decora, known for colorful outfits and playful accessories.
+Japanese street fashion is home to a diverse range of subcultures, each with its own distinctive aesthetic. From the Victorian-inspired dresses of Lolita and the colorful accessories of Decora to the dark, romantic look of Jirai Kei and the bold, expressive style of Gyaru, these fashion movements offer different approaches to individuality, creativity and self-expression.
 
 ## Lolita Fashion: Victorian & Rococo Elegance
 
