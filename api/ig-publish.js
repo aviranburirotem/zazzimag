@@ -2,11 +2,16 @@
 // Called every 15 minutes by the scheduler (.github/workflows/ig-publish.yml).
 // It only ever posts what the console's queue says is due, so calling it more often can't post anything early.
 import { run } from "../lib/ig-publish.js";
+import { healthCheck } from "../lib/health.js";
+import { setJSON, hasStore } from "../lib/token.js";
+import { AK } from "../lib/alerts.js";
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   try {
+    if (hasStore()) await setJSON(AK.beat, Date.now()).catch(() => {}); // the scheduler is alive
     const out = await run();
+    await healthCheck().catch((err) => console.error("health:", err.message)); // at most every 30 minutes
     res.status(out.ok ? 200 : 500).json(out);
   } catch (err) {
     console.error("ig-publish:", err);

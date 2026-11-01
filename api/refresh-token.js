@@ -1,6 +1,7 @@
 // Weekly job (see "crons" in vercel.json) that extends the Instagram token
 // for another 60 days and saves it, so the feed never stops working.
 import { getToken, saveToken, hasStore } from "../lib/token.js";
+import { alert, resolved, CONSOLE } from "../lib/alerts.js";
 
 export default async function handler(req, res) {
   // Vercel sends "Authorization: Bearer <CRON_SECRET>" with cron requests.
@@ -26,11 +27,13 @@ export default async function handler(req, res) {
   const data = await r.json();
   if (!r.ok || !data.access_token) {
     console.error("Token refresh failed:", data.error || r.status);
+    await alert({ key: "igrefresh", title: "Instagram connection couldn't be renewed", text: `The weekly renewal of the Instagram connection failed${data.error?.message ? `: "${data.error.message}"` : ""}. It expires about 60 days after it was last renewed, then the feed and scheduled posts stop.\n\nOpen the console → Instagram and connect it again.`, link: CONSOLE });
     res.status(502).json({ error: "Instagram refused the refresh. Generate a new token in the Meta dashboard." });
     return;
   }
 
   await saveToken(data.access_token);
+  await resolved("igrefresh");
   const days = Math.round((data.expires_in || 0) / 86400);
   res.status(200).json({ ok: true, validForDays: days });
 }

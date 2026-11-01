@@ -14,6 +14,8 @@ import { TARGETS, translateArticle, translateStrings, deeplUsage, googleCheck, s
 import { getToken, saveToken, getHiddenPosts, setHiddenPosts, hasStore, getJSON, setJSON } from "../lib/token.js";
 import { run as runIgQueue, KEYS as IGK, DEFAULT_SCHEDULE } from "../lib/ig-publish.js";
 import { fetchPosts } from "./instagram.js";
+import { alert, sendEmail, AK } from "../lib/alerts.js";
+import { healthCheck } from "../lib/health.js";
 
 const REPO = process.env.GITHUB_REPO || "aviranburirotem/zazzimag";
 const BRANCH = process.env.GITHUB_BRANCH || "main";
@@ -155,14 +157,22 @@ async function translateSite({ siteJson = null, cats = [], force = false } = {})
 // ---------- Publish: saves go to GitHub only; the site is rebuilt when the Publish button is pressed ----------
 // (vercel.json turns off Vercel's build-on-every-save; a Vercel "Deploy Hook" builds the newest saved version)
 const PUB = { hook: "deploy_hook", last: "publish_last" }; // Redis
+const CONSOLE_URL = "https://www.zazzimag.com/admin/";
 const HOOK_RE = /^https:\/\/api\.vercel\.com\/v1\/integrations\/deploy\/[A-Za-z0-9_]+\/[A-Za-z0-9_]+(\?.*)?$/;
 async function headSha() { return (await gh(repo(`/git/ref/heads/${BRANCH}`))).object.sha; }
 async function publishNow(reason) {
+  const auto = reason !== "button";
   const hook = await getJSON(PUB.hook, "");
-  if (!hook) return { ok: false, error: "Publishing isn't set up yet." };
+  if (!hook) {
+    if (auto) await alert({ key: "pubhook", title: "New photos couldn't be published", text: "Photos for a scheduled Instagram post were saved, but the site couldn't be published because publishing isn't set up.\n\nOpen the console → Publish, add the Deploy Hook link and press Publish now.", link: CONSOLE_URL });
+    return { ok: false, error: "Publishing isn't set up yet." };
+  }
   const sha = await headSha();
-  const r = await fetch(hook, { method: "POST" });
-  if (!r.ok) return { ok: false, error: `Vercel didn't accept the request (${r.status}).` };
+  const r = await fetch(hook, { method: "POST" }).catch(() => ({ ok: false, status: 0 }));
+  if (!r.ok) {
+    if (auto) await alert({ key: `pubauto:${sha.slice(0, 12)}`, title: "New photos couldn't be published", text: `Photos for a scheduled Instagram post were saved, but Vercel didn't accept the publish (${r.status || "no answer"}). The post can't go out until they're on the site.\n\nOpen the console → Publish and press Publish now.`, link: CONSOLE_URL });
+    return { ok: false, error: r.status === 429 ? "Vercel's daily publish limit is reached. Try again later (it frees up within a day)." : `Vercel didn't accept the request (${r.status || "no answer"}).` };
+  }
   const last = { sha, at: new Date().toISOString(), reason };
   await setJSON(PUB.last, last);
   return { ok: true, last };
@@ -415,6 +425,37 @@ export default async function handler(req, res) {
       if (!r.ok) return fail(400, r.error);
       return res.json(r);
     }
+
+    // ---- alerts (lib/alerts.js): where emails go, the Resend key, what happened lately ----
+    if (action === "alerts") {
+      const [cfg, key, log] = await Promise.all([getJSON(AK.cfg, {}), getJSON(AK.key, ""), getJSON(AK.log, [])]);
+      return res.json({ store: hasStore(), to: cfg.to || "", on: cfg.on !== false, from: cfg.from || "", hasKey: Boolean(key), keyEnd: key ? key.slice(-4) : "", log });
+    }
+    if (action === "saveAlerts" && req.method === "POST") {
+      if (!hasStore()) return fail(500, "Storage (Upstash Redis) isn't connected in Vercel.");
+      const cfg = await getJSON(AK.cfg, {});
+      if (body.to !== undefined) {
+        const to = String(body.to || "").trim();
+        if (to && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return fail(400, "That email address doesn't look right.");
+        cfg.to = to;
+      }
+      if (body.on !== undefined) cfg.on = Boolean(body.on);
+      if (body.from !== undefined) cfg.from = String(body.from || "").trim().slice(0, 120);
+      await setJSON(AK.cfg, cfg);
+      if (body.key !== undefined) {
+        const k = String(body.key || "").trim();
+        if (k && !/^re_[A-Za-z0-9_]{10,}$/.test(k)) return fail(400, "That doesn't look like a Resend API key (it starts with re_).");
+        await setJSON(AK.key, k);
+      }
+      return res.json({ ok: true });
+    }
+    if (action === "alertTest" && req.method === "POST") {
+      const r = await sendEmail({ subject: "Test alert", text: "This is a test from the console. If you're reading it, alerts reach you by email.\n\nNothing is wrong." });
+      if (!r.ok) return fail(400, r.error);
+      return res.json({ ok: true });
+    }
+    if (action === "alertCheck" && req.method === "POST") return res.json(await healthCheck({ daily: true, force: true }));
+    if (action === "alertClear" && req.method === "POST") { await setJSON(AK.log, []); return res.json({ ok: true }); }
 
     if (action === "list") return res.json({ articles: await listArticles() });
 

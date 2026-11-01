@@ -206,6 +206,7 @@
   .pub-btn[aria-current]{outline:2px solid var(--fg);outline-offset:2px}
   .pub-list{margin:8px 0 0;padding-left:18px;line-height:1.7;max-height:260px;overflow:auto}
   .pill.err{background:#fde8e8;border-color:#f3b9b9;color:#9b1c1c}
+  .al-log{display:grid;gap:0}.al-log details{border-top:1px solid var(--line);padding:10px 0}.al-log summary{cursor:pointer;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .pill.draft{background:#fff4e0;border-color:#f3d9a6;color:#8a5a00}
   .row-actions{display:flex;gap:6px}
   @media (max-width:640px){.row{grid-template-columns:52px minmax(0,1fr)}.row img,.row .noimg{width:52px;height:66px}.row-actions{grid-column:1/-1}}
@@ -494,6 +495,7 @@ function topBar(extra = "") {
       <button type="button" data-act="tab-fonts" ${tab === "fonts" ? 'aria-current="page"' : ""}>${icon("type")}<span>Fonts</span></button>
       <button type="button" data-act="tab-langs" ${tab === "langs" ? 'aria-current="page"' : ""}>${icon("globe")}<span>Languages</span></button>
       <button type="button" data-act="tab-hebrew" ${tab === "hebrew" ? 'aria-current="page"' : ""}>${icon("pencil")}<span>עברית</span></button>
+      <button type="button" data-act="tab-alerts" ${tab === "alerts" ? 'aria-current="page"' : ""}>${icon("bell")}<span>Alerts</span></button>
     </nav>
     <div class="c-actions">${extra}
       <button class="b primary pub-btn" type="button" data-act="tab-publish" ${tab === "publish" ? 'aria-current="page"' : ""}>${icon("send")}<span>Publish</span>${pubBadge()}</button>
@@ -2656,6 +2658,48 @@ async function renderStrip() {
   };
 }
 
+// ---------- Alerts: an email when something stops working ----------
+async function renderAlerts(flash = "", kind = "ok") {
+  tab = "alerts";
+  app.innerHTML = topBar() + `<main class="wrap c"><div class="list-head"><div><span class="label">Alerts</span><h1>Alerts</h1></div><p class="status ${kind}" id="flash">${esc(flash)}</p></div><div class="panel empty">Loading…</div></main>`;
+  let a;
+  try { a = await api("alerts"); } catch (err) { if (err.message === "auth") return; app.querySelector(".panel").textContent = err.message; return; }
+  const main = app.querySelector("main");
+  const when = (iso) => new Date(iso).toLocaleString("en-GB", { timeZone: "Asia/Jerusalem", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const ready = a.hasKey && a.to;
+  main.innerHTML = `<div class="list-head"><div><span class="label">Alerts</span><h1>Alerts</h1></div>
+      <p class="hint" style="max-width:56ch;margin:0">You get an email when something stops working: a publish that didn't reach the site, a scheduled Instagram post that failed (with Instagram's reason), photos that never reached the site, the scheduler stopping, Instagram getting disconnected, or DeepL running out. The same problem is emailed once, and again only if it's still happening a day later.</p>
+      <p class="status ${kind}" id="flash">${esc(flash)}</p></div>
+    <div class="texts">
+    <fieldset><legend>Email</legend>
+      <h3 style="margin:0;display:flex;gap:8px;align-items:center;font-size:16px">${ready ? (a.on ? `<span class="pill live">On</span> Alerts go to ${esc(a.to)}` : `<span class="pill draft">Paused</span> Emails are paused`) : `<span class="pill draft">Not set up</span>`}</h3>
+      ${a.hasKey ? `<p class="hint" style="margin:0">Resend key ending …${esc(a.keyEnd)}</p>` : `<ol class="hint" style="margin:0;padding-left:18px;line-height:1.8">
+        <li>Sign up for free at <a href="https://resend.com/signup" target="_blank" rel="noopener">resend.com</a> <b>with the email address you want the alerts sent to</b> (the free plan sends 3,000 emails a month).</li>
+        <li>Open <b>API Keys</b>, click <b>Create API Key</b>, give it any name, choose <b>Sending access</b>, and copy the key (it starts with <code>re_</code>).</li>
+        <li>Paste it below with the same email address, save, then press <b>Send a test email</b>.</li></ol>`}
+      <div class="f"><label for="al-to">Send alerts to</label><input id="al-to" type="email" autocomplete="email" value="${esc(a.to)}" placeholder="you@example.com"><p class="hint" style="margin:4px 0 0">Until you add your own domain in Resend, this must be the address you signed up to Resend with.</p></div>
+      <div class="f"><label for="al-key">${a.hasKey ? "Replace the Resend API key" : "Resend API key"}</label><input id="al-key" type="password" autocomplete="off" placeholder="re_…"></div>
+      <label style="display:flex;gap:8px;align-items:center;justify-content:flex-start;justify-self:start;width:auto;font-weight:600"><input type="checkbox" id="al-on" style="width:auto;margin:0" ${a.on ? "checked" : ""}><span>Send alert emails</span></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="b primary" type="button" id="al-save">${icon("save")}<span>Save</span></button>
+        ${ready ? `<button class="b" type="button" id="al-test">${icon("send")}<span>Send a test email</span></button>` : ""}
+        <button class="b" type="button" id="al-check">${icon("rotate-ccw")}<span>Check everything now</span></button></div>
+    </fieldset>
+    <fieldset><legend>Recent alerts</legend>
+      ${a.log.length ? `<div class="al-log">${a.log.map((l) => `<details><summary><span class="label">${esc(when(l.at))}</span> <b>${esc(l.title)}</b> ${l.emailed ? `<span class="pill live">Emailed</span>` : `<span class="pill draft" title="${esc(l.mailError || "")}">Not emailed</span>`}</summary><p class="hint" style="white-space:pre-line;margin:8px 0 0">${esc(l.text)}</p>${!l.emailed && l.mailError ? `<p class="status err" style="margin:6px 0 0">Email: ${esc(l.mailError)}</p>` : ""}</details>`).join("")}</div>
+        <div><button class="b" type="button" id="al-clear">${icon("trash-2")}<span>Clear the list</span></button></div>`
+      : `<p class="hint" style="margin:0">Nothing has gone wrong so far. Everything is listed here too, even when email isn't set up.</p>`}
+    </fieldset></div>`;
+  const run = async (fn, okMsg) => { try { const r = await fn(); renderAlerts(typeof okMsg === "function" ? okMsg(r) : okMsg); } catch (err) { if (err.message !== "auth") renderAlerts(err.message, "err"); } };
+  main.querySelector("#al-save").onclick = () => {
+    const body = { to: main.querySelector("#al-to").value.trim(), on: main.querySelector("#al-on").checked };
+    const k = main.querySelector("#al-key").value.trim(); if (k) body.key = k;
+    run(() => api("saveAlerts", { method: "POST", body }), "Saved.");
+  };
+  const t = main.querySelector("#al-test"); if (t) t.onclick = () => { t.disabled = true; run(() => api("alertTest", { method: "POST" }), `Test email sent to ${a.to}. Check your inbox (and spam, the first time).`); };
+  const c = main.querySelector("#al-check"); c.onclick = () => { c.disabled = true; run(() => api("alertCheck", { method: "POST" }), "Checked. Anything wrong is listed below (and emailed)."); };
+  const cl = main.querySelector("#al-clear"); if (cl) cl.onclick = () => run(() => api("alertClear", { method: "POST" }), "Cleared.");
+}
+
 // ---------- global clicks ----------
 app.addEventListener("click", async (e) => {
   const act = e.target.closest("[data-act]")?.dataset.act;
@@ -2671,6 +2715,7 @@ app.addEventListener("click", async (e) => {
   if (act === "tab-strip") renderStrip();
   if (act === "tab-hebrew") renderHebrew();
   if (act === "tab-publish") renderPublish();
+  if (act === "tab-alerts") renderAlerts();
   if (act === "tab-queue") renderQueue();
   if (act.startsWith("q-")) qClick(act, e);
   if (act === "vid-choose") document.getElementById("vid-file").click();

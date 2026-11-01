@@ -10,6 +10,10 @@
     {
       "path": "/api/refresh-token",
       "schedule": "0 3 * * 1"
+    },
+    {
+      "path": "/api/health",
+      "schedule": "17 5 * * *"
     }
   ],
   "headers": [
