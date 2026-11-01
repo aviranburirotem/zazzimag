@@ -70,7 +70,9 @@ const VIDEO = VIDEO_MANIFEST
 // Meta Pixel (console → Site texts → Ads and tracking). Runs only after the visitor accepts.
 const PIXEL = (T("meta.pixelId") || "").replace(/\D/g, "");
 const PIXEL_ON = PIXEL.length >= 8;
-const consentTag = PIXEL_ON ? `\n<script src="/assets/consent.js?v=${V}" data-pixel="${PIXEL}" defer></script>` : "";
+// visit statistics (Vercel Web Analytics: no cookies, nothing personal stored; see the privacy policy)
+const VA_TAG = `\n<script defer src="/_vercel/insights/script.js"></script>`;
+const consentTag = VA_TAG + (PIXEL_ON ? `\n<script src="/assets/consent.js?v=${V}" data-pixel="${PIXEL}" defer></script>` : "");
 
 // Coming-soon mode: the live site (zazzimag.com) shows only the coming-soon page.
 // Preview deployments and local builds still show the full site so you can work on it.
@@ -568,7 +570,7 @@ function accessibility() {
 }
 
 function privacy() {
-  const updated = PIXEL_ON ? "October 27, 2026" : "October 24, 2026";
+  const updated = "November 1, 2026";
   const mail = `<a href="mailto:${SITE.email}">${SITE.email}</a>`;
   return layout({
     title: "Privacy policy", pathname: "/privacy/",
@@ -576,7 +578,7 @@ function privacy() {
     body: `<section class="wrap page statement" lang="en" dir="ltr">
     <h1>Privacy</h1>
     <div id="en" lang="en">
-      <p>This policy explains what information is collected when you use zazzimag.com, run by ${esc(SITE.name)} ("we"). We keep it short because we collect very little: there are no visitor accounts${PIXEL_ON ? ", the only tracking is Meta's pixel, which runs only if you agree," : ", no advertising and no tracking cookies,"} and we never sell your information.</p>
+      <p>This policy explains what information is collected when you use zazzimag.com, run by ${esc(SITE.name)} ("we"). We keep it short because we collect very little: there are no visitor accounts, we count visits without cookies${PIXEL_ON ? ", the only tracking is Meta's pixel, which runs only if you agree," : ", there's no advertising tracking,"} and we never sell your information.</p>
       <h2>Information you send us</h2>
       <ul>
         <li><strong>Contact form and store sign-up.</strong> These open your own email app with a message to ${mail}. We receive only what you choose to send, such as your name, email address and message, and use it to reply to you or to tell you about new store items you asked to hear about.</li>
@@ -586,9 +588,10 @@ function privacy() {
       <h2>Information collected automatically</h2>
       <ul>
         <li><strong>Hosting.</strong> The site is hosted by Vercel. Like any web host, Vercel processes technical data such as your IP address, browser type and the pages you request, to deliver the site and keep it secure.</li>
-        <li><strong>Showing prices in your currency.</strong> To show store prices in your local currency, the site checks which country you're browsing from, based on your IP address. We don't store this; your browser keeps the result only until you close the tab.</li>
-        <li><strong>Settings on your device.</strong> If you use the accessibility menu or the light switch, your choices (for example larger text or the dark look) are saved in your browser's local storage so they stay on next time. This never leaves your device.</li>
-        ${PIXEL_ON ? "" : "<li>We don't use analytics, advertising or tracking cookies.</li>"}
+        <li><strong>Visit statistics.</strong> We use Vercel Web Analytics to see how many people visit, which pages they read, which site or app sent them, and their country and type of device. It doesn't use cookies, doesn't follow you across other sites, and doesn't store your IP address or anything that identifies you: visits are counted with a short-lived anonymous code that is discarded within a day.</li>
+        <li><strong>Language and prices.</strong> To show the site in your language and store prices in your local currency, the site may check which country you're browsing from, based on your IP address. We don't store this.</li>
+        <li><strong>Settings on your device.</strong> If you use the accessibility menu or choose a language, your choices (for example larger text) are saved in your browser's local storage so they stay on next time. This never leaves your device.</li>
+        ${PIXEL_ON ? "" : "<li>We don't use advertising or tracking cookies.</li>"}
       </ul>${PIXEL_ON ? `
       <h2 id="cookies">Meta Pixel (only if you agree)</h2>
       <p>We advertise on Instagram. With your permission, the site loads Meta's pixel, which sets cookies and tells Meta (Meta Platforms Ireland Ltd. / Meta Platforms, Inc.) which pages you visit, along with your IP address and browser details. We use it to measure our ads and to show Zazzi to people who might like it, including people similar to our visitors. Meta handles this data under <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener">its own privacy policy</a>, and it may be processed outside Israel and the EU.</p>

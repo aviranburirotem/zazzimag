@@ -125,7 +125,8 @@ export default async function handler(req, res) {
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("X-Robots-Tag", "noindex");
     if (ext === "html") {
-      const html = fs.readFileSync(file, "utf8").replace(/<\/body>/i, `${bar(url.pathname)}</body>`);
+      const html = fs.readFileSync(file, "utf8").replace(/<script defer src="\/_vercel\/insights\/script\.js"><\/script>/g, "") // your own previews aren't counted
+        .replace(/<\/body>/i, `${bar(url.pathname)}</body>`);
       return res.send(html);
     }
     return res.send(fs.readFileSync(file));
