@@ -57,7 +57,15 @@ html[data-theme="dark"] .zz-consent button:hover{background:rgba(255,255,255,.08
 html[data-theme="dark"] .zz-consent button[data-c="yes"],html[data-theme="dark"] .zz-consent button[data-c="ok"]{background:#f1f0ec;color:#1c1c1c}
 @media (max-width:700px){.zz-consent .zz-in{flex-direction:column;align-items:stretch;gap:12px;padding-inline-start:16px}.zz-consent .zz-row{margin-inline-start:60px}.zz-consent button{flex:1;min-width:0}}
 @media (prefers-reduced-motion:reduce){.zz-consent{transition:opacity .2s;transform:none;opacity:0}.zz-consent.in{opacity:1}}
-html.a11y-still .zz-consent{transition:none}`;
+html.a11y-still .zz-consent{transition:none}
+.zz-consent.zz-note{left:auto;right:auto;inset-inline-end:12px;bottom:12px;width:max-content;max-width:min(calc(100vw - 100px),440px);border:0;border-radius:999px;background:rgba(240,239,235,.92);box-shadow:0 2px 10px rgba(0,0,0,.08);font-size:11.5px;line-height:1.35;transform:translateY(160%)}
+.zz-consent.zz-note.in{transform:none}
+.zz-consent.zz-note .zz-in{padding:5px 6px;padding-inline-start:14px;gap:8px;flex-direction:row;align-items:center}
+.zz-consent.zz-note p{color:#6b6b66}
+.zz-consent.zz-note button{min-width:0;min-height:0;width:22px;height:22px;padding:0;border:0;border-radius:50%;background:transparent;color:#6b6b66;font:400 15px/22px system-ui,sans-serif;flex:none}
+.zz-consent.zz-note button:hover{background:rgba(0,0,0,.06)}
+@media (max-width:700px){.zz-consent.zz-note .zz-in{flex-direction:row;padding-inline-start:12px}}
+@media (prefers-reduced-motion:reduce){.zz-consent.zz-note{transform:none}}`;
 
   let box = null;
   function ask(focus) {
@@ -66,15 +74,13 @@ html.a11y-still .zz-consent{transition:none}`;
       const st = document.createElement("style"); st.id = "zz-consent-css"; st.textContent = css; document.head.append(st);
     }
     box = document.createElement("section");
-    box.className = "zz-consent";
+    box.className = focus === "notice" ? "zz-consent zz-note" : "zz-consent";
     box.setAttribute("aria-label", "Cookie choice");
     const on = loaded || get() === "yes";
-    box.innerHTML = focus === "notice"
+    box.innerHTML = focus === "notice" // a small, quiet note (turning the pixel off: Cookie settings on the privacy page and in the footer)
       ? (he()
-        ? `<div class="zz-in" dir="rtl"><p>באתר זה נעשה שימוש בעוגיות, כולל הפיקסל של Meta, כדי למדוד את הפרסום שלנו באינסטגרם. המשך הגלישה מהווה הסכמה לשימוש בעוגיות. <a href="/he/privacy/#cookies">למדיניות הפרטיות</a></p>
-      <div class="zz-row"><button type="button" data-c="no">כיבוי</button><button type="button" data-c="ok">הבנתי</button></div></div>`
-        : `<div class="zz-in"><p>This site uses cookies, including Meta's pixel, to measure our Instagram ads. By continuing to browse, you agree to the use of cookies. <a href="/privacy/#cookies">Privacy policy</a></p>
-      <div class="zz-row"><button type="button" data-c="no">Turn off</button><button type="button" data-c="ok">OK</button></div></div>`)
+        ? `<div class="zz-in" dir="rtl"><p>האתר משתמש בעוגיות. המשך הגלישה מהווה הסכמה. <a href="/he/privacy/#cookies">מדיניות פרטיות</a></p><button type="button" data-c="ok" aria-label="סגירה">×</button></div>`
+        : `<div class="zz-in"><p>This site uses cookies. By continuing, you agree. <a href="/privacy/#cookies">Privacy policy</a></p><button type="button" data-c="ok" aria-label="Close">×</button></div>`)
       : strict
       ? `<div class="zz-in"><p>We'd like to use Meta's pixel to measure our Instagram ads and show Zazzi to people who might like it. It's off unless you agree. <a href="/privacy/#cookies">Privacy policy</a></p>
       <div class="zz-row"><button type="button" data-c="no">Decline</button><button type="button" data-c="yes">Accept</button></div></div>`
@@ -96,6 +102,7 @@ html.a11y-still .zz-consent{transition:none}`;
     });
     document.body.append(box);
     requestAnimationFrame(() => requestAnimationFrame(() => box && box.classList.add("in"))); // slide up
+    if (focus === "notice") { const b = box; setTimeout(() => { if (box === b) b.querySelector('[data-c="ok"]').click(); }, 12000); } // goes away by itself
     if (focus === true) box.querySelector("button").focus();
   }
 
