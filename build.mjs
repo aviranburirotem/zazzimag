@@ -596,7 +596,8 @@ function privacy() {
       <h2 id="cookies">Meta Pixel</h2>
       <p>We advertise on Instagram. The site loads Meta's pixel, which sets cookies and tells Meta (Meta Platforms Ireland Ltd. / Meta Platforms, Inc.) which pages you visit, along with your IP address and browser details. We use it to measure our ads and to show Zazzi to people who might like it, including people similar to our visitors. Meta handles this data under <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener">its own privacy policy</a>, and it may be processed outside Israel and the EU.</p>
       <ul>
-        <li><strong>Where the law asks for consent first</strong> (the European Union, Iceland, Liechtenstein, Norway, the United Kingdom, Switzerland, Israel, South Korea, Brazil, Turkey, China and Quebec), the pixel is off until you choose Accept, and it never loads if you choose Decline. If we can't tell where you're browsing from, we ask first too.</li>
+        <li><strong>Where the law asks for consent first</strong> (the European Union, Iceland, Liechtenstein, Norway, the United Kingdom, Switzerland, South Korea, Brazil, Turkey, China and Quebec), the pixel is off until you choose Accept, and it never loads if you choose Decline. If we can't tell where you're browsing from, we ask first too.</li>
+        <li><strong>In Israel</strong>, the pixel loads when you visit and a notice tells you so; by continuing to browse you agree to it. You can turn it off from the notice or at any time below.</li>
         <li><strong>Everywhere else</strong>, the pixel loads when you visit. You can turn it off at any time.</li>
         <li>We find your country from your IP address only to make this choice; we don't store it.</li>
         <li>Your choice is saved in your browser. You can change it at any time: <a href="#cookies" data-consent-open>Cookie settings</a>.</li>
