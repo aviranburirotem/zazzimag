@@ -10,6 +10,7 @@ coverAlt: Erunyan wearing a colorful Decora fashion outfit
 coverCaption: @Erunyan wearing a colorful Decora outfit | Photo by Netta Meisles
 author: Netta Meisles
 pinned: true
+draft: true
 ---
 Japanese street fashion is home to a diverse range of subcultures, each with its own distinctive aesthetic. From the Victorian-inspired dresses of Lolita and the colorful accessories of Decora to the dark, romantic look of Jirai Kei and the bold, expressive style of Gyaru, these fashion movements offer different approaches to individuality, creativity and self-expression.
 
