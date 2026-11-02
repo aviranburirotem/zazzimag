@@ -3,9 +3,11 @@ title: Tokyo Second-Hand Shopping: Best Thrift Stores, Resale Shops & Flea Marke
 dek: Planning a shopping trip to Tokyo? Discover the city's second-hand shops, thrift stores, designer resale boutiques and flea markets, plus tips for finding great pre-loved fashion.
 date: 2026-11-02
 category: [Guide, History]
-cover: /images/articles/tokyo-second-hand-shopping/cover-2c4a5610.jpg
-color: de6762
-heroPosition: 100% 30%
+cover: /images/articles/tokyo-second-hand-shopping/cover-2c4a5248-2.jpg
+color: bf547b
+coverPosition: 51% 100%
+heroPosition: 100% 20%
+coverAlt: 2c4a5248
 coverCaption: 2nd STREET Shimokitazawa | Photo by Netta Meisles
 author: netta meisles
 draft: true
@@ -26,9 +28,12 @@ Japan's second-hand market has a history closely tied to the country's changing 
 
 Today, the market is changing again. Japanese second-hand fashion has attracted growing international attention, fuelled by social media, tourism, online resale and a weak yen. Overseas shoppers and resellers are increasingly competing for sought-after vintage and designer pieces, pushing prices up in some parts of the market.
 
+
 ## Buying Second-Hand Designer Fashion in Japan: What to Know
 
 Japan prohibits the import of counterfeit goods, but not every second-hand item is automatically guaranteed authentic. Specialist retailers such as RAGTAG and REFIND Tokyo have their own authentication procedures. When buying luxury fashion, check the seller's reputation and authentication policy.
+
+![RAGTAG Cat Street | Photo by Netta Meisles](/images/articles/tokyo-second-hand-shopping/article8203-3.jpg "")
 
 ## Where to Buy Second-Hand Clothes in Tokyo
 
@@ -45,10 +50,20 @@ Tokyo has plenty of options, whether you're looking for designer labels, everyda
 
 Designer-focused shops such as KINDAL and RAGTAG can be more expensive, while MODE OFF and some BAZZSTORE locations are worth exploring for lower-priced finds.
 
+
+![2c4a5610](/images/articles/tokyo-second-hand-shopping/2c4a5610-2.jpg "")
+
+
 ### Tokyo Flea Markets: Where to Find Vintage Clothes and More
 
 - **Tokyo City Flea Market:** At Oi Racecourse, with hundreds of vendors selling clothing, accessories and household goods on selected weekends.
 - **MOTTAINAI Flea Market:** A travelling market held at different Tokyo venues, including occasional events at Shinjuku Central Park.
 - **Shimokitazawa Flea Market:** An outdoor market at Shimokita Senrogai Akichi, featuring vintage clothing, accessories and handmade items.
+
+
+
+![july 8](/images/articles/tokyo-second-hand-shopping/july-8.jpg "")
+
+
 
 Whether browsing designer resale shops or searching through flea-market stalls, Tokyo offers plenty of ways to explore second-hand fashion. Prices may have changed, but there are still interesting pieces to be found at different budgets. Sometimes, the best finds are simply a matter of knowing where to look and taking the time to explore.
