@@ -10,6 +10,7 @@ heroPosition: 100% 20%
 coverAlt: 2c4a5248
 coverCaption: 2nd STREET Shimokitazawa | Photo by Netta Meisles
 author: netta meisles
+draft: true
 ---
 Second-hand shopping is a great way to find interesting clothes without stretching your budget. Tokyo offers everything from affordable everyday finds to vintage pieces and designer labels. Knowing the difference between its shops and resale models can help you find exactly what you're looking for.
 
