@@ -29,9 +29,10 @@ async function rates() {
 
 export default async function handler(req, res) {
   const country = String(req.headers["x-vercel-ip-country"] || "").toUpperCase();
+  const region = String(req.headers["x-vercel-ip-country-region"] || "").toUpperCase(); // e.g. QC (for the cookie choice)
   const currency = currencyFor(country);
   const rate = currency === "ILS" ? 1 : (await rates())[currency];
   res.setHeader("Cache-Control", "private, max-age=3600");
-  res.setHeader("Vary", "x-vercel-ip-country");
-  res.json({ country, currency, rate });
+  res.setHeader("Vary", "x-vercel-ip-country, x-vercel-ip-country-region");
+  res.json({ country, region, currency, rate });
 }

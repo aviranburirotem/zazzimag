@@ -570,7 +570,7 @@ function accessibility() {
 }
 
 function privacy() {
-  const updated = "November 1, 2026";
+  const updated = "November 2, 2026";
   const mail = `<a href="mailto:${SITE.email}">${SITE.email}</a>`;
   return layout({
     title: "Privacy policy", pathname: "/privacy/",
@@ -578,7 +578,7 @@ function privacy() {
     body: `<section class="wrap page statement" lang="en" dir="ltr">
     <h1>Privacy</h1>
     <div id="en" lang="en">
-      <p>This policy explains what information is collected when you use zazzimag.com, run by ${esc(SITE.name)} ("we"). We keep it short because we collect very little: there are no visitor accounts, we count visits without cookies${PIXEL_ON ? ", the only tracking is Meta's pixel, which runs only if you agree," : ", there's no advertising tracking,"} and we never sell your information.</p>
+      <p>This policy explains what information is collected when you use zazzimag.com, run by ${esc(SITE.name)} ("we"). We keep it short because we collect very little: there are no visitor accounts, we count visits without cookies${PIXEL_ON ? ", the only tracking is Meta's pixel (which waits for your consent where the law asks for it)," : ", there's no advertising tracking,"} and we never sell your information.</p>
       <h2>Information you send us</h2>
       <ul>
         <li><strong>Contact form and store sign-up.</strong> These open your own email app with a message to ${mail}. We receive only what you choose to send, such as your name, email address and message, and use it to reply to you or to tell you about new store items you asked to hear about.</li>
@@ -593,10 +593,12 @@ function privacy() {
         <li><strong>Settings on your device.</strong> If you use the accessibility menu or choose a language, your choices (for example larger text) are saved in your browser's local storage so they stay on next time. This never leaves your device.</li>
         ${PIXEL_ON ? "" : "<li>We don't use advertising or tracking cookies.</li>"}
       </ul>${PIXEL_ON ? `
-      <h2 id="cookies">Meta Pixel (only if you agree)</h2>
-      <p>We advertise on Instagram. With your permission, the site loads Meta's pixel, which sets cookies and tells Meta (Meta Platforms Ireland Ltd. / Meta Platforms, Inc.) which pages you visit, along with your IP address and browser details. We use it to measure our ads and to show Zazzi to people who might like it, including people similar to our visitors. Meta handles this data under <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener">its own privacy policy</a>, and it may be processed outside Israel and the EU.</p>
+      <h2 id="cookies">Meta Pixel</h2>
+      <p>We advertise on Instagram. The site loads Meta's pixel, which sets cookies and tells Meta (Meta Platforms Ireland Ltd. / Meta Platforms, Inc.) which pages you visit, along with your IP address and browser details. We use it to measure our ads and to show Zazzi to people who might like it, including people similar to our visitors. Meta handles this data under <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener">its own privacy policy</a>, and it may be processed outside Israel and the EU.</p>
       <ul>
-        <li>The pixel is off until you choose Accept. If you choose Decline, it never loads.</li>
+        <li><strong>Where the law asks for consent first</strong> (the European Union, Iceland, Liechtenstein, Norway, the United Kingdom, Switzerland, Israel, South Korea, Brazil, Turkey, China and Quebec), the pixel is off until you choose Accept, and it never loads if you choose Decline. If we can't tell where you're browsing from, we ask first too.</li>
+        <li><strong>Everywhere else</strong>, the pixel loads when you visit. You can turn it off at any time.</li>
+        <li>We find your country from your IP address only to make this choice; we don't store it.</li>
         <li>Your choice is saved in your browser. You can change it at any time: <a href="#cookies" data-consent-open>Cookie settings</a>.</li>
         <li>You can also control the ads you see in your Meta account under Accounts Center → Ad preferences.</li>
       </ul>` : ""}

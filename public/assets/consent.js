@@ -1,7 +1,9 @@
-// Meta Pixel, loaded only after the visitor agrees.
+// Meta Pixel and the cookie choice.
+// Where the law asks for consent first (CONSENT_FIRST below, and when the country can't be found),
+// the pixel loads only after the visitor chooses Accept. Everywhere else it loads straight away,
+// and the "Cookie settings" link in the footer lets the visitor turn it off.
 // The pixel ID comes from the console (Site texts → Ads and tracking) and is set on this script tag
-// as data-pixel. The choice is saved in this browser ("zz-consent": "yes" / "no"); the
-// "Cookie settings" link in the footer opens the choice again.
+// as data-pixel. The choice is saved in this browser ("zz-consent": "yes" / "no").
 (() => {
   const me = document.currentScript;
   const PIXEL = (me && me.dataset.pixel || "").replace(/\D/g, "");
@@ -9,6 +11,20 @@
   const KEY = "zz-consent";
   const get = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
   const set = (v) => { try { localStorage.setItem(KEY, v); } catch {} };
+
+  // countries (and Quebec) where tracking cookies need consent first; listed in the privacy policy too
+  const CONSENT_FIRST = new Set(["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE", // EU
+    "IS", "LI", "NO", "GB", "CH", "IL", "KR", "BR", "TR", "CN"]);
+  const needsConsent = (g) => !g || !g.country || CONSENT_FIRST.has(g.country) || (g.country === "CA" && g.region === "QC");
+  async function geo() {
+    try { const c = sessionStorage.getItem("zz-geo"); if (c) { const g = JSON.parse(c); if ("region" in g) return g; } } catch {}
+    try {
+      const g = await fetch("/api/geo").then((r) => r.json());
+      try { sessionStorage.setItem("zz-geo", JSON.stringify(g)); } catch {}
+      return g;
+    } catch { return null; }
+  }
+  let strict = true; // until we know the visitor's country
 
   let loaded = false;
   function loadPixel() {
@@ -48,8 +64,12 @@ html.a11y-still .zz-consent{transition:none}`;
     box = document.createElement("section");
     box.className = "zz-consent";
     box.setAttribute("aria-label", "Cookie choice");
-    box.innerHTML = `<div class="zz-in"><p>We'd like to use Meta's pixel to measure our Instagram ads and show Zazzi to people who might like it. It's off unless you agree. <a href="/privacy/#cookies">Privacy policy</a></p>
-      <div class="zz-row"><button type="button" data-c="no">Decline</button><button type="button" data-c="yes">Accept</button></div></div>`;
+    const on = loaded || get() === "yes";
+    box.innerHTML = strict
+      ? `<div class="zz-in"><p>We'd like to use Meta's pixel to measure our Instagram ads and show Zazzi to people who might like it. It's off unless you agree. <a href="/privacy/#cookies">Privacy policy</a></p>
+      <div class="zz-row"><button type="button" data-c="no">Decline</button><button type="button" data-c="yes">Accept</button></div></div>`
+      : `<div class="zz-in"><p>We use Meta's pixel to measure our Instagram ads and show Zazzi to people who might like it. It's ${on ? "on" : "off"}; you can change that here at any time. <a href="/privacy/#cookies">Privacy policy</a></p>
+      <div class="zz-row"><button type="button" data-c="no">Turn off</button><button type="button" data-c="yes">${on ? "Keep on" : "Turn on"}</button></div></div>`;
     box.addEventListener("click", (e) => {
       const c = e.target.closest("[data-c]")?.dataset.c; if (!c) return;
       const was = get();
@@ -70,6 +90,13 @@ html.a11y-still .zz-consent{transition:none}`;
   document.addEventListener("click", (e) => {
     if (e.target.closest("[data-consent-open]")) { e.preventDefault(); ask(true); }
   });
-  const start = () => { const c = get(); if (c === "yes") loadPixel(); else if (c !== "no") ask(false); };
+  const start = async () => {
+    const c = get();
+    if (c === "yes") { loadPixel(); geo().then((g) => { strict = needsConsent(g); }); return; }
+    if (c === "no") { geo().then((g) => { strict = needsConsent(g); }); return; }
+    strict = needsConsent(await geo());
+    if (strict) ask(false); // consent first: ask, the pixel waits
+    else loadPixel();      // no consent needed here: on straight away (Cookie settings turns it off)
+  };
   if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
 })();
