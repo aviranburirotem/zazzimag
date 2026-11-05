@@ -7,7 +7,7 @@ cover: /images/articles/japanese-street-fashion-a-guide-to-lolita-decora-jirai-k
 color: d34d89
 coverPosition: 50% 0%
 coverAlt: Erunyan wearing a colorful Decora fashion outfit
-coverCaption: @Erunyan wearing a colorful Decora outfit | Photo by Netta Meisles
+coverCaption: Erunyan wearing a colorful Decora outfit | Photo by Netta Meisles
 author: Netta Meisles
 pinned: true
 ---
