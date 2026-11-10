@@ -4,11 +4,13 @@ dek: Discover Mariko Mori’s All That Shines at Tokyo’s Mori Art Museum, expl
 date: 2026-11-10
 category: [Guide, History]
 cover: /images/articles/mariko-mori-all-that-shines-tokyo/cover-d-2.jpg
-color: 5cabc4
+color: 7f00ff
+colorManual: true
 heroPosition: 100% 30%
 coverAlt: article82033 5
 coverCaption: “Wave UFO” installation by Mariko Mori, featured in the All That Shines exhibition at the Mori Art Museum | Photo by Zorka Avraham
 author: Netta Meisles
+pinned: true
 ---
 Some artists create artworks. Others build entire universes around them. Mariko Mori certainly belongs to the latter. The Japanese artist brings together fashion, technology, history and spirituality, creating a visual world that seems to come from the distant future while exploring timeless questions about humanity and our place in the universe.
 
