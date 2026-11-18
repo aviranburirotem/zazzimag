@@ -88,7 +88,9 @@
   "ui.notTranslated": "Dieser Artikel wurde noch nicht übersetzt.",
   "cat:Trends": "Trends",
   "cat:Guide": "Leitfaden",
-  "cat:History": "Geschichte"
+  "cat:History": "Geschichte",
+  "cat:Street Style": "Streetstyle",
+  "cat:Streetwear": "Streetwear"
  },
  "cache": {
   "11yek0p6": "Trends",
@@ -179,9 +181,11 @@
   "9zccf09": "Link kopieren",
   "foo2qbb": "Link kopiert",
   "jgs6o3y": "Link kopiert. Füge ihn in KakaoTalk ein.",
-  "1jcf8vqo": "/strip/logo-mvwl8xy5.png"
+  "1jcf8vqo": "/strip/logo-mvwl8xy5.png",
+  "12lsh9rc": "Streetstyle",
+  "1pan5g9a": "Streetwear"
  },
  "edited": {},
  "engine": "deepl",
- "at": "2026-10-31"
+ "at": "2026-11-18"
 }

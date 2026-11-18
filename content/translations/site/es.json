@@ -88,7 +88,9 @@
   "ui.notTranslated": "Este artículo aún no se ha traducido.",
   "cat:Trends": "Tendencias",
   "cat:Guide": "Guía",
-  "cat:History": "Historia"
+  "cat:History": "Historia",
+  "cat:Street Style": "Estilo urbano",
+  "cat:Streetwear": "Ropa urbana"
  },
  "cache": {
   "11yek0p6": "Tendencias",
@@ -179,9 +181,11 @@
   "9zccf09": "Copiar enlace",
   "foo2qbb": "Enlace copiado",
   "jgs6o3y": "Enlace copiado. Pégalo en KakaoTalk.",
-  "1jcf8vqo": "/strip/logo-mvwl8xy5.png"
+  "1jcf8vqo": "/strip/logo-mvwl8xy5.png",
+  "12lsh9rc": "Estilo urbano",
+  "1pan5g9a": "Ropa urbana"
  },
  "edited": {},
  "engine": "deepl",
- "at": "2026-10-31"
+ "at": "2026-11-18"
 }

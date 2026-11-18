@@ -9,8 +9,9 @@ colorManual: true
 coverPosition: 50% 69%
 heroPosition: 50% 69%
 heroShape: vertical
-coverAlt: koenji 11
-draft: true
+coverAlt: American-inspired vintage style, two effortlessly cool women and Okome the poodle at SALERS | Photo by Netta Meisles
+coverCaption: American-inspired vintage style, two effortlessly cool women and Okome the poodle at SALERS | Photo by Netta Meisles
+author: Netta Meisles
 ---
 Koenji is full of surprises. The neighbourhood is home to independent vintage stores run by people with an exceptional eye for clothing. Here, vintage is more than secondhand shopping. It's about finding original pieces, recognising their history and knowing what makes them special.
 
@@ -40,7 +41,7 @@ A little Americana, a little Western, and a lot of character. SALERS specialises
 7DAYS has an unmistakably eclectic atmosphere, with quirky furniture and accessories inspired by the 1960s through the 1990s. Its carefully arranged interiors, vintage objects and clothing give the shop a distinctive look, with plenty of interesting details to discover as you browse.
 
 
-![funky2](/images/articles/koenji-vintage-shopping-guide/funky2.jpg "")
+![The owner of 7DAYS standing inside the colourful vintage shop, surrounded by eclectic clothing, furniture and accessories.](/images/articles/koenji-vintage-shopping-guide/funky2.jpg "Eclectic vintage, colourful details and a shop owner with plenty of personality at 7DAYS   | Photo by Netta Meisles ")
 
 
 ### 03. sleeping yet
@@ -55,7 +56,7 @@ A little Americana, a little Western, and a lot of character. SALERS specialises
 
 Small, independent and full of personality. sleeping yet brings together carefully selected vintage clothing, original creations and embroidered pieces. The shop has a playful identity and a distinct approach to its selection, making it a refreshing stop for anyone who enjoys discovering something a little different.
 
-![funky21 2](/images/articles/koenji-vintage-shopping-guide/funky21-2.jpg "")
+![The owner of sleeping yet standing inside the vintage shop, wearing a casual outfit with carefully chosen accessories and distinctive details.](/images/articles/koenji-vintage-shopping-guide/funky21-2.jpg "A playful eye for details, carefully chosen accessories and effortless style, with the owner of sleeping yet | Photo by Netta Meisles ")
 
 
 
@@ -70,7 +71,7 @@ Small, independent and full of personality. sleeping yet brings together careful
 
 70s vintage shop hiragi specialises in authentic vintage clothing from the late 1960s and 1970s. Its selection includes an impressive range of flared denim and bell-bottoms, alongside hippie-inspired custom designs. A great destination for anyone interested in the distinctive silhouettes and aesthetics of the era.
 
-![funky21](/images/articles/koenji-vintage-shopping-guide/funky21.jpg "")
+![The owner of 70s vintage shop hiragi standing inside the store, wearing a 1970s-inspired outfit with high-waisted trousers, a fitted printed shirt and a denim newsboy cap.](/images/articles/koenji-vintage-shopping-guide/funky21.jpg "A true head-to-toe 70s look at 70s vintage shop hiragi, from high-waisted trousers and a funky printed shirt to a denim newsboy cap | Photo by Netta Meisles")
 
 
 

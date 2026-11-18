@@ -88,7 +88,9 @@
   "ui.copyLink": "העתקת קישור",
   "ui.linkCopied": "הקישור הועתק",
   "ui.pasteKakao": "קישור הועתק. הדבק אותו ב-KakaoTalk",
-  "ui.notTranslated": "מאמר זה עדיין לא תורגם."
+  "ui.notTranslated": "מאמר זה עדיין לא תורגם.",
+  "cat:Street Style": "סגנון רחוב",
+  "cat:Streetwear": "אופנת רחוב"
  },
  "cache": {
   "uhamga8": "אודותינו",
@@ -135,7 +137,9 @@
   "9zccf09": "העתקת קישור",
   "foo2qbb": "הקישור הועתק",
   "jgs6o3y": "קישור הועתק. הדבק אותו ב-KakaoTalk",
-  "1jcf8vqo": "/strip/logo-mvwl8xy5.png"
+  "1jcf8vqo": "/strip/logo-mvwl8xy5.png",
+  "12lsh9rc": "סגנון רחוב",
+  "1pan5g9a": "אופנת רחוב"
  },
  "edited": {
   "home.videoLabel": "vrq87qy",
@@ -179,5 +183,5 @@
   "cat:Trends": "11yek0p6"
  },
  "engine": "google",
- "at": "2026-11-05"
+ "at": "2026-11-18"
 }

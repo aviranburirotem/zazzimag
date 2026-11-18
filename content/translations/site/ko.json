@@ -88,7 +88,9 @@
   "ui.notTranslated": "이 기사는 아직 번역되지 않았습니다.",
   "cat:Trends": "트렌드",
   "cat:Guide": "가이드",
-  "cat:History": "역사"
+  "cat:History": "역사",
+  "cat:Street Style": "스트리트 스타일",
+  "cat:Streetwear": "스트리트웨어"
  },
  "cache": {
   "11yek0p6": "트렌드",
@@ -179,9 +181,11 @@
   "9zccf09": "링크 복사",
   "foo2qbb": "링크 복사됨",
   "jgs6o3y": "링크를 복사했습니다. 카카오톡에 붙여넣으세요.",
-  "1jcf8vqo": "/strip/logo-mvwl8xy5.png"
+  "1jcf8vqo": "/strip/logo-mvwl8xy5.png",
+  "12lsh9rc": "스트리트 스타일",
+  "1pan5g9a": "스트리트웨어"
  },
  "edited": {},
  "engine": "google",
- "at": "2026-10-31"
+ "at": "2026-11-18"
 }
