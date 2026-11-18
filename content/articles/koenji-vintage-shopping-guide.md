@@ -12,6 +12,7 @@ heroShape: vertical
 coverAlt: American-inspired vintage style, two effortlessly cool women and Okome the poodle at SALERS | Photo by Netta Meisles
 coverCaption: American-inspired vintage style, two effortlessly cool women and Okome the poodle at SALERS | Photo by Netta Meisles
 author: Netta Meisles
+pinned: true
 ---
 Koenji is full of surprises. The neighbourhood is home to independent vintage stores run by people with an exceptional eye for clothing. Here, vintage is more than secondhand shopping. It's about finding original pieces, recognising their history and knowing what makes them special.
 
